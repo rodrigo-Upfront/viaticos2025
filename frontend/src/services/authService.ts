@@ -29,7 +29,7 @@ interface User {
 }
 
 class AuthService {
-  private baseURL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+  private baseURL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api';
 
   async login(email: string, password: string): Promise<LoginResponse> {
     const response = await axios.post(`${this.baseURL}/auth/login`, {
