@@ -1,12 +1,11 @@
 name: viaticos-2025
-region: nyc
 services:
   # Backend Service (FastAPI)
   - name: backend
-    build_command: cd backend && pip install -r requirements.txt
+    source_dir: backend
     dockerfile_path: backend/Dockerfile
-    source_dir: /
     github:
+      repo: rodrigo-Upfront/viaticos2025
       branch: main
       deploy_on_push: true
     health_check:
@@ -44,10 +43,10 @@ services:
 
   # Frontend Service (React)
   - name: frontend
-    build_command: cd frontend && npm ci && npm run build
+    source_dir: frontend
     dockerfile_path: frontend/Dockerfile
-    source_dir: /
     github:
+      repo: rodrigo-Upfront/viaticos2025
       branch: main
       deploy_on_push: true
     http_port: 3000
@@ -58,7 +57,7 @@ services:
     envs:
       - key: REACT_APP_API_URL
         scope: BUILD_TIME
-        value: ${_self.URL}/api
+        value: ${backend.PUBLIC_URL}/api
       - key: REACT_APP_UPLOAD_MAX_SIZE
         scope: BUILD_TIME
         value: "10485760"
