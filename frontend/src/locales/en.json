@@ -1,0 +1,54 @@
+{
+  "app": {
+    "title": "Viaticos 2025",
+    "subtitle": "Travel Expense Management System"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "email": "Email",
+    "password": "Password",
+    "loginButton": "Sign In",
+    "loginError": "Login error",
+    "welcome": "Welcome to Viaticos 2025"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "prepayments": "Prepayments",
+    "expenses": "Expenses",
+    "reports": "Reports",
+    "users": "Users",
+    "settings": "Settings",
+    "approvals": "Approvals"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "pendingPrepayments": "Pending Prepayments",
+    "pendingExpenseReports": "Pending Expense Reports",
+    "pendingExpenses": "Pending Expenses",
+    "approvedExpenses": "Approved Expenses",
+    "monthlyExpenses": "Monthly Expenses",
+    "expensesByCategory": "Expenses by Category"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "view": "View",
+    "create": "Create",
+    "update": "Update",
+    "search": "Search",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No",
+    "date": "Date",
+    "amount": "Amount",
+    "status": "Status",
+    "actions": "Actions"
+  }
+}
+

@@ -1,0 +1,54 @@
+{
+  "app": {
+    "title": "Viaticos 2025",
+    "subtitle": "Sistema de Gestión de Gastos de Viaje"
+  },
+  "auth": {
+    "login": "Iniciar Sesión",
+    "logout": "Cerrar Sesión",
+    "email": "Correo Electrónico",
+    "password": "Contraseña",
+    "loginButton": "Ingresar",
+    "loginError": "Error de inicio de sesión",
+    "welcome": "Bienvenido a Viaticos 2025"
+  },
+  "navigation": {
+    "dashboard": "Panel de Control",
+    "prepayments": "Anticipos",
+    "expenses": "Gastos",
+    "reports": "Reportes",
+    "users": "Usuarios",
+    "settings": "Configuración",
+    "approvals": "Aprobaciones"
+  },
+  "dashboard": {
+    "title": "Panel de Control",
+    "pendingPrepayments": "Anticipos Pendientes",
+    "pendingExpenseReports": "Reportes de Gastos Pendientes",
+    "pendingExpenses": "Gastos Pendientes",
+    "approvedExpenses": "Gastos Aprobados",
+    "monthlyExpenses": "Gastos Mensuales",
+    "expensesByCategory": "Gastos por Categoría"
+  },
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "view": "Ver",
+    "create": "Crear",
+    "update": "Actualizar",
+    "search": "Buscar",
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito",
+    "confirm": "Confirmar",
+    "yes": "Sí",
+    "no": "No",
+    "date": "Fecha",
+    "amount": "Monto",
+    "status": "Estado",
+    "actions": "Acciones"
+  }
+}
+
