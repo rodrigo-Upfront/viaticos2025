@@ -1,0 +1,29 @@
+{
+  "name": "viaticos-2025",
+  "version": "1.0.0",
+  "description": "Travel Expense Management System - FastAPI + React + PostgreSQL",
+  "scripts": {
+    "build": "echo 'This is a multi-service application. Build individual services:'",
+    "build:frontend": "cd frontend && npm ci && npm run build",
+    "build:backend": "cd backend && pip install -r requirements.txt",
+    "start": "docker-compose up",
+    "dev": "docker-compose up",
+    "test": "echo 'Run tests for individual services'"
+  },
+  "keywords": [
+    "travel-expense",
+    "fastapi",
+    "react",
+    "postgresql",
+    "expense-management"
+  ],
+  "author": "rodrigo-Upfront",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "workspaces": [
+    "frontend"
+  ]
+}
