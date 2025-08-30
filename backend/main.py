@@ -46,6 +46,106 @@ async def lifespan(app: FastAPI):
             conn.commit()
             print("✅ Ensured RequestStatus enum values present")
 
+            # Ensure currency master and columns exist (idempotent startup migration)
+            try:
+                # Create currencies table if missing
+                conn.execute(text(
+                    """
+                    CREATE TABLE IF NOT EXISTS currencies (
+                        id SERIAL PRIMARY KEY,
+                        name VARCHAR(100) UNIQUE NOT NULL,
+                        code VARCHAR(10) UNIQUE NOT NULL,
+                        symbol VARCHAR(10)
+                    );
+                    """
+                ))
+                # Seed a minimal set (safe due to ON CONFLICT)
+                conn.execute(text(
+                    """
+                    INSERT INTO currencies (name, code, symbol) VALUES
+                      ('Peruvian Sol','PEN','S/'),
+                      ('US Dollar','USD','$'),
+                      ('Chilean Peso','CLP','$'),
+                      ('Euro','EUR','€'),
+                      ('Mexican Peso','MXN','$'),
+                      ('Colombian Peso','COP','$'),
+                      ('Brazilian Real','BRL','R$'),
+                      ('Argentine Peso','ARS','$')
+                    ON CONFLICT (code) DO NOTHING;
+                    """
+                ))
+
+                # Add currency_id columns if missing
+                conn.execute(text("ALTER TABLE prepayments ADD COLUMN IF NOT EXISTS currency_id INTEGER"))
+                conn.execute(text("ALTER TABLE expenses ADD COLUMN IF NOT EXISTS currency_id INTEGER"))
+
+                # Backfill from legacy 'currency' columns when present
+                conn.execute(text(
+                    """
+                    UPDATE prepayments p
+                    SET currency_id = c.id
+                    FROM currencies c
+                    WHERE p.currency_id IS NULL
+                      AND (
+                        (SELECT COUNT(*) FROM information_schema.columns 
+                         WHERE table_name='prepayments' AND column_name='currency') > 0
+                      )
+                      AND (p.currency = c.code OR p.currency = c.name);
+                    """
+                ))
+                conn.execute(text(
+                    """
+                    UPDATE expenses e
+                    SET currency_id = c.id
+                    FROM currencies c
+                    WHERE e.currency_id IS NULL
+                      AND (
+                        (SELECT COUNT(*) FROM information_schema.columns 
+                         WHERE table_name='expenses' AND column_name='currency') > 0
+                      )
+                      AND (e.currency = c.code OR e.currency = c.name);
+                    """
+                ))
+
+                # Default to USD if still null
+                conn.execute(text(
+                    "UPDATE prepayments SET currency_id = (SELECT id FROM currencies WHERE code='USD' LIMIT 1) WHERE currency_id IS NULL"
+                ))
+                conn.execute(text(
+                    "UPDATE expenses SET currency_id = (SELECT id FROM currencies WHERE code='USD' LIMIT 1) WHERE currency_id IS NULL"
+                ))
+
+                # Drop legacy currency columns if exist
+                conn.execute(text(
+                    "DO $$ BEGIN IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='prepayments' AND column_name='currency') THEN ALTER TABLE prepayments DROP COLUMN currency; END IF; END $$;"
+                ))
+                conn.execute(text(
+                    "DO $$ BEGIN IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='expenses' AND column_name='currency') THEN ALTER TABLE expenses DROP COLUMN currency; END IF; END $$;"
+                ))
+                conn.execute(text(
+                    "DO $$ BEGIN IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='countries' AND column_name='currency') THEN ALTER TABLE countries DROP COLUMN currency; END IF; END $$;"
+                ))
+
+                # Add FKs and NOT NULL (ignore if already present)
+                conn.execute(text(
+                    "DO $$ BEGIN ALTER TABLE prepayments ADD CONSTRAINT IF NOT EXISTS fk_prepay_currency FOREIGN KEY (currency_id) REFERENCES currencies(id); EXCEPTION WHEN others THEN NULL; END $$;"
+                ))
+                conn.execute(text(
+                    "DO $$ BEGIN ALTER TABLE expenses ADD CONSTRAINT IF NOT EXISTS fk_expense_currency FOREIGN KEY (currency_id) REFERENCES currencies(id); EXCEPTION WHEN others THEN NULL; END $$;"
+                ))
+                try:
+                    conn.execute(text("ALTER TABLE prepayments ALTER COLUMN currency_id SET NOT NULL"))
+                except Exception:
+                    pass
+                try:
+                    conn.execute(text("ALTER TABLE expenses ALTER COLUMN currency_id SET NOT NULL"))
+                except Exception:
+                    pass
+                conn.commit()
+                print("✅ Ensured currency master and columns present")
+            except Exception as e:
+                print(f"⚠️ Skipped currency migration: {e}")
+
             # Lightweight migration for reimbursements: make expenses.travel_expense_report_id nullable and add created_by_user_id if missing
             try:
                 conn.execute(text("ALTER TABLE expenses ALTER COLUMN travel_expense_report_id DROP NOT NULL"))
