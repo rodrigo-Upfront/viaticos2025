@@ -25,9 +25,10 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import ExpenseModal from '../components/forms/ExpenseModal';
+import { currencyService, Currency } from '../services/currencyService';
 import ExpenseViewModal from '../components/modals/ExpenseViewModal';
 import ConfirmDialog from '../components/forms/ConfirmDialog';
-import { expenseService, Expense as ApiExpense } from '../services/expenseService';
+import { expenseService, Expense as ApiExpense, ExpenseCreate } from '../services/expenseService';
 import { categoryService, Category as ApiCategory } from '../services/categoryService';
 import { supplierService, Supplier as ApiSupplier } from '../services/supplierService';
 import { reportService, ExpenseReport as ApiReport } from '../services/reportService';
@@ -93,8 +94,9 @@ const ExpensesPage: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [travelExpenseReports, setTravelExpenseReports] = useState<TravelExpenseReport[]>([]);
-  const [countries, setCountries] = useState<{ id: number; name: string; currency: string }[]>([]);
+  const [countries, setCountries] = useState<{ id: number; name: string }[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
 
   // Load data on component mount
   useEffect(() => {
@@ -103,6 +105,7 @@ const ExpensesPage: React.FC = () => {
     loadSuppliers();
     loadReports();
     loadCountries();
+    loadCurrencies();
   }, []);
 
   const [modal, setModal] = useState({
@@ -148,7 +151,7 @@ const ExpensesPage: React.FC = () => {
       expense_date: apiExpense.expense_date,
       country_id: apiExpense.country_id,
       country: country?.name || apiExpense.country_name || 'Unknown',
-      currency: apiExpense.currency,
+      currency: apiExpense.currency_code || currencies.find(c => c.id === (apiExpense as any).currency_id)?.code || '',
       amount: parseFloat(apiExpense.amount),
       document_number: apiExpense.document_number,
       taxable: apiExpense.taxable as 'Si' | 'No',
@@ -158,23 +161,26 @@ const ExpensesPage: React.FC = () => {
     };
   };
 
-  const mapFrontendToApi = (frontendExpense: Expense) => {
+  const mapFrontendToApi = (frontendExpense: Expense): ExpenseCreate => {
+    const currency = currencies.find(c => c.code === frontendExpense.currency);
+    const isReimbursement = frontendExpense.travel_expense_report_id === 0;
     return {
       category_id: frontendExpense.category_id,
-      travel_expense_report_id: frontendExpense.travel_expense_report_id,
+      travel_expense_report_id: isReimbursement ? undefined as any : frontendExpense.travel_expense_report_id,
       purpose: frontendExpense.purpose,
       document_type: frontendExpense.document_type,
       boleta_supplier: frontendExpense.boleta_supplier,
       factura_supplier_id: frontendExpense.factura_supplier_id && frontendExpense.factura_supplier_id > 0 ? frontendExpense.factura_supplier_id : null,
       expense_date: frontendExpense.expense_date,
-      country_id: frontendExpense.country_id,
-      currency: frontendExpense.currency,
+      // For reimbursement, send explicit currency; for report-linked it's ignored by backend
+      currency_id: currency ? currency.id : undefined as any,
       amount: frontendExpense.amount,
       document_number: frontendExpense.document_number,
       taxable: frontendExpense.taxable,
       document_file: frontendExpense.document_file,
       comments: frontendExpense.comments,
-    };
+      ...(isReimbursement ? { country_id: frontendExpense.country_id } : {})
+    } as unknown as ExpenseCreate;
   };
 
   // Load functions
@@ -256,7 +262,6 @@ const ExpensesPage: React.FC = () => {
       const mappedCountries = response.map((country: ApiCountry) => ({
         id: country.id,
         name: country.name,
-        currency: country.currency,
       }));
       setCountries(mappedCountries);
     } catch (error) {
@@ -268,18 +273,27 @@ const ExpensesPage: React.FC = () => {
 
   // CRUD operations
   const handleCreate = async () => {
-    await Promise.all([loadCategories(), loadSuppliers(), loadReports(), loadCountries()]);
+    await Promise.all([loadCategories(), loadSuppliers(), loadReports(), loadCountries(), loadCurrencies()]);
     setModal({ open: true, mode: 'create', expense: undefined });
   };
 
   const handleEdit = async (expense: Expense) => {
     // Ensure the latest data is available when opening the modal
-    await Promise.all([loadCountries(), loadCategories(), loadSuppliers(), loadReports()]);
+    await Promise.all([loadCountries(), loadCategories(), loadSuppliers(), loadReports(), loadCurrencies()]);
     setModal({ open: true, mode: 'edit', expense });
   };
 
   const handleView = (expense: Expense) => {
     setViewModal({ open: true, expense });
+  };
+
+  const loadCurrencies = async () => {
+    try {
+      const data = await currencyService.getCurrencies();
+      setCurrencies(data);
+    } catch (error) {
+      console.error('Failed to load currencies:', error);
+    }
   };
 
   const handleDelete = (expense: Expense) => {
@@ -462,6 +476,7 @@ const ExpensesPage: React.FC = () => {
         suppliers={suppliers}
         travelExpenseReports={travelExpenseReports}
         countries={countries}
+        currencies={currencies}
         loading={loading.action}
       />
 

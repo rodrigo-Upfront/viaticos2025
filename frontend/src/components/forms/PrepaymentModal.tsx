@@ -15,6 +15,7 @@ import {
   Typography,
   IconButton,
 } from '@mui/material';
+import { currencyService, Currency } from '../../services/currencyService';
 import {
   Download as DownloadIcon,
   Description as DocumentIcon,
@@ -30,6 +31,7 @@ interface Prepayment {
   endDate: string;
   amount: number;
   currency: string;
+  currency_id?: number;
   comment: string;
   justification_file?: string;
   status: string;
@@ -38,7 +40,6 @@ interface Prepayment {
 interface Country {
   id: number;
   name: string;
-  currency: string;
 }
 
 interface PrepaymentModalProps {
@@ -48,6 +49,7 @@ interface PrepaymentModalProps {
   prepayment?: Prepayment;
   mode: 'create' | 'edit';
   countries: Country[];
+  currencies?: Currency[];
   loading?: boolean;
 }
 
@@ -58,6 +60,7 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
   prepayment,
   mode,
   countries,
+  currencies = [],
   loading = false
 }) => {
   const [formData, setFormData] = useState<Prepayment>({
@@ -68,6 +71,7 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
     endDate: '',
     amount: 0,
     currency: 'USD',
+    currency_id: undefined,
     comment: '',
     justification_file: '',
     status: 'pending'
@@ -91,6 +95,7 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
         endDate: '',
         amount: 0,
         currency: 'USD',
+        currency_id: undefined,
         comment: '',
         justification_file: '',
         status: 'pending'
@@ -99,6 +104,11 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
     }
     setErrors({});
   }, [prepayment, mode, open]);
+
+  // Ensure currency is always a string to avoid controlled/uncontrolled warning
+  useEffect(() => {
+    setFormData(prev => ({ ...prev, currency: prev.currency || '' }));
+  }, [open]);
 
   const handleChange = (field: keyof Prepayment) => (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = field === 'amount' ? parseFloat(event.target.value) || 0 : event.target.value;
@@ -120,6 +130,10 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
       ...prev,
       [field]: event.target.value
     }));
+    if (field === 'currency') {
+      const selected = currencies.find(c => c.code === event.target.value);
+      setFormData(prev => ({ ...prev, currency_id: selected?.id }));
+    }
     if (errors[field]) {
       setErrors(prev => ({
         ...prev,
@@ -135,7 +149,7 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
       ...prev,
       destination_country_id: countryId,
       destination: selectedCountry?.name || '',
-      currency: selectedCountry?.currency || 'USD'
+      currency: prev.currency
     }));
     if (errors.destination_country_id) {
       setErrors(prev => ({
@@ -197,6 +211,10 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
 
     if (formData.amount <= 0) {
       newErrors.amount = 'Amount must be greater than 0';
+    }
+
+    if (!formData.currency) {
+      newErrors.currency = 'Currency is required';
     }
 
     setErrors(newErrors);
@@ -314,16 +332,19 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
               sx={{ flex: 1 }}
             />
 
-            <TextField
-              label="Currency"
-              value={formData.currency}
-              onChange={handleChange('currency')}
-              sx={{ flex: 1 }}
-              InputProps={{
-                readOnly: formData.destination_country_id > 0,
-              }}
-              helperText={formData.destination_country_id > 0 ? "Currency is set by selected country" : ""}
-            />
+            <FormControl fullWidth sx={{ flex: 1 }}>
+              <InputLabel>Currency</InputLabel>
+              <Select
+                value={formData.currency || ''}
+                onChange={handleSelectChange('currency')}
+                label="Currency"
+              >
+                <MenuItem value=""><em>Select currency</em></MenuItem>
+                {(currencies.length ? currencies : [])?.map((c) => (
+                  <MenuItem key={c.code} value={c.code}>{c.code} - {c.name}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Box>
 
           <TextField

@@ -15,10 +15,11 @@ from contextlib import asynccontextmanager
 from app.database.connection import engine, get_db
 from app.models import models
 from app.routers import (
-    auth, users, countries, categories, suppliers,
+    auth, users, countries, categories, suppliers, currencies,
     prepayments, expense_reports, expenses, approvals, dashboard
 )
 from app.core.config import settings
+from sqlalchemy import text
 
 
 @asynccontextmanager
@@ -30,6 +31,35 @@ async def lifespan(app: FastAPI):
     # Create database tables
     models.Base.metadata.create_all(bind=engine)
     print("📊 Database tables created")
+    
+    # Ensure DB enums include new RequestStatus values
+    try:
+        with engine.connect() as conn:
+            # Add new enum values if they do not exist (PostgreSQL specific)
+            # Some databases may have used enum names (uppercase) as labels; ensure both cases exist
+            conn.execute(text("ALTER TYPE requeststatus ADD VALUE IF NOT EXISTS 'supervisor_pending'"))
+            conn.execute(text("ALTER TYPE requeststatus ADD VALUE IF NOT EXISTS 'accounting_pending'"))
+            conn.execute(text("ALTER TYPE requeststatus ADD VALUE IF NOT EXISTS 'treasury_pending'"))
+            conn.execute(text("ALTER TYPE requeststatus ADD VALUE IF NOT EXISTS 'SUPERVISOR_PENDING'"))
+            conn.execute(text("ALTER TYPE requeststatus ADD VALUE IF NOT EXISTS 'ACCOUNTING_PENDING'"))
+            conn.execute(text("ALTER TYPE requeststatus ADD VALUE IF NOT EXISTS 'TREASURY_PENDING'"))
+            conn.commit()
+            print("✅ Ensured RequestStatus enum values present")
+
+            # Lightweight migration for reimbursements: make expenses.travel_expense_report_id nullable and add created_by_user_id if missing
+            try:
+                conn.execute(text("ALTER TABLE expenses ALTER COLUMN travel_expense_report_id DROP NOT NULL"))
+            except Exception:
+                pass
+            try:
+                conn.execute(text("ALTER TABLE expenses ADD COLUMN IF NOT EXISTS created_by_user_id INTEGER REFERENCES users(id)"))
+            except Exception:
+                pass
+            conn.commit()
+            print("✅ Expense table supports reimbursements")
+    except Exception as e:
+        # Non-fatal: log and continue (helps on SQLite or first-time setups)
+        print(f"⚠️ Skipped enum migration: {e}")
     
     # Create storage directories
     os.makedirs(settings.UPLOAD_PATH, exist_ok=True)
@@ -71,6 +101,7 @@ app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(countries.router, prefix="/api/countries", tags=["Countries"])
 app.include_router(categories.router, prefix="/api/categories", tags=["Categories"])
 app.include_router(suppliers.router, prefix="/api/suppliers", tags=["Suppliers"])
+app.include_router(currencies.router, prefix="/api/currencies", tags=["Currencies"])
 app.include_router(prepayments.router, prefix="/api/prepayments", tags=["Prepayments"])
 app.include_router(expense_reports.router, prefix="/api/expense-reports", tags=["Expense Reports"])
 app.include_router(expenses.router, prefix="/api/expenses", tags=["Expenses"])

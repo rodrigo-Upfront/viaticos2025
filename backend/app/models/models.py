@@ -24,7 +24,9 @@ class UserProfile(str, enum.Enum):
 
 class RequestStatus(str, enum.Enum):
     PENDING = "pending"
-    IN_PROGRESS = "in_progress"
+    SUPERVISOR_PENDING = "supervisor_pending"
+    ACCOUNTING_PENDING = "accounting_pending"
+    TREASURY_PENDING = "treasury_pending"
     APPROVED = "approved"
     REJECTED = "rejected"
 
@@ -99,12 +101,26 @@ class User(Base):
     approval_history = relationship("ApprovalHistory", back_populates="user")
 
 
+class Currency(Base):
+    __tablename__ = "currencies"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), unique=True, nullable=False)  # e.g., "Peruvian Sol", "US Dollar"
+    code = Column(String(10), unique=True, nullable=False)   # e.g., "PEN", "USD"
+    symbol = Column(String(10), nullable=True)               # e.g., "S/", "$"
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    prepayments = relationship("Prepayment", back_populates="currency")
+    expenses = relationship("Expense", back_populates="currency")
+
+
 class Country(Base):
     __tablename__ = "countries"
     
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), unique=True, nullable=False)
-    currency = Column(String(10), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
@@ -168,7 +184,7 @@ class Prepayment(Base):
     destination_country_id = Column(Integer, ForeignKey("countries.id"), nullable=False)
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)
-    currency = Column(String(10), nullable=False)
+    currency_id = Column(Integer, ForeignKey("currencies.id"), nullable=False)
     amount = Column(Numeric(12, 2), nullable=False)
     justification_file = Column(String(500), nullable=True)
     comment = Column(Text, nullable=True)
@@ -179,6 +195,7 @@ class Prepayment(Base):
     
     # Relationships
     destination_country = relationship("Country", back_populates="prepayments")
+    currency = relationship("Currency", back_populates="prepayments")
     requesting_user = relationship("User", back_populates="prepayments")
     travel_expense_report = relationship("TravelExpenseReport", back_populates="prepayment", uselist=False)
 
@@ -206,14 +223,14 @@ class Expense(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     category_id = Column(Integer, ForeignKey("expense_categories.id"), nullable=False)
-    travel_expense_report_id = Column(Integer, ForeignKey("travel_expense_reports.id"), nullable=False)
+    travel_expense_report_id = Column(Integer, ForeignKey("travel_expense_reports.id"), nullable=True)
     purpose = Column(String(500), nullable=False)
     document_type = Column(SQLEnum(DocumentType), nullable=False)
     boleta_supplier = Column(String(200), nullable=True)
     factura_supplier_id = Column(Integer, ForeignKey("factura_suppliers.id"), nullable=True)
     expense_date = Column(Date, nullable=False)
     country_id = Column(Integer, ForeignKey("countries.id"), nullable=False)
-    currency = Column(String(10), nullable=False)
+    currency_id = Column(Integer, ForeignKey("currencies.id"), nullable=False)
     amount = Column(Numeric(12, 2), nullable=False)
     document_number = Column(String(100), nullable=False)
     taxable = Column(SQLEnum(TaxableOption), default=TaxableOption.NO, nullable=True)
@@ -222,12 +239,16 @@ class Expense(Base):
     status = Column(SQLEnum(ExpenseStatus), default=ExpenseStatus.PENDING, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     
     # Relationships
     category = relationship("ExpenseCategory", back_populates="expenses")
     travel_expense_report = relationship("TravelExpenseReport", back_populates="expenses")
     factura_supplier = relationship("FacturaSupplier", back_populates="expenses")
     country = relationship("Country", back_populates="expenses")
+    currency = relationship("Currency", back_populates="expenses")
+    # Optional: creator for standalone reimbursements
+    # Using backref is unnecessary here; read-only usage
 
 
 class Approval(Base):

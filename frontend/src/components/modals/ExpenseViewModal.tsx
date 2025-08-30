@@ -113,7 +113,7 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
               Travel Expense Report
             </Typography>
             <Typography variant="body1" paragraph>
-              {expense.travel_expense_report || `Report ID: ${expense.travel_expense_report_id}`}
+              {expense.travel_expense_report_id ? (expense.travel_expense_report || `Report`) : 'Reimbursement'}
             </Typography>
           </Grid>
 
@@ -172,10 +172,10 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
             />
           </Grid>
 
-          {/* Document Information */}
+          {/* Comment */}
           <Grid item xs={12}>
             <Typography variant="h6" gutterBottom color="primary">
-              Document Information
+              Comment
             </Typography>
             <Divider sx={{ mb: 2 }} />
           </Grid>

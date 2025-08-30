@@ -12,14 +12,14 @@ from decimal import Decimal
 class ExpenseBase(BaseModel):
     """Base expense schema"""
     category_id: int = Field(..., description="Expense category ID")
-    travel_expense_report_id: int = Field(..., description="Travel expense report ID")
+    travel_expense_report_id: Optional[int] = Field(None, description="Travel expense report ID (omit or null for reimbursement)")
     purpose: str = Field(..., min_length=1, max_length=500, description="Purpose of expense")
     document_type: str = Field(..., description="Document type (Boleta/Factura)")
     boleta_supplier: Optional[str] = Field(None, max_length=200, description="Boleta supplier name")
     factura_supplier_id: Optional[int] = Field(None, description="Factura supplier ID")
     expense_date: date = Field(..., description="Date of expense")
-    country_id: int = Field(..., description="Country where expense occurred")
-    currency: str = Field(..., min_length=3, max_length=3, description="Currency code")
+    country_id: Optional[int] = Field(None, description="Country where expense occurred (required for reimbursement)")
+    currency_id: Optional[int] = Field(None, description="Currency ID (required for reimbursement)")
     amount: Decimal = Field(..., gt=0, description="Expense amount")
     document_number: str = Field(..., min_length=1, max_length=100, description="Document number")
     taxable: Optional[str] = Field("No", description="Taxable option (Si/No)")
@@ -29,7 +29,9 @@ class ExpenseBase(BaseModel):
 
 class ExpenseCreate(ExpenseBase):
     """Schema for creating an expense"""
-    pass
+    # For creation, country and currency will be inherited from the report's prepayment
+    country_id: Optional[int] = Field(None)
+    currency_id: Optional[int] = Field(None)
 
 
 class ExpenseUpdate(ExpenseBase):
@@ -42,7 +44,7 @@ class ExpenseUpdate(ExpenseBase):
     factura_supplier_id: Optional[int] = Field(None)
     expense_date: Optional[date] = Field(None)
     country_id: Optional[int] = Field(None)
-    currency: Optional[str] = Field(None, min_length=3, max_length=3)
+    currency_id: Optional[int] = Field(None)
     amount: Optional[Decimal] = Field(None, gt=0)
     document_number: Optional[str] = Field(None, min_length=1, max_length=100)
     taxable: Optional[str] = Field(None)
@@ -56,10 +58,13 @@ class ExpenseResponse(ExpenseBase):
     status: str
     created_at: datetime
     updated_at: datetime
+    created_by_user_id: Optional[int] = None
     
     # Related data
     category_name: Optional[str] = None
     country_name: Optional[str] = None
+    currency_name: Optional[str] = None
+    currency_code: Optional[str] = None
     factura_supplier_name: Optional[str] = None
 
     class Config:
@@ -77,7 +82,7 @@ class ExpenseResponse(ExpenseBase):
             factura_supplier_id=obj.factura_supplier_id,
             expense_date=obj.expense_date,
             country_id=obj.country_id,
-            currency=obj.currency,
+            currency_id=obj.currency_id,
             amount=obj.amount,
             document_number=obj.document_number,
             taxable=obj.taxable.value if obj.taxable else "No",
@@ -88,6 +93,8 @@ class ExpenseResponse(ExpenseBase):
             updated_at=obj.updated_at,
             category_name=obj.category.name if obj.category else None,
             country_name=obj.country.name if obj.country else None,
+            currency_name=obj.currency.name if obj.currency else None,
+            currency_code=obj.currency.code if obj.currency else None,
             factura_supplier_name=obj.factura_supplier.name if obj.factura_supplier else None
         )
 

@@ -38,7 +38,6 @@ interface User {
 interface Country {
   id: number;
   name: string;
-  currency: string;
 }
 
 interface UserModalProps {

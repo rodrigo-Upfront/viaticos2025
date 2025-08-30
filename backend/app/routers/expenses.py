@@ -10,7 +10,7 @@ from datetime import datetime
 
 from app.database.connection import get_db
 from app.models.models import (
-    User, Expense, ExpenseCategory, Country, FacturaSupplier, 
+    User, Expense, ExpenseCategory, Country, Currency, FacturaSupplier, 
     TravelExpenseReport, Prepayment, ExpenseStatus, DocumentType, TaxableOption
 )
 from app.services.auth_service import AuthService, get_current_user, get_current_superuser
@@ -39,6 +39,7 @@ async def get_expenses(
     query = db.query(Expense).options(
         joinedload(Expense.category),
         joinedload(Expense.country),
+        joinedload(Expense.currency),
         joinedload(Expense.factura_supplier),
         joinedload(Expense.travel_expense_report)
     )
@@ -47,10 +48,10 @@ async def get_expenses(
     if report_id:
         query = query.filter(Expense.travel_expense_report_id == report_id)
     
-    # Non-superusers can only see expenses from their own reports
+    # Non-superusers can only see expenses from their own reports OR their own reimbursements
     if not current_user.is_superuser:
-        query = query.join(TravelExpenseReport).filter(
-            TravelExpenseReport.requesting_user_id == current_user.id
+        query = query.outerjoin(TravelExpenseReport).filter(
+            (TravelExpenseReport.requesting_user_id == current_user.id) | (Expense.created_by_user_id == current_user.id)
         )
     
     # Apply search filter
@@ -134,20 +135,19 @@ async def create_expense(
     if not category:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found")
     
-    report = db.query(TravelExpenseReport).filter(TravelExpenseReport.id == expense_data.travel_expense_report_id).first()
-    if not report:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Travel expense report not found")
-    
-    country = db.query(Country).filter(Country.id == expense_data.country_id).first()
-    if not country:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Country not found")
+    report = None
+    if expense_data.travel_expense_report_id:
+        report = db.query(TravelExpenseReport).filter(TravelExpenseReport.id == expense_data.travel_expense_report_id).first()
+        if not report:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Travel expense report not found")
     
     # Check permissions
-    if not current_user.is_superuser and report.requesting_user_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions to add expenses to this report"
-        )
+    if report is not None:
+        if not current_user.is_superuser and report.requesting_user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not enough permissions to add expenses to this report"
+            )
     
     # Verify factura supplier if provided and document type is Factura
     if expense_data.factura_supplier_id and expense_data.factura_supplier_id > 0:
@@ -156,16 +156,23 @@ async def create_expense(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Factura supplier not found")
     
     # Get country and currency from the travel expense report's prepayment
-    report_with_prepayment = db.query(TravelExpenseReport).options(
-        joinedload(TravelExpenseReport.prepayment).joinedload(Prepayment.destination_country)
-    ).filter(TravelExpenseReport.id == expense_data.travel_expense_report_id).first()
-    
-    if not report_with_prepayment:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Travel expense report not found")
-    
-    # Inherit country and currency from prepayment
-    inherited_country_id = report_with_prepayment.prepayment.destination_country_id
-    inherited_currency = report_with_prepayment.prepayment.currency
+    inherited_country_id = None
+    inherited_currency_id = None
+    if report is not None:
+        report_with_prepayment = db.query(TravelExpenseReport).options(
+            joinedload(TravelExpenseReport.prepayment).joinedload(Prepayment.destination_country),
+            joinedload(TravelExpenseReport.prepayment).joinedload(Prepayment.currency)
+        ).filter(TravelExpenseReport.id == expense_data.travel_expense_report_id).first()
+        if not report_with_prepayment:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Travel expense report not found")
+        inherited_country_id = report_with_prepayment.prepayment.destination_country_id
+        inherited_currency_id = report_with_prepayment.prepayment.currency_id
+        # Validate expense date within prepayment range
+        if not (report_with_prepayment.prepayment.start_date <= expense_data.expense_date <= report_with_prepayment.prepayment.end_date):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Expense date must be within the report travel dates"
+            )
     
     try:
         # Build fields explicitly to avoid duplicate keyword errors
@@ -176,8 +183,15 @@ async def create_expense(
         payload.pop("status", None)  # Remove status if it exists in payload
         
         # Override country and currency with inherited values
-        payload["country_id"] = inherited_country_id
-        payload["currency"] = inherited_currency
+        if report is not None:
+            payload["country_id"] = inherited_country_id
+            payload["currency_id"] = inherited_currency_id
+        else:
+            # Reimbursement: require explicit country and currency
+            if not expense_data.country_id or not expense_data.currency_id:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="country_id and currency_id are required for reimbursements")
+            payload["country_id"] = expense_data.country_id
+            payload["currency_id"] = expense_data.currency_id
         
         # Handle factura_supplier_id for Boleta documents
         if expense_data.document_type.upper() == "BOLETA":
@@ -189,7 +203,8 @@ async def create_expense(
             **payload,
             document_type=DocumentType(expense_data.document_type),
             taxable=TaxableOption(expense_data.taxable),
-            status=ExpenseStatus.PENDING
+            status=ExpenseStatus.PENDING,
+            created_by_user_id=None if report is not None else current_user.id
         )
         
         db.add(expense)
@@ -200,6 +215,7 @@ async def create_expense(
         expense = db.query(Expense).options(
             joinedload(Expense.category),
             joinedload(Expense.country),
+            joinedload(Expense.currency),
             joinedload(Expense.factura_supplier)
         ).filter(Expense.id == expense.id).first()
         
@@ -255,6 +271,16 @@ async def update_expense(
                 setattr(expense, field, TaxableOption(value))
             else:
                 setattr(expense, field, value)
+        # If report-linked, validate date within prepayment window (using possibly updated date)
+        if expense.travel_expense_report_id:
+            report_with_prepayment = db.query(TravelExpenseReport).options(
+                joinedload(TravelExpenseReport.prepayment)
+            ).filter(TravelExpenseReport.id == expense.travel_expense_report_id).first()
+            if report_with_prepayment and not (report_with_prepayment.prepayment.start_date <= expense.expense_date <= report_with_prepayment.prepayment.end_date):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Expense date must be within the report travel dates"
+                )
         
         expense.updated_at = datetime.utcnow()
         
@@ -265,6 +291,7 @@ async def update_expense(
         expense = db.query(Expense).options(
             joinedload(Expense.category),
             joinedload(Expense.country),
+            joinedload(Expense.currency),
             joinedload(Expense.factura_supplier)
         ).filter(Expense.id == expense.id).first()
         

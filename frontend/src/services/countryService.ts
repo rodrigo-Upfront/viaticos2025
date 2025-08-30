@@ -8,19 +8,16 @@ import apiClient from './apiClient';
 export interface Country {
   id: number;
   name: string;
-  currency: string;
   created_at: string;
   updated_at: string;
 }
 
 export interface CountryCreate {
   name: string;
-  currency: string;
 }
 
 export interface CountryUpdate {
   name?: string;
-  currency?: string;
 }
 
 // Note: GET /countries returns a plain array (not paginated)
@@ -33,7 +30,7 @@ export class CountryService {
    * Get all countries
    */
   async getCountries(): Promise<CountryListResponse> {
-    const response = await apiClient.get(this.basePath);
+    const response = await apiClient.get(`${this.basePath}/`);
     return response.data as Country[];
   }
 

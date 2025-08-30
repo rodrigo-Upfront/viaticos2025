@@ -24,17 +24,15 @@ import { useTranslation } from 'react-i18next';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import apiClient from '../services/apiClient';
 import { countryService, Country } from '../services/countryService';
+import { currencyService, Currency } from '../services/currencyService';
 
 interface DashboardStats {
   prepayments_pending: number;
   expense_reports_pending_amount: number;
   expenses_pending_amount: number;
   expenses_approved_amount: number;
-  country?: {
-    id: number;
-    name: string;
-    currency: string;
-  };
+  country?: { id: number; name: string };
+  currency?: { id: number; name: string; code: string; symbol?: string };
 }
 
 
@@ -43,7 +41,9 @@ const Dashboard: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [countries, setCountries] = useState<Country[]>([]);
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [selectedCountry, setSelectedCountry] = useState<number | ''>('');
+  const [selectedCurrency, setSelectedCurrency] = useState<number | ''>('');
   const { t } = useTranslation();
 
   // Mock data for charts (will be replaced with real data)
@@ -65,11 +65,12 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     loadCountries();
+    loadCurrencies();
   }, []);
 
   useEffect(() => {
     fetchDashboardStats();
-  }, [selectedCountry]);
+  }, [selectedCountry, selectedCurrency]);
 
   const loadCountries = async () => {
     try {
@@ -80,10 +81,23 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const loadCurrencies = async () => {
+    try {
+      const data = await currencyService.getCurrencies();
+      setCurrencies(data);
+    } catch (error) {
+      console.error('Error loading currencies:', error);
+    }
+  };
+
   const fetchDashboardStats = async () => {
     setLoading(true);
     try {
-      const url = selectedCountry ? `/dashboard/stats?country_id=${selectedCountry}` : '/dashboard/stats';
+      const params: string[] = [];
+      if (selectedCountry) params.push(`country_id=${selectedCountry}`);
+      if (selectedCurrency) params.push(`currency_id=${selectedCurrency}`);
+      const qs = params.length ? `?${params.join('&')}` : '';
+      const url = `/dashboard/stats${qs}`;
       const response = await apiClient.get(url);
       setStats(response.data);
     } catch (error) {
@@ -105,10 +119,9 @@ const Dashboard: React.FC = () => {
   };
 
   const getCurrencyDisplay = () => {
-    if (stats?.country) {
-      return stats.country.currency;
-    }
-    return 'USD'; // Default currency
+    if (stats?.currency?.code) return stats.currency.code;
+    const selected = currencies.find(c => c.id === selectedCurrency);
+    return selected?.code || 'USD';
   };
 
   const StatCard: React.FC<{
@@ -153,7 +166,7 @@ const Dashboard: React.FC = () => {
         <Box display="flex" alignItems="center" gap={2}>
           {stats?.country && (
             <Chip 
-              label={`${stats.country.name} (${stats.country.currency})`}
+              label={`${stats.country.name}`}
               color="primary"
               variant="outlined"
             />
@@ -170,7 +183,24 @@ const Dashboard: React.FC = () => {
               </MenuItem>
               {countries.map((country) => (
                 <MenuItem key={country.id} value={country.id}>
-                  {country.name} ({country.currency})
+                  {country.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl sx={{ minWidth: 200 }}>
+            <InputLabel>Filter by Currency</InputLabel>
+            <Select
+              value={selectedCurrency}
+              onChange={(e) => setSelectedCurrency(e.target.value as number | '')}
+              label="Filter by Currency"
+            >
+              <MenuItem value="">
+                <em>All Currencies</em>
+              </MenuItem>
+              {currencies.map((c) => (
+                <MenuItem key={c.id} value={c.id}>
+                  {c.code} - {c.name}
                 </MenuItem>
               ))}
             </Select>

@@ -11,7 +11,9 @@ export interface Prepayment {
   destination_country_id: number;
   start_date: string;
   end_date: string;
-  currency: string;
+  currency_id: number;
+  currency_code?: string;
+  currency_name?: string;
   amount: string;
   justification_file?: string;
   comment?: string;
@@ -28,7 +30,7 @@ export interface PrepaymentCreate {
   destination_country_id: number;
   start_date: string;
   end_date: string;
-  currency: string;
+  currency_id: number;
   amount: number;
   justification_file?: string;
   comment?: string;
@@ -39,7 +41,7 @@ export interface PrepaymentUpdate {
   destination_country_id?: number;
   start_date?: string;
   end_date?: string;
-  currency?: string;
+  currency_id?: number;
   amount?: number;
   justification_file?: string;
   comment?: string;

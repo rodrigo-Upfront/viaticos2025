@@ -47,10 +47,7 @@ async def create_country(
             )
         
         # Create country
-        db_country = Country(
-            name=country_data.name,
-            currency=country_data.currency
-        )
+        db_country = Country(name=country_data.name)
         
         db.add(db_country)
         db.commit()

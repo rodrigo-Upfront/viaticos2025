@@ -63,7 +63,7 @@ class ExpenseReportResponse(ExpenseReportBase):
             updated_at=obj.updated_at,
             prepayment_reason=obj.prepayment.reason if obj.prepayment else None,
             prepayment_amount=prepayment_amount,
-            prepayment_currency=obj.prepayment.currency if obj.prepayment else None,
+            prepayment_currency=(obj.prepayment.currency.code if obj.prepayment and obj.prepayment.currency else None),
             prepayment_destination=obj.prepayment.destination_country.name if obj.prepayment and obj.prepayment.destination_country else None,
             requesting_user_name=f"{obj.requesting_user.name} {obj.requesting_user.surname}" if obj.requesting_user else None,
             total_expenses=total_expenses,

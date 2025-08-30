@@ -15,7 +15,7 @@ export interface Expense {
   factura_supplier_id: number;
   expense_date: string;
   country_id: number;
-  currency: string;
+  currency_id: number;
   amount: string;
   document_number: string;
   taxable?: string;
@@ -26,6 +26,8 @@ export interface Expense {
   updated_at: string;
   category_name?: string;
   country_name?: string;
+  currency_name?: string;
+  currency_code?: string;
   factura_supplier_name?: string;
 }
 
@@ -37,8 +39,7 @@ export interface ExpenseCreate {
   boleta_supplier?: string;
   factura_supplier_id?: number | null;
   expense_date: string;
-  country_id: number;
-  currency: string;
+  currency_id: number;
   amount: number;
   document_number: string;
   taxable?: string;
@@ -54,8 +55,7 @@ export interface ExpenseUpdate {
   boleta_supplier?: string;
   factura_supplier_id?: number | null;
   expense_date?: string;
-  country_id?: number;
-  currency?: string;
+  currency_id?: number;
   amount?: number;
   document_number?: string;
   taxable?: string;

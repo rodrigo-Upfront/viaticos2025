@@ -64,7 +64,8 @@ export class ReportService {
     if (params?.limit) searchParams.append('limit', params.limit.toString());
     if (params?.status_filter) searchParams.append('status_filter', params.status_filter);
     
-    const url = `${this.basePath}${searchParams.toString() ? `?${searchParams}` : ''}`;
+    // Use trailing slash to avoid 307 redirect that strips CORS headers
+    const url = `${this.basePath}/${searchParams.toString() ? `?${searchParams}` : ''}`;
     const response = await apiClient.get(url);
     return response.data;
   }

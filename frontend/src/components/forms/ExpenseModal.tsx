@@ -22,6 +22,7 @@ import {
   Description as DocumentIcon,
 } from '@mui/icons-material';
 import apiClient from '../../services/apiClient';
+import { Currency } from '../../services/currencyService';
 
 interface Expense {
   id?: number;
@@ -75,7 +76,8 @@ interface ExpenseModalProps {
   categories: Category[];
   suppliers: Supplier[];
   travelExpenseReports: TravelExpenseReport[];
-  countries?: { id: number; name: string; currency: string }[];
+  countries?: { id: number; name: string }[];
+  currencies?: Currency[];
   loading?: boolean;
 }
 
@@ -89,6 +91,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
   suppliers,
   travelExpenseReports,
   countries = [],
+  currencies = [],
   loading = false
 }) => {
   const [formData, setFormData] = useState<Expense>({
@@ -212,7 +215,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
       ...prev,
       country_id: countryId,
       country: selectedCountry?.name || prev.country,
-      currency: selectedCountry?.currency || prev.currency,
+      currency: prev.currency,
     }));
     if ((errors as any).country_id) {
       setErrors(prev => ({
@@ -226,15 +229,26 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
     const reportId = event.target.value;
     const selectedReport = travelExpenseReports.find(r => r.id === reportId);
     
+    // Reimbursement option
+    if (reportId === 0) {
+      setFormData(prev => ({
+        ...prev,
+        travel_expense_report_id: 0,
+        travel_expense_report: 'Reimbursement',
+        country: '',
+        currency: ''
+      }));
+      if (errors.travel_expense_report_id) {
+        setErrors(prev => ({ ...prev, travel_expense_report_id: '' }));
+      }
+      return;
+    }
+
     // Fetch the travel expense report details to get country/currency info
     if (reportId > 0) {
       try {
-        // Fetch report details to show country/currency preview
         const response = await apiClient.get(`/expense-reports/${reportId}`);
         const reportDetails = response.data;
-        
-        console.log('Report details:', reportDetails); // Debug log
-        
         setFormData(prev => ({
           ...prev,
           travel_expense_report_id: reportId,
@@ -243,7 +257,6 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
           currency: reportDetails.prepayment_currency || 'Currency not found'
         }));
       } catch (error) {
-        console.error('Error loading report details:', error);
         setFormData(prev => ({
           ...prev,
           travel_expense_report_id: reportId,
@@ -252,14 +265,6 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
           currency: 'Error loading currency'
         }));
       }
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        travel_expense_report_id: reportId,
-        travel_expense_report: selectedReport?.displayName || '',
-        country: 'Select a travel expense report',
-        currency: ''
-      }));
     }
     
     if (errors.travel_expense_report_id) {
@@ -302,7 +307,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
       newErrors.category_id = 'Category is required';
     }
 
-    if (!formData.travel_expense_report_id || formData.travel_expense_report_id === 0) {
+    if (formData.travel_expense_report_id === -1 as any) {
       newErrors.travel_expense_report_id = 'Travel expense report is required';
     }
 
@@ -328,6 +333,16 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
     if (!formData.document_number.trim()) {
       newErrors.document_number = 'Document number is required';
+    }
+
+    if (formData.travel_expense_report_id === 0) {
+      // Reimbursement: require country and currency selection
+      if (!formData.country_id || formData.country_id === 0) {
+        (newErrors as any).country_id = 'Country is required for reimbursement';
+      }
+      if (!formData.currency) {
+        (newErrors as any).currency = 'Currency is required for reimbursement';
+      }
     }
 
     setErrors(newErrors);
@@ -382,9 +397,10 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
               onChange={handleTravelReportChange}
               label="Travel Expense Report"
             >
-              <MenuItem value={0}>
+              <MenuItem value={-1} disabled>
                 <em>Select a travel expense report</em>
               </MenuItem>
+              <MenuItem value={0}>Reimbursement</MenuItem>
               {travelExpenseReports.map((report) => (
                 <MenuItem key={report.id} value={report.id}>
                   {report.displayName}
@@ -521,32 +537,22 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
             />
           </Box>
 
-          {/* Country and Currency display (non-editable) */}
+          {/* Country display/edit */}
           <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
-            <TextField
-              fullWidth
-              label="Country"
-              value={formData.country}
-              disabled
-              helperText={formData.travel_expense_report_id > 0 ? "Inherited from Travel Expense Report" : "Select a travel expense report first"}
-              sx={{ 
-                '& .MuiInputBase-input.Mui-disabled': {
-                  WebkitTextFillColor: 'rgba(0, 0, 0, 0.6)',
-                }
-              }}
-            />
-            <TextField
-              fullWidth
-              label="Currency"
-              value={formData.currency}
-              disabled
-              helperText={formData.travel_expense_report_id > 0 ? "Inherited from Travel Expense Report" : ""}
-              sx={{ 
-                '& .MuiInputBase-input.Mui-disabled': {
-                  WebkitTextFillColor: 'rgba(0, 0, 0, 0.6)',
-                }
-              }}
-            />
+            <FormControl fullWidth>
+              <InputLabel>Country</InputLabel>
+              <Select
+                value={formData.country_id}
+                onChange={handleCountryChange}
+                label="Country"
+                disabled={formData.travel_expense_report_id > 0}
+              >
+                <MenuItem value={0}><em>Select a country</em></MenuItem>
+                {countries.map((country) => (
+                  <MenuItem key={country.id} value={country.id}>{country.name}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Box>
 
           <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
@@ -564,12 +570,21 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
               sx={{ flex: 1 }}
             />
 
-            <TextField
-              label="Currency"
-              value={formData.currency}
-              disabled
-              sx={{ flex: 1 }}
-            />
+            {/* Currency selection */}
+            <FormControl fullWidth sx={{ flex: 1 }}>
+              <InputLabel>Currency</InputLabel>
+              <Select
+                value={formData.currency || ''}
+                onChange={handleSelectChange('currency')}
+                label="Currency"
+                disabled={formData.travel_expense_report_id > 0}
+              >
+                <MenuItem value=""><em>Select currency</em></MenuItem>
+                {currencies.map((c) => (
+                  <MenuItem key={c.id} value={c.code}>{c.code} - {c.name}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Box>
 
           <TextField

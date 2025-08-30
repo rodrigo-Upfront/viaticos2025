@@ -27,7 +27,9 @@ import { useTranslation } from 'react-i18next';
 import PrepaymentModal from '../components/forms/PrepaymentModal';
 import PrepaymentViewModal from '../components/modals/PrepaymentViewModal';
 import ConfirmDialog from '../components/forms/ConfirmDialog';
+import apiClient from '../services/apiClient';
 import { prepaymentService, Prepayment as ApiPrepayment } from '../services/prepaymentService';
+import { currencyService, Currency } from '../services/currencyService';
 import { countryService, Country as ApiCountry } from '../services/countryService';
 
 interface Prepayment {
@@ -39,6 +41,7 @@ interface Prepayment {
   endDate: string;
   amount: number;
   currency: string;
+  currency_id?: number;
   comment: string;
   justification_file?: string;
   status: string;
@@ -47,7 +50,6 @@ interface Prepayment {
 interface Country {
   id: number;
   name: string;
-  currency: string;
 }
 
 const PrepaymentsPage: React.FC = () => {
@@ -63,6 +65,7 @@ const PrepaymentsPage: React.FC = () => {
   // Data state
   const [countries, setCountries] = useState<Country[]>([]);
   const [prepayments, setPrepayments] = useState<Prepayment[]>([]);
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
 
   const [modal, setModal] = useState({
     open: false,
@@ -74,7 +77,10 @@ const PrepaymentsPage: React.FC = () => {
     open: false,
     title: '',
     message: '',
-    onConfirm: () => {}
+    onConfirm: () => {},
+    confirmText: undefined as string | undefined,
+    cancelText: undefined as string | undefined,
+    severity: undefined as 'error' | 'warning' | 'info' | undefined,
   });
 
   const [snackbar, setSnackbar] = useState({
@@ -92,6 +98,7 @@ const PrepaymentsPage: React.FC = () => {
   useEffect(() => {
     loadPrepayments();
     loadCountries();
+    loadCurrencies();
   }, []);
 
   // Helper function to convert API prepayment to frontend format
@@ -104,7 +111,8 @@ const PrepaymentsPage: React.FC = () => {
       startDate: apiPrepayment.start_date,
       endDate: apiPrepayment.end_date,
       amount: parseFloat(apiPrepayment.amount),
-      currency: apiPrepayment.currency,
+      currency: apiPrepayment.currency_code || '',
+      currency_id: (apiPrepayment as any).currency_id,
       comment: apiPrepayment.comment || '',
       justification_file: apiPrepayment.justification_file,
       status: apiPrepayment.status,
@@ -113,13 +121,14 @@ const PrepaymentsPage: React.FC = () => {
 
   // Helper function to convert frontend prepayment to API format
   const mapFrontendToApi = (frontendPrepayment: Prepayment) => {
+    const currencyId = currencies.find(c => c.code === frontendPrepayment.currency)?.id || frontendPrepayment.currency_id;
     return {
       reason: frontendPrepayment.reason,
       destination_country_id: frontendPrepayment.destination_country_id,
       start_date: frontendPrepayment.startDate,
       end_date: frontendPrepayment.endDate,
       amount: frontendPrepayment.amount,
-      currency: frontendPrepayment.currency,
+      currency_id: currencyId as number,
       comment: frontendPrepayment.comment,
       justification_file: frontendPrepayment.justification_file,
     };
@@ -152,7 +161,7 @@ const PrepaymentsPage: React.FC = () => {
       const mappedCountries = response.map((country: ApiCountry) => ({
         id: country.id,
         name: country.name,
-        currency: country.currency,
+        // currency removed from Country
       }));
       setCountries(mappedCountries);
     } catch (error) {
@@ -182,19 +191,26 @@ const PrepaymentsPage: React.FC = () => {
 
   // CRUD operations
   const handleCreate = async () => {
-    // Ensure the latest countries list is available when opening the modal
-    await loadCountries();
+    await Promise.all([loadCountries(), loadCurrencies()]);
     setModal({ open: true, mode: 'create', prepayment: undefined });
   };
 
   const handleEdit = async (prepayment: Prepayment) => {
-    // Ensure the latest countries list is available when opening the modal
-    await loadCountries();
+    await Promise.all([loadCountries(), loadCurrencies()]);
     setModal({ open: true, mode: 'edit', prepayment });
   };
 
   const handleView = (prepayment: Prepayment) => {
     setViewModal({ open: true, prepayment });
+  };
+
+  const loadCurrencies = async () => {
+    try {
+      const data = await currencyService.getCurrencies();
+      setCurrencies(data);
+    } catch (error) {
+      console.error('Failed to load currencies:', error);
+    }
   };
 
   const handleDelete = (prepayment: Prepayment) => {
@@ -224,7 +240,10 @@ const PrepaymentsPage: React.FC = () => {
         } finally {
           setLoading(prev => ({ ...prev, action: false }));
         }
-      }
+      },
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      severity: 'error'
     });
   };
 
@@ -278,14 +297,24 @@ const PrepaymentsPage: React.FC = () => {
     setConfirmDialog({
       open: true,
       title: 'Send for Approval',
-      message: `The prepayment for "${prepayment.reason}" is already pending approval and will appear in the approvals queue for authorized users.`,
-      onConfirm: () => {
-        setSnackbar({
-          open: true,
-          message: 'Prepayment is in the approval queue. Approvers will be notified.',
-          severity: 'info'
-        });
-      }
+      message: `This will send the prepayment "${prepayment.reason}" for approval. Continue?`,
+      onConfirm: async () => {
+        try {
+          setLoading(prev => ({ ...prev, action: true }));
+          await apiClient.post(`/approvals/prepayments/${prepayment.id}/submit`, {});
+          // Refresh list or update item status locally
+          setPrepayments(prev => prev.map(p => p.id === prepayment.id ? { ...p, status: 'supervisor_pending' } : p));
+          setSnackbar({ open: true, message: 'Sent for approval', severity: 'success' });
+        } catch (error: any) {
+          console.error('Failed to submit for approval:', error);
+          setSnackbar({ open: true, message: 'Failed to send for approval', severity: 'error' });
+        } finally {
+          setLoading(prev => ({ ...prev, action: false }));
+        }
+      },
+      confirmText: 'Send',
+      cancelText: 'Cancel',
+      severity: 'info'
     });
   };
 
@@ -400,6 +429,7 @@ const PrepaymentsPage: React.FC = () => {
         prepayment={modal.prepayment}
         mode={modal.mode}
         countries={countries}
+        currencies={currencies}
         loading={loading.action}
       />
 
@@ -410,8 +440,9 @@ const PrepaymentsPage: React.FC = () => {
         onConfirm={confirmDialog.onConfirm}
         title={confirmDialog.title}
         message={confirmDialog.message}
-        severity="error"
-        confirmText="Delete"
+        severity={confirmDialog.severity || 'warning'}
+        confirmText={confirmDialog.confirmText || 'Confirm'}
+        cancelText={confirmDialog.cancelText || 'Cancel'}
       />
 
       {/* Prepayment View Modal */}

@@ -9,7 +9,7 @@ from typing import List, Optional
 from datetime import datetime
 
 from app.database.connection import get_db
-from app.models.models import User, Prepayment, Country, RequestStatus
+from app.models.models import User, Prepayment, Country, Currency, RequestStatus
 from app.services.auth_service import AuthService, get_current_user, get_current_superuser
 from app.schemas.prepayment_schemas import (
     PrepaymentCreate, PrepaymentUpdate, PrepaymentResponse, 
@@ -34,7 +34,8 @@ async def get_prepayments(
     """
     query = db.query(Prepayment).options(
         joinedload(Prepayment.destination_country),
-        joinedload(Prepayment.requesting_user)
+        joinedload(Prepayment.requesting_user),
+        joinedload(Prepayment.currency)
     )
     
     # Non-superusers can only see their own prepayments
@@ -85,7 +86,8 @@ async def get_prepayment(
     """
     prepayment = db.query(Prepayment).options(
         joinedload(Prepayment.destination_country),
-        joinedload(Prepayment.requesting_user)
+        joinedload(Prepayment.requesting_user),
+        joinedload(Prepayment.currency)
     ).filter(Prepayment.id == prepayment_id).first()
     
     if not prepayment:
@@ -121,6 +123,14 @@ async def create_prepayment(
             detail="Destination country not found"
         )
     
+    # Verify currency exists
+    currency = db.query(Currency).filter(Currency.id == prepayment_data.currency_id).first()
+    if not currency:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Currency not found"
+        )
+    
     # Validate date range
     if prepayment_data.start_date >= prepayment_data.end_date:
         raise HTTPException(
@@ -142,7 +152,8 @@ async def create_prepayment(
         # Load relationships for response
         prepayment = db.query(Prepayment).options(
             joinedload(Prepayment.destination_country),
-            joinedload(Prepayment.requesting_user)
+            joinedload(Prepayment.requesting_user),
+            joinedload(Prepayment.currency)
         ).filter(Prepayment.id == prepayment.id).first()
         
         return PrepaymentResponse.from_orm(prepayment)
@@ -195,6 +206,15 @@ async def update_prepayment(
                 detail="Destination country not found"
             )
     
+    # Verify currency exists if being updated
+    if prepayment_data.currency_id:
+        currency = db.query(Currency).filter(Currency.id == prepayment_data.currency_id).first()
+        if not currency:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Currency not found"
+            )
+    
     # Validate date range if dates are being updated
     start_date = prepayment_data.start_date or prepayment.start_date
     end_date = prepayment_data.end_date or prepayment.end_date
@@ -218,7 +238,8 @@ async def update_prepayment(
         # Load relationships for response
         prepayment = db.query(Prepayment).options(
             joinedload(Prepayment.destination_country),
-            joinedload(Prepayment.requesting_user)
+            joinedload(Prepayment.requesting_user),
+            joinedload(Prepayment.currency)
         ).filter(Prepayment.id == prepayment.id).first()
         
         return PrepaymentResponse.from_orm(prepayment)
@@ -271,7 +292,8 @@ async def update_prepayment_status(
         # Load relationships for response
         prepayment = db.query(Prepayment).options(
             joinedload(Prepayment.destination_country),
-            joinedload(Prepayment.requesting_user)
+            joinedload(Prepayment.requesting_user),
+            joinedload(Prepayment.currency)
         ).filter(Prepayment.id == prepayment.id).first()
         
         return PrepaymentResponse.from_orm(prepayment)

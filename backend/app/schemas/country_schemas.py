@@ -11,7 +11,6 @@ from datetime import datetime
 class CountryBase(BaseModel):
     """Base country schema"""
     name: str = Field(..., min_length=1, max_length=100, description="Country name")
-    currency: str = Field(..., min_length=1, max_length=10, description="Country currency code")
 
 
 class CountryCreate(CountryBase):
@@ -22,7 +21,6 @@ class CountryCreate(CountryBase):
 class CountryUpdate(BaseModel):
     """Country update schema"""
     name: Optional[str] = Field(None, min_length=1, max_length=100, description="Country name")
-    currency: Optional[str] = Field(None, min_length=1, max_length=10, description="Country currency code")
 
 
 class CountryResponse(CountryBase):
@@ -40,7 +38,6 @@ class CountryResponse(CountryBase):
         return cls(
             id=country.id,
             name=country.name,
-            currency=country.currency,
             created_at=country.created_at,
             updated_at=country.updated_at
         )
@@ -50,14 +47,12 @@ class CountryOption(BaseModel):
     """Country option schema for dropdowns"""
     id: int = Field(..., description="Country ID")
     name: str = Field(..., description="Country name")
-    currency: str = Field(..., description="Currency code")
     
     @classmethod
     def from_orm(cls, country):
         """Create CountryOption from ORM model"""
         return cls(
             id=country.id,
-            name=country.name,
-            currency=country.currency
+            name=country.name
         )
 

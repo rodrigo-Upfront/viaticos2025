@@ -15,7 +15,7 @@ class PrepaymentBase(BaseModel):
     destination_country_id: int = Field(..., description="Destination country ID")
     start_date: date = Field(..., description="Start date of travel")
     end_date: date = Field(..., description="End date of travel")
-    currency: str = Field(..., min_length=3, max_length=3, description="Currency code")
+    currency_id: int = Field(..., description="Currency ID")
     amount: Decimal = Field(..., gt=0, description="Prepayment amount")
     justification_file: Optional[str] = Field(None, max_length=500, description="Justification file path")
     comment: Optional[str] = Field(None, description="Additional comments")
@@ -32,7 +32,7 @@ class PrepaymentUpdate(PrepaymentBase):
     destination_country_id: Optional[int] = Field(None)
     start_date: Optional[date] = Field(None)
     end_date: Optional[date] = Field(None)
-    currency: Optional[str] = Field(None, min_length=3, max_length=3)
+    currency_id: Optional[int] = Field(None)
     amount: Optional[Decimal] = Field(None, gt=0)
     justification_file: Optional[str] = Field(None, max_length=500)
     comment: Optional[str] = Field(None)
@@ -48,6 +48,8 @@ class PrepaymentResponse(PrepaymentBase):
     
     # Related data
     destination_country_name: Optional[str] = None
+    currency_name: Optional[str] = None
+    currency_code: Optional[str] = None
     requesting_user_name: Optional[str] = None
 
     class Config:
@@ -61,7 +63,7 @@ class PrepaymentResponse(PrepaymentBase):
             destination_country_id=obj.destination_country_id,
             start_date=obj.start_date,
             end_date=obj.end_date,
-            currency=obj.currency,
+            currency_id=obj.currency_id,
             amount=obj.amount,
             justification_file=obj.justification_file,
             comment=obj.comment,
@@ -70,6 +72,8 @@ class PrepaymentResponse(PrepaymentBase):
             created_at=obj.created_at,
             updated_at=obj.updated_at,
             destination_country_name=obj.destination_country.name if obj.destination_country else None,
+            currency_name=obj.currency.name if obj.currency else None,
+            currency_code=obj.currency.code if obj.currency else None,
             requesting_user_name=f"{obj.requesting_user.name} {obj.requesting_user.surname}" if obj.requesting_user else None
         )
 

@@ -40,7 +40,7 @@ ssh root@161.35.39.205
 
 #### Step 2: Clone Repository
 ```bash
-cd /opt
+cd /var/www
 git clone https://github.com/rodrigo-Upfront/viaticos2025.git
 cd viaticos2025
 ```

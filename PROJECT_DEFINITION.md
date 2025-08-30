@@ -78,15 +78,31 @@ Viaticos 2025 is a comprehensive travel expense management system that handles t
 **Fields:**
 - `id` (Primary Key, Auto-increment)
 - `name` (String, Mandatory, Unique)
-- `currency` (String, Mandatory)
 - `created_at` (DateTime)
 - `updated_at` (DateTime)
 
 **Business Rules:**
 - Ordered by name for display
 - Administered by superusers only
+- Currency is now selected independently via Currency master
 
-### 4.3 Expense Category
+### 4.3 Currency
+**Purpose:** Master list of currencies for financial operations
+
+**Fields:**
+- `id` (Primary Key, Auto-increment)
+- `name` (String, Mandatory, Unique) - e.g., "Peruvian Sol"
+- `code` (String, Mandatory, Unique) - e.g., "PEN"
+- `symbol` (String, Optional) - e.g., "S/"
+- `created_at` (DateTime)
+- `updated_at` (DateTime)
+
+**Business Rules:**
+- Ordered by name for display
+- Administered by superusers only
+- Used for independent currency selection in prepayments and expenses
+
+### 4.4 Expense Category
 **Purpose:** Categories for expense classification
 
 **Fields:**
@@ -101,7 +117,7 @@ Viaticos 2025 is a comprehensive travel expense management system that handles t
 - Only accessible by superusers
 - Alert amount triggers warning when expenses exceed this threshold
 
-### 4.4 Factura Supplier
+### 4.5 Factura Supplier
 **Purpose:** Suppliers for formal invoices (facturas)
 
 **Fields:**
@@ -115,7 +131,7 @@ Viaticos 2025 is a comprehensive travel expense management system that handles t
 - Only accessible by superusers
 - Can be deleted only if no associated transactions exist
 
-### 4.5 Prepayment
+### 4.6 Prepayment
 **Purpose:** Travel advance payment requests
 
 **Fields:**
@@ -124,21 +140,28 @@ Viaticos 2025 is a comprehensive travel expense management system that handles t
 - `destination_country_id` (Foreign Key to Country, Mandatory)
 - `start_date` (Date, Mandatory)
 - `end_date` (Date, Mandatory)
-- `currency` (String, Mandatory, Auto-filled from country)
+- `currency_id` (Foreign Key to Currency, Mandatory)
 - `amount` (Decimal, Mandatory, 2 decimals)
 - `justification_file` (String, Optional, File path)
 - `comment` (Text, Optional)
-- `status` (Enum: 'pending', 'in_progress', 'approved', 'rejected', Default: 'pending')
+- `status` (Enum: 'PENDING', 'SUPERVISOR_PENDING', 'ACCOUNTING_PENDING', 'TREASURY_PENDING', 'APPROVED', 'REJECTED', Default: 'PENDING')
 - `requesting_user_id` (Foreign Key to User, Mandatory)
 - `created_at` (DateTime)
 - `updated_at` (DateTime)
 
 **Business Rules:**
 - End date must be after start date
-- Status is system-controlled through approval workflow
-- Currency auto-filled but can be modified
+- Status is system-controlled through the approval workflow (see Section 6)
+- Status mapping (customer-facing labels):
+  - PENDING → "Pending"
+  - SUPERVISOR_PENDING → "Supervisor Pending"
+  - ACCOUNTING_PENDING → "Accounting Pending"
+  - TREASURY_PENDING → "Treasury Pending"
+  - APPROVED → "Approved"
+  - REJECTED → "Rejected"
+- Currency selected independently from country
 
-### 4.6 Travel Expense Report
+### 4.7 Travel Expense Report
 **Purpose:** Expense reports linked to prepayments
 
 **Fields:**
@@ -159,7 +182,7 @@ Viaticos 2025 is a comprehensive travel expense management system that handles t
 - Cannot be created manually
 - Budget status: Over-Budget when expense_amount > prepaid_amount
 
-### 4.7 Expense
+### 4.8 Expense
 **Purpose:** Individual expense entries
 
 **Fields:**
@@ -172,7 +195,7 @@ Viaticos 2025 is a comprehensive travel expense management system that handles t
 - `factura_supplier_id` (Foreign Key to Factura Supplier, Conditional: Required when document_type = 'Factura')
 - `expense_date` (Date, Mandatory)
 - `country_id` (Foreign Key to Country, Inherited from expense report)
-- `currency` (String, Inherited from expense report)
+- `currency_id` (Foreign Key to Currency, Inherited from expense report)
 - `amount` (Decimal, Mandatory, 2 decimals)
 - `document_number` (String, Mandatory)
 - `taxable` (Enum: 'Si', 'No', Default: 'No', Conditional: Only for Factura)
@@ -187,7 +210,7 @@ Viaticos 2025 is a comprehensive travel expense management system that handles t
 - Supplier field requirements based on document type
 - Amount alert triggered if exceeds category alert amount
 
-### 4.8 Approval
+### 4.9 Approval
 **Purpose:** Approval workflow tracking
 
 **Fields:**
@@ -202,7 +225,7 @@ Viaticos 2025 is a comprehensive travel expense management system that handles t
 - `created_at` (DateTime)
 - `updated_at` (DateTime)
 
-### 4.9 Approval History
+### 4.10 Approval History
 **Purpose:** Complete audit trail of approval actions
 
 **Fields:**
@@ -251,21 +274,33 @@ Viaticos 2025 is a comprehensive travel expense management system that handles t
 ## 6. Approval Workflows
 
 ### 6.1 Prepayment Approval Hierarchy
-1. **User Supervisor** (User with supervisor relationship)
-2. **Accounting Users** (Any user with profile = 'accounting' AND is_approver = true)
-3. **Treasury Users** (Any user with profile = 'treasury' AND is_approver = true)
+1. **User Supervisor** (Supervisor of the requester; must have is_approver = true)
+2. **Accounting Users** (Any user with profile = 'accounting' AND is_approver = true; first approval wins)
+3. **Treasury Users** (Any user with profile = 'treasury' AND is_approver = true; final approval)
 
 ### 6.2 Travel Expense Report Approval Hierarchy
 1. **User Supervisor** (User with supervisor relationship)
 2. **Accounting Users** (Any user with profile = 'accounting' AND is_approver = true)
 3. **Treasury Users** (Any user with profile = 'treasury' AND is_approver = true)
 
-### 6.3 Workflow Process
-1. **Initiation:** Status changes from 'pending' to 'in_progress'
-2. **Sequential Approval:** Each level must approve before proceeding to next
-3. **Parallel Processing:** Multiple users at same level can approve (first one wins)
-4. **Completion:** Final approval changes status to 'approved'
-5. **Rejection:** Any level can reject, returning to 'rejected' status
+### 6.3 Workflow Process (Prepayment)
+1. **Submit for Approval**: Requester triggers submit; validations:
+   - If no supervisor → 400 "Missing supervisor" (no status change)
+   - If supervisor exists but is not approver → 400 "Supervisor do not have approval permits" (no status change)
+   - Otherwise set status → SUPERVISOR_PENDING
+2. **Supervisor Approval**: If approved → status → ACCOUNTING_PENDING. If rejected → status → REJECTED.
+   - If there are no accounting approvers → revert status → PENDING; append comment "errors on approval - missing accounting user"; return 400 "Error - no accounting users available".
+3. **Accounting Approval**: If approved → status → TREASURY_PENDING. If rejected → status → REJECTED.
+   - If there are no treasury approvers → revert status → PENDING; append comment "errors on approval - missing treasury user"; return 400 "Error - no treasury users available".
+4. **Treasury Approval**: If approved → status → APPROVED and automatically create a Travel Expense Report (if one does not already exist). If rejected → status → REJECTED.
+5. **Re-approval Rules**: Once a prepayment is APPROVED it cannot be approved again; only superusers may delete it.
+
+Note: Travel Expense Report approval hierarchy uses the same three-step chain and can be defined analogously once prepayment flow is finalized.
+
+### 6.4 Approval API Endpoints (Prepayment)
+- `POST /api/approvals/prepayments/{id}/submit` → Submit for approval (transitions to SUPERVISOR_PENDING with validations)
+- `POST /api/approvals/prepayments/{id}/approve` → Approve/Reject at the current stage
+- `GET /api/approvals/pending` → Returns items the current user can act on, filtered by role and current stage
 
 ### 6.4 Notification System
 - **Approval Request:** Email to approver with summary and approval link
@@ -276,12 +311,14 @@ Viaticos 2025 is a comprehensive travel expense management system that handles t
 
 ### 7.1 Dashboard
 **Main Dashboard includes:**
-- Count of prepayments pending approval
+- Count of prepayments pending approval (includes PENDING, SUPERVISOR_PENDING, ACCOUNTING_PENDING, TREASURY_PENDING)
 - Total amount of travel expense reports with status 'pending'
 - Total amount of expenses with status 'pending'
 - Total amount of expenses with status 'approved'
 - Monthly expenses line chart (with totals above each month)
 - Expenses per category line chart (with totals)
+- **Independent filters for Country and Currency** (amounts displayed in selected currency)
+- Currency selection affects all monetary displays and calculations
 
 ### 7.2 Expense Amount Alerts
 - Category-based alert thresholds

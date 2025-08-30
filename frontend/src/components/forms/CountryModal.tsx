@@ -13,7 +13,6 @@ import {
 interface Country {
   id?: number;
   name: string;
-  currency: string;
 }
 
 interface CountryModalProps {
@@ -32,8 +31,7 @@ const CountryModal: React.FC<CountryModalProps> = ({
   mode
 }) => {
   const [formData, setFormData] = useState<Country>({
-    name: '',
-    currency: ''
+    name: ''
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
@@ -41,7 +39,7 @@ const CountryModal: React.FC<CountryModalProps> = ({
     if (country && mode === 'edit') {
       setFormData(country);
     } else {
-      setFormData({ name: '', currency: '' });
+      setFormData({ name: '' });
     }
     setErrors({});
   }, [country, mode, open]);
@@ -67,11 +65,7 @@ const CountryModal: React.FC<CountryModalProps> = ({
       newErrors.name = 'Country name is required';
     }
 
-    if (!formData.currency.trim()) {
-      newErrors.currency = 'Currency is required';
-    } else if (formData.currency.length !== 3) {
-      newErrors.currency = 'Currency must be 3 characters (e.g., USD, PEN)';
-    }
+    // No currency validation; currency moved to Prepayment/Expense
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -85,7 +79,7 @@ const CountryModal: React.FC<CountryModalProps> = ({
   };
 
   const handleClose = () => {
-    setFormData({ name: '', currency: '' });
+    setFormData({ name: '' });
     setErrors({});
     onClose();
   };
@@ -107,24 +101,7 @@ const CountryModal: React.FC<CountryModalProps> = ({
             margin="normal"
             required
           />
-          <TextField
-            fullWidth
-            label="Currency Code"
-            value={formData.currency}
-            onChange={handleChange('currency')}
-            error={!!errors.currency}
-            helperText={errors.currency || 'Use 3-letter ISO code (e.g., USD, PEN, CLP)'}
-            margin="normal"
-            required
-            inputProps={{
-              maxLength: 3,
-              style: { textTransform: 'uppercase' }
-            }}
-            onInput={(e) => {
-              const target = e.target as HTMLInputElement;
-              target.value = target.value.toUpperCase();
-            }}
-          />
+          {/* Currency removed from Country per new model */}
         </Box>
       </DialogContent>
       <DialogActions>

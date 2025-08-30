@@ -11,7 +11,7 @@ from datetime import datetime
 from app.database.connection import get_db
 from app.models.models import (
     User, Approval, Prepayment, TravelExpenseReport, Country,
-    ApprovalStatus, EntityType, RequestStatus
+    ApprovalStatus, EntityType, RequestStatus, UserProfile, ApprovalHistory, ApprovalAction as HistoryAction
 )
 from app.services.auth_service import AuthService, get_current_user, get_current_approver
 from app.schemas.approval_schemas import (
@@ -43,11 +43,42 @@ async def get_pending_approvals(
         pending_items = []
         item_counter = 0
         
-        # Get pending prepayments
-        pending_prepayments = db.query(Prepayment).options(
+        # Get prepayments that are pending for this approver based on stage
+        prepayment_query = db.query(Prepayment).options(
             joinedload(Prepayment.destination_country),
-            joinedload(Prepayment.requesting_user)
-        ).filter(Prepayment.status == RequestStatus.PENDING).all()
+            joinedload(Prepayment.requesting_user),
+            joinedload(Prepayment.currency)
+        )
+
+        stage_filters = []
+        if current_user.is_approver or current_user.is_superuser:
+            # Supervisor stage: only the requester's supervisor
+            stage_filters.append(
+                (Prepayment.status == RequestStatus.SUPERVISOR_PENDING) &
+                (Prepayment.requesting_user_id == User.id)
+            )
+
+        # Fetch and filter in Python for clarity of role logic
+        all_stage_prepayments = prepayment_query.filter(
+            Prepayment.status.in_([
+                RequestStatus.SUPERVISOR_PENDING.value,
+                RequestStatus.ACCOUNTING_PENDING.value,
+                RequestStatus.TREASURY_PENDING.value
+            ])
+        ).all()
+
+        pending_prepayments = []
+        for prepayment in all_stage_prepayments:
+            requester = prepayment.requesting_user
+            if prepayment.status == RequestStatus.SUPERVISOR_PENDING:
+                if requester and requester.supervisor_id == current_user.id and current_user.is_approver:
+                    pending_prepayments.append(prepayment)
+            elif prepayment.status == RequestStatus.ACCOUNTING_PENDING:
+                if current_user.is_approver and current_user.profile == UserProfile.ACCOUNTING:
+                    pending_prepayments.append(prepayment)
+            elif prepayment.status == RequestStatus.TREASURY_PENDING:
+                if current_user.is_approver and current_user.profile == UserProfile.TREASURY:
+                    pending_prepayments.append(prepayment)
         
         for prepayment in pending_prepayments:
             item_counter += 1
@@ -57,7 +88,7 @@ async def get_pending_approvals(
                 entity_id=prepayment.id,
                 requester=f"{prepayment.requesting_user.name} {prepayment.requesting_user.surname}" if prepayment.requesting_user else "Unknown",
                 amount=str(prepayment.amount) if prepayment.amount else "0",
-                currency=prepayment.currency or "USD",
+                currency=(prepayment.currency.code if getattr(prepayment, 'currency', None) else "USD"),
                 reason=prepayment.reason or "No reason provided",
                 destination=prepayment.destination_country.name if prepayment.destination_country else "Unknown",
                 request_date=prepayment.created_at.strftime("%Y-%m-%d") if prepayment.created_at else "Unknown"
@@ -86,7 +117,7 @@ async def get_pending_approvals(
                 prepaid_amount=str(prepaid_amount),
                 report_date=report.created_at.strftime("%Y-%m-%d") if report.created_at else "Unknown",
                 amount=str(float(total_expenses)),  # Use total expenses as the approval amount
-                currency=report.prepayment.currency if report.prepayment else "USD"
+                currency=(report.prepayment.currency.code if report.prepayment and report.prepayment.currency else "USD")
             ))
         
         return PendingApprovalsList(
@@ -99,6 +130,64 @@ async def get_pending_approvals(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error retrieving pending approvals: {str(e)}"
         )
+
+
+@router.post("/prepayments/{prepayment_id}/submit")
+async def submit_prepayment(
+    prepayment_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Submit a prepayment into the multi-stage approval workflow.
+    Allowed when status is PENDING or REJECTED.
+    Validations:
+    - Requester must have a supervisor
+    - Supervisor must be an approver
+    """
+    prepayment = db.query(Prepayment).options(
+        joinedload(Prepayment.requesting_user)
+    ).filter(Prepayment.id == prepayment_id).first()
+
+    if not prepayment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Prepayment not found")
+
+    # Only owner or superuser can submit
+    if not current_user.is_superuser and prepayment.requesting_user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions to submit")
+
+    if prepayment.status not in [RequestStatus.PENDING, RequestStatus.REJECTED]:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Prepayment cannot be submitted in its current status")
+
+    requester = prepayment.requesting_user
+    if not requester or requester.supervisor_id is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing supervisor")
+
+    supervisor = db.query(User).filter(User.id == requester.supervisor_id).first()
+    if not supervisor or not supervisor.is_approver:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Supervisor do not have approval permits")
+
+    try:
+        prepayment.status = RequestStatus.SUPERVISOR_PENDING
+        prepayment.updated_at = datetime.utcnow()
+
+        # History
+        db.add(ApprovalHistory(
+            entity_type=EntityType.PREPAYMENT,
+            entity_id=prepayment.id,
+            user_id=current_user.id,
+            user_role=current_user.profile.value if current_user.profile else "employee",
+            action=HistoryAction.SUBMITTED,
+            from_status=RequestStatus.PENDING.value,
+            to_status=RequestStatus.SUPERVISOR_PENDING.value,
+            comments="Submitted for approval"
+        ))
+
+        db.commit()
+        return {"message": "Prepayment submitted for supervisor approval", "new_status": prepayment.status.value}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to submit prepayment: {str(e)}")
 
 
 @router.post("/prepayments/{prepayment_id}/approve")
@@ -126,11 +215,8 @@ async def approve_prepayment(
             detail="Prepayment not found"
         )
     
-    if prepayment.status != RequestStatus.PENDING:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Prepayment is not pending approval"
-        )
+    if prepayment.status == RequestStatus.APPROVED:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Prepayment already approved")
     
     # Validate action
     if action_data.action not in ["approve", "reject"]:
@@ -146,17 +232,72 @@ async def approve_prepayment(
         )
     
     try:
-        # Update prepayment status
-        if action_data.action == "approve":
-            prepayment.status = RequestStatus.APPROVED
+        requester = db.query(User).filter(User.id == prepayment.requesting_user_id).first()
+        next_status = None
+        message = None
+
+        # Determine stage and permissions
+        if prepayment.status == RequestStatus.SUPERVISOR_PENDING:
+            if not (requester and requester.supervisor_id == current_user.id and current_user.is_approver):
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized for supervisor stage")
+            if action_data.action == "approve":
+                # Check accounting approvers exist
+                has_accounting = db.query(User).filter(
+                    User.profile == UserProfile.ACCOUNTING,
+                    User.is_approver == True
+                ).count() > 0
+                if not has_accounting:
+                    prepayment.status = RequestStatus.PENDING
+                    prepayment.updated_at = datetime.utcnow()
+                    prepayment.comment = (prepayment.comment or "") + "\nerrors on approval - missing accounting user"
+                    db.commit()
+                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Error - no accountants users available")
+                next_status = RequestStatus.ACCOUNTING_PENDING
+                message = "Prepayment approved by supervisor; pending accounting approval"
+            else:
+                next_status = RequestStatus.REJECTED
+                message = "Prepayment rejected at supervisor stage"
+
+        elif prepayment.status == RequestStatus.ACCOUNTING_PENDING:
+            if not (current_user.is_approver and current_user.profile == UserProfile.ACCOUNTING):
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized for accounting stage")
+            if action_data.action == "approve":
+                # Check treasury approvers exist
+                has_treasury = db.query(User).filter(
+                    User.profile == UserProfile.TREASURY,
+                    User.is_approver == True
+                ).count() > 0
+                if not has_treasury:
+                    prepayment.status = RequestStatus.PENDING
+                    prepayment.updated_at = datetime.utcnow()
+                    prepayment.comment = (prepayment.comment or "") + "\nerrors on approval - missing treasury user"
+                    db.commit()
+                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Error - no treasury users available")
+                next_status = RequestStatus.TREASURY_PENDING
+                message = "Prepayment approved by accounting; pending treasury approval"
+            else:
+                next_status = RequestStatus.REJECTED
+                message = "Prepayment rejected at accounting stage"
+
+        elif prepayment.status == RequestStatus.TREASURY_PENDING:
+            if not (current_user.is_approver and current_user.profile == UserProfile.TREASURY):
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized for treasury stage")
+            if action_data.action == "approve":
+                next_status = RequestStatus.APPROVED
+                message = "Prepayment approved by treasury"
+            else:
+                next_status = RequestStatus.REJECTED
+                message = "Prepayment rejected at treasury stage"
         else:
-            prepayment.status = RequestStatus.REJECTED
-            if action_data.rejection_reason:
-                prepayment.comment = (prepayment.comment or "") + f"\n[REJECTED] {action_data.rejection_reason}"
-        
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Prepayment is not in an approval stage")
+
+        # Apply status
+        prepayment.status = next_status
         prepayment.updated_at = datetime.utcnow()
-        
-        # Create approval record
+        if action_data.action == "reject" and action_data.rejection_reason:
+            prepayment.comment = (prepayment.comment or "") + f"\n[REJECTED] {action_data.rejection_reason}"
+
+        # Approval record
         approval = Approval(
             entity_type=EntityType.PREPAYMENT,
             entity_id=prepayment_id,
@@ -166,22 +307,50 @@ async def approve_prepayment(
             rejection_reason=action_data.rejection_reason,
             approved_at=datetime.utcnow() if action_data.action == "approve" else None
         )
-        
         db.add(approval)
+
+        # History
+        db.add(ApprovalHistory(
+            entity_type=EntityType.PREPAYMENT,
+            entity_id=prepayment.id,
+            user_id=current_user.id,
+            user_role=current_user.profile.value if current_user.profile else "employee",
+            action=HistoryAction.APPROVED if action_data.action == "approve" else HistoryAction.REJECTED,
+            from_status=prepayment.status.value if prepayment.status else "",
+            to_status=next_status.value,
+            comments=action_data.rejection_reason or action_data.comments
+        ))
+
+        # On final approval, auto-create travel expense report if not exists
+        created_report_id = None
+        if next_status == RequestStatus.APPROVED:
+            existing_report = db.query(TravelExpenseReport).filter(TravelExpenseReport.prepayment_id == prepayment.id).first()
+            if not existing_report:
+                report = TravelExpenseReport(
+                    prepayment_id=prepayment.id,
+                    status=RequestStatus.PENDING,
+                    requesting_user_id=prepayment.requesting_user_id
+                )
+                db.add(report)
+                db.flush()  # get id
+                created_report_id = report.id
+
         db.commit()
-        
-        return {
-            "message": f"Prepayment {action_data.action}d successfully",
+
+        response = {
+            "message": message,
             "prepayment_id": prepayment_id,
             "new_status": prepayment.status.value
         }
-        
+        if created_report_id:
+            response["created_report_id"] = created_report_id
+        return response
+
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to {action_data.action} prepayment: {str(e)}"
-        )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to {action_data.action} prepayment: {str(e)}")
 
 
 @router.post("/reports/{report_id}/approve")

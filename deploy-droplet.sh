@@ -7,7 +7,7 @@ set -e  # Exit on any error
 
 DROPLET_IP="161.35.39.205"
 DROPLET_USER="root"
-APP_DIR="/opt/viaticos2025"
+APP_DIR="/var/www/viaticos2025"
 REPO_URL="https://github.com/rodrigo-Upfront/viaticos2025.git"
 
 echo "🚀 Starting deployment to DigitalOcean Droplet..."
@@ -43,7 +43,7 @@ fi
 echo "✅ Docker is installed and ready!"
 
 echo "📂 Setting up application directory..."
-run_on_droplet "mkdir -p $APP_DIR"
+run_on_droplet "mkdir -p /var/www"
 
 echo "🔄 Cloning/updating repository..."
 if run_on_droplet "[ -d $APP_DIR/.git ]"; then
@@ -51,7 +51,7 @@ if run_on_droplet "[ -d $APP_DIR/.git ]"; then
     run_on_droplet "cd $APP_DIR && git pull origin main"
 else
     echo "📦 Cloning repository..."
-    run_on_droplet "cd /opt && git clone $REPO_URL viaticos2025"
+    run_on_droplet "cd /var/www && git clone $REPO_URL viaticos2025"
 fi
 
 echo "📋 Copying production configuration..."

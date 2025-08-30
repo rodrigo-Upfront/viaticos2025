@@ -108,7 +108,10 @@ const ApprovalsPage: React.FC = () => {
     open: false,
     title: '',
     message: '',
-    onConfirm: () => {}
+    onConfirm: () => {},
+    confirmText: undefined as string | undefined,
+    cancelText: undefined as string | undefined,
+    severity: undefined as 'error' | 'warning' | 'info' | undefined,
   });
 
   const [snackbar, setSnackbar] = useState({
@@ -142,8 +145,8 @@ const ApprovalsPage: React.FC = () => {
 
     setConfirmDialog({
       open: true,
-      title: 'Approve Item',
-      message: `Are you sure you want to approve "${itemName}"? This action will change the status to "approved".`,
+      title: 'Approve',
+      message: 'Approve this item?',
       onConfirm: async () => {
         try {
           setLoading(prev => ({ ...prev, action: true }));
@@ -172,7 +175,10 @@ const ApprovalsPage: React.FC = () => {
         } finally {
           setLoading(prev => ({ ...prev, action: false }));
         }
-      }
+      },
+      confirmText: 'Approve',
+      cancelText: 'Cancel',
+      severity: 'info'
     });
   };
 
@@ -464,8 +470,9 @@ const ApprovalsPage: React.FC = () => {
         onConfirm={confirmDialog.onConfirm}
         title={confirmDialog.title}
         message={confirmDialog.message}
-        severity="warning"
-        confirmText="Confirm"
+        severity={confirmDialog.severity || 'warning'}
+        confirmText={confirmDialog.confirmText || 'Confirm'}
+        cancelText={confirmDialog.cancelText || 'Cancel'}
       />
 
       {/* View Modals */}

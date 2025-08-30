@@ -52,7 +52,6 @@ interface User {
 interface Country {
   id: number;
   name: string;
-  currency: string;
 }
 
 const UsersPage: React.FC = () => {
@@ -144,7 +143,6 @@ const UsersPage: React.FC = () => {
       const mappedCountries = response.map((country: ApiCountry) => ({
         id: country.id,
         name: country.name,
-        currency: country.currency,
       }));
       setCountries(mappedCountries);
     } catch (error) {

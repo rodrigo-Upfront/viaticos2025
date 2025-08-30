@@ -62,7 +62,6 @@ function TabPanel(props: TabPanelProps) {
 interface Country {
   id?: number;
   name: string;
-  currency: string;
 }
 
 interface Category {
@@ -131,7 +130,6 @@ const SettingsPage: React.FC = () => {
       const mappedCountries = countriesData.map((country: ApiCountry) => ({
         id: country.id,
         name: country.name,
-        currency: country.currency,
       }));
       setCountries(mappedCountries);
     } catch (error) {
@@ -237,13 +235,11 @@ const SettingsPage: React.FC = () => {
       if (countryModal.mode === 'create') {
         const apiData = {
           name: countryData.name,
-          currency: countryData.currency,
         };
         const newCountry = await countryService.createCountry(apiData);
         const mappedCountry = {
           id: newCountry.id,
           name: newCountry.name,
-          currency: newCountry.currency,
         };
         setCountries(prev => [...prev, mappedCountry]);
         setSnackbar({
@@ -254,13 +250,11 @@ const SettingsPage: React.FC = () => {
       } else if (countryData.id) {
         const apiData = {
           name: countryData.name,
-          currency: countryData.currency,
         };
         const updatedCountry = await countryService.updateCountry(countryData.id, apiData);
         const mappedCountry = {
           id: updatedCountry.id,
           name: updatedCountry.name,
-          currency: updatedCountry.currency,
         };
         setCountries(prev => prev.map(c => c.id === countryData.id ? mappedCountry : c));
         setSnackbar({
@@ -483,7 +477,7 @@ const SettingsPage: React.FC = () => {
                 <TableRow>
                   <TableCell>ID</TableCell>
                   <TableCell>Name</TableCell>
-                  <TableCell>Currency</TableCell>
+                  <TableCell>Actions</TableCell>
                   <TableCell>Actions</TableCell>
                 </TableRow>
               </TableHead>
@@ -492,7 +486,6 @@ const SettingsPage: React.FC = () => {
                   <TableRow key={country.id}>
                     <TableCell>{country.id}</TableCell>
                     <TableCell>{country.name}</TableCell>
-                    <TableCell>{country.currency}</TableCell>
                     <TableCell>
                       <IconButton
                         size="small"
