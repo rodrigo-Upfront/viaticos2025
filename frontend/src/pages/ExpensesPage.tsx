@@ -15,6 +15,7 @@ import {
   Snackbar,
   Alert,
   CircularProgress,
+  TextField,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -62,6 +63,7 @@ interface TravelExpenseReport {
   prepayment_id: number;
   status: string;
   displayName: string;
+  reason: string;
 }
 
 interface Category {
@@ -97,6 +99,14 @@ const ExpensesPage: React.FC = () => {
   const [countries, setCountries] = useState<{ id: number; name: string }[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
+
+  // Filters/search state
+  const [searchPurpose, setSearchPurpose] = useState('');
+  const [filterCategoryId, setFilterCategoryId] = useState<number | ''>('');
+  const [filterCountryId, setFilterCountryId] = useState<number | ''>('');
+  const [filterReportId, setFilterReportId] = useState<number | ''>('');
+  const [filterStartDate, setFilterStartDate] = useState('');
+  const [filterEndDate, setFilterEndDate] = useState('');
 
   // Load data on component mount
   useEffect(() => {
@@ -187,7 +197,14 @@ const ExpensesPage: React.FC = () => {
   const loadExpenses = async () => {
     try {
       setLoading(prev => ({ ...prev, expenses: true }));
-      const response = await expenseService.getExpenses();
+      const response = await expenseService.getExpenses({
+        search: searchPurpose || undefined,
+        ...(filterCategoryId ? { category_id: filterCategoryId as number } : {} as any),
+        ...(filterCountryId ? { country_id: filterCountryId as number } : {} as any),
+        ...(filterReportId ? { report_id: filterReportId as number } : {} as any),
+        ...(filterStartDate ? { start_date: filterStartDate } : {} as any),
+        ...(filterEndDate ? { end_date: filterEndDate } : {} as any),
+      } as any);
       const mappedExpenses = response.expenses.map(mapApiToFrontend);
       setExpenses(mappedExpenses);
     } catch (error) {
@@ -245,7 +262,8 @@ const ExpensesPage: React.FC = () => {
         id: report.id,
         prepayment_id: report.prepayment_id,
         status: report.status,
-        displayName: `Report #${report.id} - ${report.prepayment_reason || 'Travel'} (Prepayment #${report.prepayment_id})`
+        displayName: `Report #${report.id} - ${report.reimbursement_reason || report.prepayment_reason || 'Travel'}`,
+        reason: report.reimbursement_reason || report.prepayment_reason || 'No reason'
       }));
       setTravelExpenseReports(mappedReports);
     } catch (error) {
@@ -352,11 +370,12 @@ const ExpensesPage: React.FC = () => {
           severity: 'success'
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save expense:', error);
+      const errorMessage = error?.response?.data?.detail || `Failed to ${modal.mode === 'create' ? 'create' : 'update'} expense`;
       setSnackbar({
         open: true,
-        message: `Failed to ${modal.mode === 'create' ? 'create' : 'update'} expense`,
+        message: errorMessage,
         severity: 'error'
       });
     } finally {
@@ -379,6 +398,77 @@ const ExpensesPage: React.FC = () => {
         </Button>
       </Box>
 
+      {/* Search and filters */}
+      <Box display="flex" gap={2} alignItems="center" mb={2}>
+        <TextField
+          size="small"
+          placeholder="Search purpose..."
+          value={searchPurpose}
+          onChange={(e) => setSearchPurpose(e.target.value)}
+          sx={{ minWidth: 240 }}
+        />
+        <TextField
+          select
+          size="small"
+          label="Category"
+          value={filterCategoryId}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFilterCategoryId(e.target.value === '' ? '' : Number(e.target.value))}
+          sx={{ minWidth: 200 }}
+          SelectProps={{ native: true }}
+        >
+          <option value=""></option>
+          {categories.map(c => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </TextField>
+        <TextField
+          select
+          size="small"
+          label="Country"
+          value={filterCountryId}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFilterCountryId(e.target.value === '' ? '' : Number(e.target.value))}
+          sx={{ minWidth: 200 }}
+          SelectProps={{ native: true }}
+        >
+          <option value=""></option>
+          {countries.map(c => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </TextField>
+        <TextField
+          select
+          size="small"
+          label="Report"
+          value={filterReportId}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFilterReportId(e.target.value === '' ? '' : Number(e.target.value))}
+          sx={{ minWidth: 200 }}
+          SelectProps={{ native: true }}
+        >
+          <option value=""></option>
+          {travelExpenseReports.map(r => (
+            <option key={r.id} value={r.id}>Report #{r.id} - {r.reason || 'No reason'}</option>
+          ))}
+        </TextField>
+        <TextField
+          label="From"
+          type="date"
+          size="small"
+          value={filterStartDate}
+          onChange={(e) => setFilterStartDate(e.target.value)}
+          InputLabelProps={{ shrink: true }}
+        />
+        <TextField
+          label="To"
+          type="date"
+          size="small"
+          value={filterEndDate}
+          onChange={(e) => setFilterEndDate(e.target.value)}
+          InputLabelProps={{ shrink: true }}
+        />
+        <Button variant="outlined" onClick={loadExpenses}>Apply</Button>
+        <Button variant="text" onClick={() => { setSearchPurpose(''); setFilterCategoryId(''); setFilterCountryId(''); setFilterReportId(''); setFilterStartDate(''); setFilterEndDate(''); loadExpenses(); }}>Reset</Button>
+      </Box>
+
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
@@ -386,6 +476,7 @@ const ExpensesPage: React.FC = () => {
               <TableCell>ID</TableCell>
               <TableCell>Category</TableCell>
               <TableCell>Purpose</TableCell>
+              <TableCell>Report</TableCell>
               <TableCell>Amount</TableCell>
               <TableCell>Date</TableCell>
               <TableCell>Document Type</TableCell>
@@ -396,7 +487,7 @@ const ExpensesPage: React.FC = () => {
           <TableBody>
             {loading.expenses ? (
               <TableRow>
-                <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
                   <CircularProgress />
                   <Typography variant="body2" sx={{ mt: 1 }}>
                     Loading expenses...
@@ -405,7 +496,7 @@ const ExpensesPage: React.FC = () => {
               </TableRow>
             ) : expenses.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
                   <Typography variant="body2" color="text.secondary">
                     No expenses found
                   </Typography>
@@ -417,6 +508,13 @@ const ExpensesPage: React.FC = () => {
                   <TableCell>{expense.id}</TableCell>
                   <TableCell>{expense.category}</TableCell>
                   <TableCell>{expense.purpose}</TableCell>
+                  <TableCell>
+                    {expense.travel_expense_report_id ? (
+                      `Report #${expense.travel_expense_report_id}`
+                    ) : (
+                      '-'
+                    )}
+                  </TableCell>
                   <TableCell>{expense.currency} {expense.amount.toLocaleString()}</TableCell>
                   <TableCell>{expense.expense_date}</TableCell>
                   <TableCell>

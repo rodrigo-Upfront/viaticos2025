@@ -3,6 +3,15 @@ import {
   Box,
   Typography,
   Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
   Paper,
   Table,
   TableBody,
@@ -23,12 +32,16 @@ import {
   Download as DownloadIcon,
   Visibility as ViewIcon,
   FileDownload as FileDownloadIcon,
+  Add as AddIcon,
   Send as SendIcon,
+  CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import ReportViewModal from '../components/modals/ReportViewModal';
 import ConfirmDialog from '../components/forms/ConfirmDialog';
-import { reportService, ExpenseReport as ApiReport, ExpenseReportSummary } from '../services/reportService';
+import { reportService, ExpenseReport as ApiReport, ExpenseReportSummary, ExpenseReportManualCreate } from '../services/reportService';
+import { countryService, Country as ApiCountry } from '../services/countryService';
+import { currencyService, Currency } from '../services/currencyService';
 
 interface ExpenseReport {
   id: number;
@@ -38,6 +51,17 @@ interface ExpenseReport {
   prepaidAmount: number;
   budgetStatus: string;
   status: string;
+  expenseCount: number;
+  // Reimbursement-specific fields
+  report_type?: string;
+  reimbursement_reason?: string;
+  reimbursement_country?: string;
+  reimbursement_currency?: string;
+  reimbursement_start_date?: string;
+  reimbursement_end_date?: string;
+  prepayment_reason?: string;
+  prepayment_destination?: string;
+  prepayment_currency?: string;
 }
 
 const ReportsPage: React.FC = () => {
@@ -52,24 +76,85 @@ const ReportsPage: React.FC = () => {
 
   // Data state
   const [expenseReports, setExpenseReports] = useState<ExpenseReport[]>([]);
+  const [filteredReports, setFilteredReports] = useState<ExpenseReport[]>([]);
   const [summary, setSummary] = useState<ExpenseReportSummary | null>(null);
+  const [countries, setCountries] = useState<{ id: number; name: string }[]>([]);
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
+
+  // Search state
+  const [searchFilters, setSearchFilters] = useState({
+    reason: '',
+    country: '',
+    budgetStatus: '',
+    type: '',
+  });
 
   // Load data on component mount
   useEffect(() => {
     loadReports();
     loadSummary();
+    loadCountries();
+    loadCurrencies();
   }, []);
+
+  // Filter reports based on search criteria
+  useEffect(() => {
+    let filtered = expenseReports;
+
+    if (searchFilters.reason) {
+      filtered = filtered.filter(report => {
+        const reason = report.report_type === 'REIMBURSEMENT' 
+          ? report.reimbursement_reason 
+          : report.prepayment_reason;
+        return reason?.toLowerCase().includes(searchFilters.reason.toLowerCase());
+      });
+    }
+
+    if (searchFilters.country) {
+      filtered = filtered.filter(report => {
+        const country = report.report_type === 'REIMBURSEMENT' 
+          ? report.reimbursement_country 
+          : report.prepayment_destination;
+        return country?.toLowerCase().includes(searchFilters.country.toLowerCase());
+      });
+    }
+
+    if (searchFilters.budgetStatus) {
+      filtered = filtered.filter(report => 
+        report.budgetStatus?.toLowerCase().includes(searchFilters.budgetStatus.toLowerCase())
+      );
+    }
+
+    if (searchFilters.type) {
+      filtered = filtered.filter(report => 
+        (report.report_type || 'PREPAYMENT').toLowerCase().includes(searchFilters.type.toLowerCase())
+      );
+    }
+
+    setFilteredReports(filtered);
+  }, [expenseReports, searchFilters]);
 
   // Helper function to map API report to frontend format
   const mapApiToFrontend = (apiReport: ApiReport): ExpenseReport => {
     return {
       id: apiReport.id,
-      prepaymentId: apiReport.prepayment_id,
+      prepaymentId: (apiReport as any).prepayment_id || 0,
       reportDate: apiReport.created_at.split('T')[0], // Extract date part
       totalExpenses: parseFloat(apiReport.total_expenses || '0'),
       prepaidAmount: parseFloat(apiReport.prepayment_amount || '0'),
       budgetStatus: (parseFloat(apiReport.total_expenses || '0') > parseFloat(apiReport.prepayment_amount || '0')) ? 'Over-Budget' : 'Under-Budget',
       status: apiReport.status,
+      expenseCount: (apiReport as any).expense_count || 0,
+      // Include reimbursement-specific fields
+      report_type: (apiReport as any).report_type,
+      reimbursement_reason: (apiReport as any).reimbursement_reason,
+      reimbursement_country: (apiReport as any).reimbursement_country,
+      reimbursement_currency: (apiReport as any).reimbursement_currency,
+      reimbursement_start_date: (apiReport as any).start_date,
+      reimbursement_end_date: (apiReport as any).end_date,
+      prepayment_reason: (apiReport as any).prepayment_reason,
+      prepayment_destination: (apiReport as any).prepayment_destination,
+      prepayment_currency: (apiReport as any).prepayment_currency,
     };
   };
 
@@ -80,6 +165,7 @@ const ReportsPage: React.FC = () => {
       const response = await reportService.getReports();
       const mappedReports = response.reports.map(mapApiToFrontend);
       setExpenseReports(mappedReports);
+      setFilteredReports(mappedReports);
     } catch (error) {
       console.error('Failed to load expense reports:', error);
       setSnackbar({
@@ -89,6 +175,26 @@ const ReportsPage: React.FC = () => {
       });
     } finally {
       setLoading(prev => ({ ...prev, reports: false }));
+    }
+  };
+
+  // Load countries and currencies
+  const loadCountries = async () => {
+    try {
+      const response = await countryService.getCountries();
+      const mapped = response.map((c: ApiCountry) => ({ id: c.id, name: c.name }));
+      setCountries(mapped);
+    } catch (e) {
+      // ignore optional load errors
+    }
+  };
+
+  const loadCurrencies = async () => {
+    try {
+      const data = await currencyService.getCurrencies();
+      setCurrencies(data);
+    } catch (e) {
+      // ignore optional load errors
     }
   };
 
@@ -105,10 +211,35 @@ const ReportsPage: React.FC = () => {
     }
   };
 
+  const getBudgetStatusColor = (status: string) => {
+    return status === 'Under-Budget' ? 'success' : 'error';
+  };
+
+  const getStatusLabel = (status: string) => {
+    const statusMap: Record<string, string> = {
+      'pending': 'Pending Submit',
+      'supervisor_pending': 'Supervisor Pending',
+      'accounting_pending': 'Accounting Pending',
+      'treasury_pending': 'Treasury Pending',
+      'approved_for_reimbursement': 'Approved for Reimbursement',
+      'funds_return_pending': 'Funds Return Pending',
+      'approved': 'Approved',
+      'rejected': 'Rejected'
+    };
+    return statusMap[status.toLowerCase()] || status;
+  };
+
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case 'pending':
+        return 'default';
+      case 'supervisor_pending':
+      case 'accounting_pending':
+      case 'treasury_pending':
         return 'warning';
+      case 'approved_for_reimbursement':
+      case 'funds_return_pending':
+        return 'info';
       case 'approved':
         return 'success';
       case 'rejected':
@@ -118,14 +249,12 @@ const ReportsPage: React.FC = () => {
     }
   };
 
-  const getBudgetStatusColor = (status: string) => {
-    return status === 'Under-Budget' ? 'success' : 'error';
-  };
-
   const [viewModal, setViewModal] = useState({
     open: false,
     report: undefined as typeof expenseReports[0] | undefined
   });
+
+
 
   const handleViewReport = (report: typeof expenseReports[0]) => {
     setViewModal({ open: true, report });
@@ -144,29 +273,73 @@ const ReportsPage: React.FC = () => {
     severity: 'success' as 'success' | 'error' | 'warning' | 'info'
   });
 
-  const handleSendForApproval = (report: ExpenseReport) => {
-    if (report.status !== 'pending') {
+  // Create reimbursement dialog
+  const [createDialog, setCreateDialog] = useState({
+    open: false,
+    reason: '',
+    country_id: 0,
+    currency_id: 0,
+    start_date: '',
+    end_date: '',
+  });
+
+  const handleSendForApproval = async (report: ExpenseReport) => {
+    if (report.status !== 'pending' && report.status !== 'rejected') {
       setSnackbar({
         open: true,
-        message: 'Only pending reports can be sent for approval',
+        message: 'Only pending or rejected reports can be sent for approval',
         severity: 'warning'
       });
       return;
     }
 
-    setConfirmDialog({
-      open: true,
-      title: 'Send for Approval',
-      message: `The expense report #${report.id} is already pending approval and will appear in the approvals queue for authorized users.`,
-      onConfirm: () => {
-        setSnackbar({
-          open: true,
-          message: 'Expense report is in the approval queue. Approvers will be notified.',
-          severity: 'info'
-        });
+    // Check if report has expenses
+    if (report.expenseCount === 0) {
+      setSnackbar({
+        open: true,
+        message: 'Cannot submit report for approval without expenses. Please add at least one expense before submitting.',
+        severity: 'warning'
+      });
+      return;
+    }
+
+    try {
+      setLoading(prev => ({ ...prev, action: true }));
+      
+      const response = await fetch(`/api/approvals/reports/${report.id}/submit`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to submit report');
       }
-    });
+
+      setSnackbar({
+        open: true,
+        message: 'Report submitted for approval successfully',
+        severity: 'success'
+      });
+      
+      // Reload reports to show updated status
+      await Promise.all([loadReports(), loadSummary()]);
+      
+    } catch (error: any) {
+      setSnackbar({
+        open: true,
+        message: error.message || 'Failed to submit report for approval',
+        severity: 'error'
+      });
+    } finally {
+      setLoading(prev => ({ ...prev, action: false }));
+    }
   };
+
+
 
   const handleExportAll = () => {
     // Placeholder for export all functionality
@@ -202,6 +375,40 @@ const ReportsPage: React.FC = () => {
     }, 1500);
   };
 
+  const openCreateReimbursement = async () => {
+    await Promise.all([loadCountries(), loadCurrencies()]);
+    setCreateDialog({ open: true, reason: '', country_id: 0, currency_id: 0, start_date: '', end_date: '' });
+  };
+
+  const handleCreateReimbursement = async () => {
+    if (!createDialog.reason.trim() || !createDialog.country_id || !createDialog.currency_id || !createDialog.start_date || !createDialog.end_date) {
+      setSnackbar({ open: true, message: 'All fields are required', severity: 'warning' });
+      return;
+    }
+    if (new Date(createDialog.start_date) >= new Date(createDialog.end_date)) {
+      setSnackbar({ open: true, message: 'End date must be after start date', severity: 'warning' });
+      return;
+    }
+    try {
+      setLoading(prev => ({ ...prev, action: true }));
+      const payload: ExpenseReportManualCreate = {
+        reason: createDialog.reason.trim(),
+        country_id: createDialog.country_id,
+        currency_id: createDialog.currency_id,
+        start_date: createDialog.start_date,
+        end_date: createDialog.end_date,
+      };
+      await reportService.createManualReport(payload);
+      setCreateDialog(prev => ({ ...prev, open: false }));
+      setSnackbar({ open: true, message: 'Reimbursement report created successfully', severity: 'success' });
+      await Promise.all([loadReports(), loadSummary()]);
+    } catch (error: any) {
+      setSnackbar({ open: true, message: error?.response?.data?.detail || 'Failed to create reimbursement', severity: 'error' });
+    } finally {
+      setLoading(prev => ({ ...prev, action: false }));
+    }
+  };
+
   return (
     <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
@@ -209,6 +416,14 @@ const ReportsPage: React.FC = () => {
           {t('navigation.reports')}
         </Typography>
         <Box>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={openCreateReimbursement}
+            sx={{ mr: 2 }}
+          >
+            Create Reimbursement
+          </Button>
           <Button
             variant="outlined"
             startIcon={<DownloadIcon />}
@@ -279,12 +494,73 @@ const ReportsPage: React.FC = () => {
         </Grid>
       </Grid>
 
+      {/* Search Filters */}
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          Search & Filter
+        </Typography>
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={6} md={3}>
+            <TextField
+              fullWidth
+              label="Reason"
+              value={searchFilters.reason}
+              onChange={(e) => setSearchFilters(prev => ({ ...prev, reason: e.target.value }))}
+              size="small"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Country</InputLabel>
+              <Select
+                value={searchFilters.country}
+                label="Country"
+                onChange={(e) => setSearchFilters(prev => ({ ...prev, country: e.target.value }))}
+              >
+                <MenuItem value=""><em>All</em></MenuItem>
+                {countries.map(country => (
+                  <MenuItem key={country.id} value={country.name}>{country.name}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Budget Status</InputLabel>
+              <Select
+                value={searchFilters.budgetStatus}
+                label="Budget Status"
+                onChange={(e) => setSearchFilters(prev => ({ ...prev, budgetStatus: e.target.value }))}
+              >
+                <MenuItem value=""><em>All</em></MenuItem>
+                <MenuItem value="Under-Budget">Under Budget</MenuItem>
+                <MenuItem value="Over-Budget">Over Budget</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Type</InputLabel>
+              <Select
+                value={searchFilters.type}
+                label="Type"
+                onChange={(e) => setSearchFilters(prev => ({ ...prev, type: e.target.value }))}
+              >
+                <MenuItem value=""><em>All</em></MenuItem>
+                <MenuItem value="PREPAYMENT">Prepayment</MenuItem>
+                <MenuItem value="REIMBURSEMENT">Reimbursement</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+        </Grid>
+      </Paper>
+
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Report ID</TableCell>
-              <TableCell>Prepayment ID</TableCell>
+              <TableCell>Type</TableCell>
+              <TableCell>Reason</TableCell>
               <TableCell>Report Date</TableCell>
               <TableCell>Total Expenses</TableCell>
               <TableCell>Prepaid Amount</TableCell>
@@ -303,7 +579,7 @@ const ReportsPage: React.FC = () => {
                   </Typography>
                 </TableCell>
               </TableRow>
-            ) : expenseReports.length === 0 ? (
+            ) : filteredReports.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
                   <Typography variant="body2" color="text.secondary">
@@ -312,23 +588,46 @@ const ReportsPage: React.FC = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              expenseReports.map((report) => (
+              filteredReports.map((report) => (
                 <TableRow key={report.id}>
-                  <TableCell>{report.id}</TableCell>
-                  <TableCell>{report.prepaymentId}</TableCell>
-                  <TableCell>{report.reportDate}</TableCell>
-                  <TableCell>${report.totalExpenses.toLocaleString()}</TableCell>
-                  <TableCell>${report.prepaidAmount.toLocaleString()}</TableCell>
                   <TableCell>
                     <Chip
-                      label={report.budgetStatus}
-                      color={getBudgetStatusColor(report.budgetStatus) as any}
+                      label={report.report_type || 'PREPAYMENT'}
+                      color={report.report_type === 'REIMBURSEMENT' ? 'secondary' : 'primary'}
                       size="small"
+                      variant="filled"
                     />
                   </TableCell>
                   <TableCell>
+                    {report.report_type === 'REIMBURSEMENT' 
+                      ? (report.reimbursement_reason || 'N/A')
+                      : (report.prepayment_reason || 'N/A')
+                    }
+                  </TableCell>
+                  <TableCell>{report.reportDate}</TableCell>
+                  <TableCell>
+                    {(report.reimbursement_currency || report.prepayment_currency || '$')}{report.totalExpenses.toLocaleString()}
+                  </TableCell>
+                  <TableCell>
+                    {report.report_type === 'REIMBURSEMENT' 
+                      ? '-' 
+                      : `${report.prepayment_currency || '$'}${report.prepaidAmount.toLocaleString()}`
+                    }
+                  </TableCell>
+                  <TableCell>
+                    {report.report_type === 'REIMBURSEMENT' ? (
+                      <Chip label="-" size="small" variant="outlined" />
+                    ) : (
+                      <Chip
+                        label={report.budgetStatus}
+                        color={getBudgetStatusColor(report.budgetStatus) as any}
+                        size="small"
+                      />
+                    )}
+                  </TableCell>
+                  <TableCell>
                     <Chip
-                      label={report.status}
+                      label={getStatusLabel(report.status)}
                       color={getStatusColor(report.status) as any}
                       size="small"
                     />
@@ -342,13 +641,19 @@ const ReportsPage: React.FC = () => {
                     >
                       <ViewIcon />
                     </IconButton>
-                    {report.status === 'pending' && (
+                    {(report.status === 'pending' || report.status === 'rejected') && (
                       <IconButton
                         size="small"
                         onClick={() => handleSendForApproval(report)}
                         color="success"
-                        title="Send for Approval"
-                        disabled={loading.action}
+                        title={
+                          report.expenseCount === 0
+                            ? "Cannot send for approval: No expenses added" 
+                            : report.status === 'rejected' 
+                              ? "Resubmit for Approval"
+                              : "Send for Approval"
+                        }
+                        disabled={loading.action || report.expenseCount === 0}
                       >
                         <SendIcon />
                       </IconButton>
@@ -381,6 +686,81 @@ const ReportsPage: React.FC = () => {
         onClose={() => setViewModal({ open: false, report: undefined })}
         report={viewModal.report}
       />
+
+
+
+      {/* Create Reimbursement Dialog */}
+      <Dialog open={createDialog.open} onClose={() => setCreateDialog(prev => ({ ...prev, open: false }))} maxWidth="sm" fullWidth>
+        <DialogTitle>Create Reimbursement Report</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            label="Reason"
+            value={createDialog.reason}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCreateDialog(prev => ({ ...prev, reason: e.target.value }))}
+            margin="normal"
+            required
+          />
+          <FormControl fullWidth margin="normal" required>
+            <InputLabel>Country</InputLabel>
+            <Select
+              value={createDialog.country_id}
+              label="Country"
+              onChange={(e: any) => setCreateDialog(prev => ({ ...prev, country_id: e.target.value }))}
+            >
+              <MenuItem value={0}><em>Select a country</em></MenuItem>
+              {countries.map(c => (
+                <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl fullWidth margin="normal" required>
+            <InputLabel>Currency</InputLabel>
+            <Select
+              value={createDialog.currency_id}
+              label="Currency"
+              onChange={(e: any) => setCreateDialog(prev => ({ ...prev, currency_id: e.target.value }))}
+            >
+              <MenuItem value={0}><em>Select currency</em></MenuItem>
+              {currencies.map(c => (
+                <MenuItem key={c.id} value={c.id}>{c.code} - {c.name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <TextField
+            fullWidth
+            label="Start Date"
+            type="date"
+            value={createDialog.start_date}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCreateDialog(prev => ({ ...prev, start_date: e.target.value }))}
+            margin="normal"
+            required
+            InputLabelProps={{
+              shrink: true,
+            }}
+          />
+          <TextField
+            fullWidth
+            label="End Date"
+            type="date"
+            value={createDialog.end_date}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCreateDialog(prev => ({ ...prev, end_date: e.target.value }))}
+            margin="normal"
+            required
+            InputLabelProps={{
+              shrink: true,
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCreateDialog(prev => ({ ...prev, open: false }))} color="inherit" disabled={loading.action}>
+            Cancel
+          </Button>
+          <Button onClick={handleCreateReimbursement} variant="contained" disabled={loading.action}>
+            {loading.action ? 'Creating...' : 'Create'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Confirmation Dialog */}
       <ConfirmDialog

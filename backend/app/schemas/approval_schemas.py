@@ -4,7 +4,7 @@ Pydantic models for approval data validation and serialization
 """
 
 from pydantic import BaseModel, Field
-from typing import Optional, Union
+from typing import Optional, Union, List, Dict
 from datetime import datetime
 
 
@@ -91,3 +91,24 @@ class PendingApprovalsList(BaseModel):
     """Schema for pending approvals list (formatted for frontend)"""
     items: list[PendingApprovalItem]
     total: int
+
+
+class ExpenseRejection(BaseModel):
+    """Schema for expense rejection details"""
+    expense_id: int = Field(..., description="Expense ID")
+    rejection_reason: str = Field(..., max_length=300, description="Rejection reason")
+
+
+class ReportApprovalAction(BaseModel):
+    """Schema for report approval/rejection action"""
+    action: str = Field(..., description="Action: 'approve' or 'reject'")
+    rejection_reason: Optional[str] = Field(None, description="Overall rejection reason")
+    expense_rejections: Optional[List[ExpenseRejection]] = Field(None, description="Individual expense rejections")
+
+
+class ReportApprovalResponse(BaseModel):
+    """Schema for report approval response"""
+    report_id: int
+    status: str
+    message: str
+    expense_updates: Optional[Dict[int, str]] = None  # expense_id -> new_status

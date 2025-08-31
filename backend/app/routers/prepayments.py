@@ -26,6 +26,7 @@ async def get_prepayments(
     limit: int = Query(100, ge=1, le=1000, description="Number of records to return"),
     search: Optional[str] = Query(None, description="Search by reason or destination"),
     status_filter: Optional[str] = Query(None, description="Filter by status"),
+    country_id: Optional[int] = Query(None, description="Filter by destination country id"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -60,6 +61,9 @@ async def get_prepayments(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid status: {status_filter}"
             )
+    # Apply country filter
+    if country_id:
+        query = query.filter(Prepayment.destination_country_id == country_id)
     
     # Get total count
     total = query.count()
@@ -184,17 +188,17 @@ async def update_prepayment(
             detail="Prepayment not found"
         )
     
-    # Non-superusers can only update their own prepayments and only if pending
+    # Non-superusers can only update their own prepayments and only if pending or rejected
     if not current_user.is_superuser:
         if prepayment.requesting_user_id != current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not enough permissions"
             )
-        if prepayment.status != RequestStatus.PENDING:
+        if prepayment.status not in [RequestStatus.PENDING, RequestStatus.REJECTED]:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Can only edit pending prepayments"
+                detail="Can only edit pending or rejected prepayments"
             )
     
     # Verify destination country exists if being updated
@@ -314,7 +318,7 @@ async def update_prepayment_status(
 @router.delete("/{prepayment_id}")
 async def delete_prepayment(
     prepayment_id: int,
-    current_user: User = Depends(get_current_superuser),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -328,6 +332,12 @@ async def delete_prepayment(
             detail="Prepayment not found"
         )
     
+    # Only superuser or owner can delete, and only if pending or rejected
+    if not (current_user.is_superuser or prepayment.requesting_user_id == current_user.id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
+    if prepayment.status not in [RequestStatus.PENDING, RequestStatus.REJECTED]:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Can only delete pending or rejected prepayments")
+
     try:
         db.delete(prepayment)
         db.commit()

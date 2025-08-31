@@ -19,6 +19,7 @@ class PrepaymentBase(BaseModel):
     amount: Decimal = Field(..., gt=0, description="Prepayment amount")
     justification_file: Optional[str] = Field(None, max_length=500, description="Justification file path")
     comment: Optional[str] = Field(None, description="Additional comments")
+    rejection_reason: Optional[str] = Field(None, description="Rejection reason (set when rejected)")
 
 
 class PrepaymentCreate(PrepaymentBase):
@@ -36,6 +37,7 @@ class PrepaymentUpdate(PrepaymentBase):
     amount: Optional[Decimal] = Field(None, gt=0)
     justification_file: Optional[str] = Field(None, max_length=500)
     comment: Optional[str] = Field(None)
+    rejection_reason: Optional[str] = Field(None)
 
 
 class PrepaymentResponse(PrepaymentBase):
@@ -67,6 +69,7 @@ class PrepaymentResponse(PrepaymentBase):
             amount=obj.amount,
             justification_file=obj.justification_file,
             comment=obj.comment,
+            rejection_reason=getattr(obj, 'rejection_reason', None),
             status=obj.status.value if obj.status else "pending",
             requesting_user_id=obj.requesting_user_id,
             created_at=obj.created_at,

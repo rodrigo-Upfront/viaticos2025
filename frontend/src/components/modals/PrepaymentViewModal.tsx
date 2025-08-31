@@ -29,6 +29,7 @@ interface Prepayment {
   comment: string;
   justification_file?: string;
   status: string;
+  rejection_reason?: string;
 }
 
 interface PrepaymentViewModalProps {
@@ -43,17 +44,14 @@ const PrepaymentViewModal: React.FC<PrepaymentViewModalProps> = ({ open, onClose
   }
 
   const handleFileDownload = (filename: string) => {
-    // Placeholder for file download functionality
-    console.log('Download file:', filename);
-    
-    // Create a temporary download link for demonstration
-    // In a real application, this would call the backend API
+    // Navigate to backend storage path (basic implementation)
+    const url = `/storage/uploads/prepayments/${filename}`;
     const link = document.createElement('a');
-    link.href = '#'; // This would be the actual file URL from backend
+    link.href = url;
     link.download = filename;
+    document.body.appendChild(link);
     link.click();
-    
-    alert(`Download functionality not yet implemented for: ${filename}\n\nIn a real application, this would download the file from the server.`);
+    document.body.removeChild(link);
   };
 
   const getStatusColor = (status: string) => {
@@ -189,6 +187,17 @@ const PrepaymentViewModal: React.FC<PrepaymentViewModalProps> = ({ open, onClose
               </Typography>
               <Typography variant="body1" paragraph>
                 {prepayment.comment}
+              </Typography>
+            </Grid>
+          )}
+
+          {prepayment.status === 'rejected' && prepayment.rejection_reason && (
+            <Grid item xs={12}>
+              <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                Rejection Reason
+              </Typography>
+              <Typography variant="body1" color="error" paragraph>
+                {prepayment.rejection_reason}
               </Typography>
             </Grid>
           )}

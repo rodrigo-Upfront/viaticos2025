@@ -51,6 +51,16 @@ interface ExpenseReport {
   startDate?: string;
   endDate?: string;
   requestingUser?: string;
+  // Reimbursement-specific fields
+  report_type?: string;
+  reimbursement_reason?: string;
+  reimbursement_country?: string;
+  reimbursement_currency?: string;
+  reimbursement_start_date?: string;
+  reimbursement_end_date?: string;
+  prepayment_reason?: string;
+  prepayment_destination?: string;
+  prepayment_currency?: string;
   expenses?: Array<{
     id: number;
     category: string;
@@ -135,6 +145,13 @@ const ReportViewModal: React.FC<ReportViewModalProps> = ({ open, onClose, report
         <Box display="flex" alignItems="center" justifyContent="space-between">
           <Typography variant="h6">Travel Expense Report (ID: {report.id})</Typography>
           <Box display="flex" gap={1}>
+            {report.report_type && (
+              <Chip
+                label={report.report_type}
+                color={report.report_type === 'REIMBURSEMENT' ? 'secondary' : 'primary'}
+                variant="filled"
+              />
+            )}
             <Chip
               label={report.status}
               color={getStatusColor(report.status) as any}
@@ -159,23 +176,25 @@ const ReportViewModal: React.FC<ReportViewModalProps> = ({ open, onClose, report
             <Divider sx={{ mb: 2 }} />
           </Grid>
 
-          <Grid item xs={12} sm={6} md={3}>
-            <Paper sx={{ p: 2, textAlign: 'center' }}>
-              <MoneyIcon color="primary" sx={{ fontSize: 40, mb: 1 }} />
-              <Typography variant="h6" color="primary">
-                ${(report.prepaidAmount || 0).toLocaleString()}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                Prepaid Amount
-              </Typography>
-            </Paper>
-          </Grid>
+          {report.report_type !== 'REIMBURSEMENT' && (
+            <Grid item xs={12} sm={6} md={3}>
+              <Paper sx={{ p: 2, textAlign: 'center' }}>
+                <MoneyIcon color="primary" sx={{ fontSize: 40, mb: 1 }} />
+                <Typography variant="h6" color="primary">
+                  {report.prepayment_currency || '$'}{(report.prepaidAmount || 0).toLocaleString()}
+                </Typography>
+                <Typography variant="body2" color="textSecondary">
+                  Prepaid Amount
+                </Typography>
+              </Paper>
+            </Grid>
+          )}
 
           <Grid item xs={12} sm={6} md={3}>
             <Paper sx={{ p: 2, textAlign: 'center' }}>
               <ReceiptIcon color="warning" sx={{ fontSize: 40, mb: 1 }} />
               <Typography variant="h6" color="warning.main">
-                ${(report.totalExpenses || 0).toLocaleString()}
+                {(report.reimbursement_currency || report.prepayment_currency || '$')}{(report.totalExpenses || 0).toLocaleString()}
               </Typography>
               <Typography variant="body2" color="textSecondary">
                 Total Expenses
@@ -183,21 +202,23 @@ const ReportViewModal: React.FC<ReportViewModalProps> = ({ open, onClose, report
             </Paper>
           </Grid>
 
-          <Grid item xs={12} sm={6} md={3}>
-            <Paper sx={{ p: 2, textAlign: 'center' }}>
-              {getBudgetIcon(report.budgetStatus)}
-              <Typography 
-                variant="h6" 
-                color={isOverBudget ? 'error.main' : 'success.main'}
-                sx={{ mt: 1 }}
-              >
-                ${Math.abs(remainingBudget || 0).toLocaleString()}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                {isOverBudget ? 'Over Budget' : 'Remaining'}
-              </Typography>
-            </Paper>
-          </Grid>
+          {report.report_type !== 'REIMBURSEMENT' && (
+            <Grid item xs={12} sm={6} md={3}>
+              <Paper sx={{ p: 2, textAlign: 'center' }}>
+                {getBudgetIcon(report.budgetStatus)}
+                <Typography 
+                  variant="h6" 
+                  color={isOverBudget ? 'error.main' : 'success.main'}
+                  sx={{ mt: 1 }}
+                >
+                  {report.prepayment_currency || '$'}{Math.abs(remainingBudget || 0).toLocaleString()}
+                </Typography>
+                <Typography variant="body2" color="textSecondary">
+                  {isOverBudget ? 'Over Budget' : 'Remaining'}
+                </Typography>
+              </Paper>
+            </Grid>
+          )}
 
           <Grid item xs={12} sm={6} md={3}>
             <Paper sx={{ p: 2, textAlign: 'center' }}>
@@ -218,14 +239,16 @@ const ReportViewModal: React.FC<ReportViewModalProps> = ({ open, onClose, report
             <Divider sx={{ mb: 2 }} />
           </Grid>
 
-          <Grid item xs={12} sm={6}>
-            <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-              Related Prepayment ID
-            </Typography>
-            <Typography variant="body1" paragraph>
-              #{report.prepaymentId}
-            </Typography>
-          </Grid>
+          {report.report_type !== 'REIMBURSEMENT' && (
+            <Grid item xs={12} sm={6}>
+              <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                Related Prepayment ID
+              </Typography>
+              <Typography variant="body1" paragraph>
+                #{report.prepaymentId}
+              </Typography>
+            </Grid>
+          )}
 
           <Grid item xs={12} sm={6}>
             <Typography variant="subtitle2" color="textSecondary" gutterBottom>
@@ -241,16 +264,24 @@ const ReportViewModal: React.FC<ReportViewModalProps> = ({ open, onClose, report
               Trip Dates
             </Typography>
             <Typography variant="body1" paragraph>
-              {report.startDate || '2025-08-15'} to {report.endDate || '2025-08-18'}
+              {report.report_type === 'REIMBURSEMENT' 
+                ? (report.reimbursement_start_date && report.reimbursement_end_date 
+                   ? `${report.reimbursement_start_date} to ${report.reimbursement_end_date}`
+                   : 'N/A')
+                : (report.startDate || '2025-08-15') + ' to ' + (report.endDate || '2025-08-18')
+              }
             </Typography>
           </Grid>
 
           <Grid item xs={12} sm={6}>
             <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-              Destination
+              {report.report_type === 'REIMBURSEMENT' ? 'Country' : 'Destination'}
             </Typography>
             <Typography variant="body1" paragraph>
-              {report.destination || 'Lima, Peru'}
+              {report.report_type === 'REIMBURSEMENT' 
+                ? (report.reimbursement_country || 'N/A')
+                : (report.prepayment_destination || report.destination || 'N/A')
+              }
             </Typography>
           </Grid>
 
@@ -259,8 +290,21 @@ const ReportViewModal: React.FC<ReportViewModalProps> = ({ open, onClose, report
               Reason/Purpose
             </Typography>
             <Typography variant="body1" paragraph>
-              {report.reason || 'Business travel for client meetings and project coordination'}
+              {report.report_type === 'REIMBURSEMENT' 
+                ? (report.reimbursement_reason || 'N/A')
+                : (report.prepayment_reason || report.reason || 'N/A')
+              }
             </Typography>
+            {report.prepaymentId && report.prepaymentId > 0 && report.prepayment_reason && (
+              <>
+                <Typography variant="subtitle2" color="textSecondary" gutterBottom sx={{ mt: 2 }}>
+                  Related Prepayment Reason
+                </Typography>
+                <Typography variant="body1" paragraph>
+                  {report.prepayment_reason}
+                </Typography>
+              </>
+            )}
           </Grid>
 
           {/* Expense Breakdown */}

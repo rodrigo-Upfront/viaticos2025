@@ -30,6 +30,10 @@ async def get_expenses(
     search: Optional[str] = Query(None, description="Search by purpose or document number"),
     status_filter: Optional[str] = Query(None, description="Filter by status"),
     report_id: Optional[int] = Query(None, description="Filter by travel expense report ID"),
+    category_id: Optional[int] = Query(None, description="Filter by category ID"),
+    country_id: Optional[int] = Query(None, description="Filter by country ID"),
+    start_date: Optional[str] = Query(None, description="Filter by expense_date from (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="Filter by expense_date to (YYYY-MM-DD)"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -48,11 +52,35 @@ async def get_expenses(
     if report_id:
         query = query.filter(Expense.travel_expense_report_id == report_id)
     
-    # Non-superusers can only see expenses from their own reports OR their own reimbursements
+    # Permission filtering for non-superusers
     if not current_user.is_superuser:
-        query = query.outerjoin(TravelExpenseReport).filter(
-            (TravelExpenseReport.requesting_user_id == current_user.id) | (Expense.created_by_user_id == current_user.id)
-        )
+        # Join with TravelExpenseReport for permission checks
+        query = query.outerjoin(TravelExpenseReport)
+        
+        # Base condition: users can see expenses from their own reports or expenses they created
+        base_conditions = [
+            TravelExpenseReport.requesting_user_id == current_user.id,
+            Expense.created_by_user_id == current_user.id
+        ]
+        
+        # Additional condition: approvers can see expenses from reports in their approval queue
+        # when specifically filtering by report_id (i.e., when viewing a report for approval)
+        if report_id and current_user.is_approver:
+            from app.models.models import RequestStatus
+            
+            # Allow approvers to see expenses from reports that are in approval stages
+            approval_conditions = TravelExpenseReport.status.in_([
+                RequestStatus.SUPERVISOR_PENDING,
+                RequestStatus.ACCOUNTING_PENDING, 
+                RequestStatus.TREASURY_PENDING,
+                RequestStatus.APPROVED_FOR_REIMBURSEMENT,
+                RequestStatus.FUNDS_RETURN_PENDING
+            ])
+            base_conditions.append(approval_conditions)
+        
+        # Apply the combined filter
+        from sqlalchemy import or_
+        query = query.filter(or_(*base_conditions))
     
     # Apply search filter
     if search:
@@ -61,6 +89,22 @@ async def get_expenses(
             (Expense.purpose.ilike(search_filter)) |
             (Expense.document_number.ilike(search_filter))
         )
+    # Category filter
+    if category_id:
+        query = query.filter(Expense.category_id == category_id)
+    # Country filter
+    if country_id:
+        query = query.filter(Expense.country_id == country_id)
+    # Date range filter
+    try:
+        if start_date:
+            sd = datetime.strptime(start_date, "%Y-%m-%d").date()
+            query = query.filter(Expense.expense_date >= sd)
+        if end_date:
+            ed = datetime.strptime(end_date, "%Y-%m-%d").date()
+            query = query.filter(Expense.expense_date <= ed)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid date format. Use YYYY-MM-DD")
     
     # Apply status filter
     if status_filter:
@@ -276,11 +320,13 @@ async def update_expense(
             report_with_prepayment = db.query(TravelExpenseReport).options(
                 joinedload(TravelExpenseReport.prepayment)
             ).filter(TravelExpenseReport.id == expense.travel_expense_report_id).first()
-            if report_with_prepayment and not (report_with_prepayment.prepayment.start_date <= expense.expense_date <= report_with_prepayment.prepayment.end_date):
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Expense date must be within the report travel dates"
-                )
+            if report_with_prepayment and report_with_prepayment.prepayment:
+                if not (report_with_prepayment.prepayment.start_date <= expense.expense_date <= report_with_prepayment.prepayment.end_date):
+                    db.rollback()
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Expense date must be within the travel dates ({report_with_prepayment.prepayment.start_date} to {report_with_prepayment.prepayment.end_date})"
+                    )
         
         expense.updated_at = datetime.utcnow()
         
@@ -297,6 +343,10 @@ async def update_expense(
         
         return ExpenseResponse.from_orm(expense)
         
+    except HTTPException:
+        # Re-raise HTTP exceptions (like validation errors) as-is
+        db.rollback()
+        raise
     except Exception as e:
         db.rollback()
         raise HTTPException(

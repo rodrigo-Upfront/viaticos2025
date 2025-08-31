@@ -40,6 +40,8 @@ async def lifespan(app: FastAPI):
             conn.execute(text("ALTER TYPE requeststatus ADD VALUE IF NOT EXISTS 'supervisor_pending'"))
             conn.execute(text("ALTER TYPE requeststatus ADD VALUE IF NOT EXISTS 'accounting_pending'"))
             conn.execute(text("ALTER TYPE requeststatus ADD VALUE IF NOT EXISTS 'treasury_pending'"))
+            conn.execute(text("ALTER TYPE requeststatus ADD VALUE IF NOT EXISTS 'approved_for_reimbursement'"))
+            conn.execute(text("ALTER TYPE requeststatus ADD VALUE IF NOT EXISTS 'funds_return_pending'"))
             conn.execute(text("ALTER TYPE requeststatus ADD VALUE IF NOT EXISTS 'SUPERVISOR_PENDING'"))
             conn.execute(text("ALTER TYPE requeststatus ADD VALUE IF NOT EXISTS 'ACCOUNTING_PENDING'"))
             conn.execute(text("ALTER TYPE requeststatus ADD VALUE IF NOT EXISTS 'TREASURY_PENDING'"))
@@ -155,16 +157,99 @@ async def lifespan(app: FastAPI):
                 conn.execute(text("ALTER TABLE expenses ADD COLUMN IF NOT EXISTS created_by_user_id INTEGER REFERENCES users(id)"))
             except Exception:
                 pass
+            # TravelExpenseReport adjustments for reimbursements
+            dialect = engine.dialect.name
+            try:
+                conn.execute(text("ALTER TABLE travel_expense_reports ALTER COLUMN prepayment_id DROP NOT NULL"))
+            except Exception:
+                pass
+            if dialect == 'postgresql':
+                try:
+                    conn.execute(text("CREATE TYPE reporttype AS ENUM ('PREPAYMENT','REIMBURSEMENT')"))
+                except Exception:
+                    pass
+                try:
+                    conn.execute(text("ALTER TABLE travel_expense_reports ADD COLUMN IF NOT EXISTS report_type reporttype DEFAULT 'PREPAYMENT' NOT NULL"))
+                except Exception:
+                    pass
+            else:
+                # Fallback for SQLite and others: use TEXT
+                try:
+                    conn.execute(text("ALTER TABLE travel_expense_reports ADD COLUMN report_type TEXT DEFAULT 'PREPAYMENT' NOT NULL"))
+                except Exception:
+                    pass
+                # If above failed (older SQLite), try without default/constraint and backfill
+                try:
+                    conn.execute(text("ALTER TABLE travel_expense_reports ADD COLUMN report_type TEXT"))
+                except Exception:
+                    pass
+                try:
+                    conn.execute(text("UPDATE travel_expense_reports SET report_type='PREPAYMENT' WHERE report_type IS NULL"))
+                except Exception:
+                    pass
+            try:
+                conn.execute(text("ALTER TABLE travel_expense_reports ADD COLUMN IF NOT EXISTS reason TEXT"))
+            except Exception:
+                # SQLite fallback without IF NOT EXISTS
+                try:
+                    conn.execute(text("ALTER TABLE travel_expense_reports ADD COLUMN reason TEXT"))
+                except Exception:
+                    pass
+            try:
+                conn.execute(text("ALTER TABLE travel_expense_reports ADD COLUMN IF NOT EXISTS country_id INTEGER REFERENCES countries(id)"))
+            except Exception:
+                try:
+                    conn.execute(text("ALTER TABLE travel_expense_reports ADD COLUMN country_id INTEGER"))
+                except Exception:
+                    pass
+            try:
+                conn.execute(text("ALTER TABLE travel_expense_reports ADD COLUMN IF NOT EXISTS currency_id INTEGER REFERENCES currencies(id)"))
+            except Exception:
+                try:
+                    conn.execute(text("ALTER TABLE travel_expense_reports ADD COLUMN currency_id INTEGER"))
+                except Exception:
+                    pass
+            # Add rejection_reason to prepayments if missing
+            try:
+                conn.execute(text("ALTER TABLE prepayments ADD COLUMN IF NOT EXISTS rejection_reason TEXT"))
+            except Exception:
+                pass
+            # Add trip dates for reimbursement reports
+            try:
+                conn.execute(text("ALTER TABLE travel_expense_reports ADD COLUMN IF NOT EXISTS start_date DATE"))
+            except Exception:
+                pass
+            try:
+                conn.execute(text("ALTER TABLE travel_expense_reports ADD COLUMN IF NOT EXISTS end_date DATE"))
+            except Exception:
+                pass
+            # Add rejection reason for expense-level rejections
+            try:
+                conn.execute(text("ALTER TABLE expenses ADD COLUMN IF NOT EXISTS rejection_reason VARCHAR(300)"))
+            except Exception:
+                pass
+            # Add expense rejections column to approval history
+            try:
+                conn.execute(text("ALTER TABLE approval_history ADD COLUMN IF NOT EXISTS expense_rejections TEXT"))
+            except Exception:
+                pass
             conn.commit()
             print("✅ Expense table supports reimbursements")
     except Exception as e:
         # Non-fatal: log and continue (helps on SQLite or first-time setups)
         print(f"⚠️ Skipped enum migration: {e}")
     
-    # Create storage directories
-    os.makedirs(settings.UPLOAD_PATH, exist_ok=True)
-    os.makedirs(settings.EXPORT_PATH, exist_ok=True)
-    print(f"📁 Storage directories created: {settings.UPLOAD_PATH}")
+    # Create storage directories; fallback to local ./storage if default is not writable
+    try:
+        os.makedirs(settings.UPLOAD_PATH, exist_ok=True)
+        os.makedirs(settings.EXPORT_PATH, exist_ok=True)
+        print(f"📁 Storage directories created: {settings.UPLOAD_PATH}")
+    except Exception as e:
+        local_upload = os.path.abspath("storage/uploads")
+        local_export = os.path.abspath("storage/exports")
+        os.makedirs(local_upload, exist_ok=True)
+        os.makedirs(local_export, exist_ok=True)
+        print(f"📁 Using local storage directories due to error: {e}")
     
     yield
     

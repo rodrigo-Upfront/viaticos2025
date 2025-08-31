@@ -31,11 +31,13 @@ import {
   Close as CloseIcon,
   Visibility as ViewIcon,
   AccessTime as PendingIcon,
+  Assignment as AssignmentIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import ConfirmDialog from '../components/forms/ConfirmDialog';
 import PrepaymentViewModal from '../components/modals/PrepaymentViewModal';
 import ReportViewModal from '../components/modals/ReportViewModal';
+import ReportApprovalModal from '../components/modals/ReportApprovalModal';
 import { approvalService, PendingApprovalItem } from '../services/approvalService';
 
 interface TabPanelProps {
@@ -124,6 +126,11 @@ const ApprovalsPage: React.FC = () => {
     open: false,
     type: '' as 'prepayment' | 'report' | '',
     data: null as any
+  });
+
+  const [approvalModal, setApprovalModal] = useState({
+    open: false,
+    report: null as any
   });
 
   const [rejectionDialog, setRejectionDialog] = useState({
@@ -240,6 +247,53 @@ const ApprovalsPage: React.FC = () => {
     } finally {
       setLoading(prev => ({ ...prev, action: false }));
     }
+  };
+
+  const handleApproveReport = (item: PendingApprovalItem) => {
+    // Determine the current status based on business logic
+    // If treasury user is seeing this, it's likely in treasury approval stage
+    const totalExpenses = parseFloat(item.total_expenses || '0');
+    const prepaidAmount = parseFloat(item.prepaid_amount || '0');
+    
+    let currentStatus = 'pending_approval';
+    if (totalExpenses < prepaidAmount) {
+      currentStatus = 'funds_return_pending';
+    } else if (totalExpenses > prepaidAmount) {
+      currentStatus = 'approved_for_reimbursement';
+    } else {
+      currentStatus = 'treasury_pending';
+    }
+
+    // Convert the approval data format to ReportApprovalModal format
+    const reportData = {
+      id: item.entity_id,
+      prepaymentId: item.prepayment_id || 0,
+      reportDate: item.report_date || item.request_date,
+      totalExpenses: totalExpenses,
+      prepaidAmount: prepaidAmount,
+      budgetStatus: 'Under-Budget', // This will be calculated properly in the modal
+      status: currentStatus,
+      expenseCount: 0, // This will be fetched from the API
+      requester: item.requester,
+      report_type: item.prepayment_id ? 'PREPAYMENT' : 'REIMBURSEMENT',
+      reimbursement_reason: item.reason,
+      reimbursement_country: item.destination,
+      reimbursement_currency: item.currency,
+      prepayment_reason: item.reason,
+      prepayment_destination: item.destination,
+      prepayment_currency: item.currency,
+    };
+    
+    setApprovalModal({ open: true, report: reportData });
+  };
+
+  const handleApprovalComplete = async () => {
+    await loadPendingApprovals();
+    setSnackbar({
+      open: true,
+      message: 'Report approval processed successfully',
+      severity: 'success'
+    });
   };
 
   const handleView = (listItemId: number, type: string) => {
@@ -406,7 +460,7 @@ const ApprovalsPage: React.FC = () => {
                       <TableCell>
                         {item.type === 'prepayment' 
                           ? `${item.reason || 'No reason'} - ${item.destination || 'Unknown'}`
-                          : `Expense Report (Prepayment #${item.prepayment_id || 'N/A'})`
+                          : `${item.reason || 'No reason provided'}`
                         }
                       </TableCell>
                       <TableCell>
@@ -419,30 +473,44 @@ const ApprovalsPage: React.FC = () => {
                         {item.request_date}
                       </TableCell>
                       <TableCell>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleView(item.id, item.type)}
-                          color="info"
-                          disabled={loading.action}
-                        >
-                          <ViewIcon />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          color="success"
-                          onClick={() => handleApprove(item.id, item.type)}
-                          disabled={loading.action}
-                        >
-                          <CheckIcon />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => handleReject(item.id, item.type)}
-                          disabled={loading.action}
-                        >
-                          <CloseIcon />
-                        </IconButton>
+                        {item.type === 'report' ? (
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => handleApproveReport(item)}
+                            title="Review & Approve/Reject"
+                            disabled={loading.action}
+                          >
+                            <AssignmentIcon />
+                          </IconButton>
+                        ) : (
+                          <>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleView(item.id, item.type)}
+                              color="info"
+                              disabled={loading.action}
+                            >
+                              <ViewIcon />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              color="success"
+                              onClick={() => handleApprove(item.id, item.type)}
+                              disabled={loading.action}
+                            >
+                              <CheckIcon />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => handleReject(item.id, item.type)}
+                              disabled={loading.action}
+                            >
+                              <CloseIcon />
+                            </IconButton>
+                          </>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
@@ -459,7 +527,114 @@ const ApprovalsPage: React.FC = () => {
 
         <TabPanel value={tabValue} index={2}>
           <Typography variant="h6" gutterBottom>Pending Expense Reports</Typography>
-          {/* Expense reports table content */}
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Report ID</TableCell>
+                  <TableCell>Requester</TableCell>
+                  <TableCell>Type</TableCell>
+                  <TableCell>Reason</TableCell>
+                  <TableCell>Total Expenses</TableCell>
+                  <TableCell>Prepaid Amount</TableCell>
+                  <TableCell>Budget Status</TableCell>
+                  <TableCell>Date</TableCell>
+                  <TableCell>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {loading.pendingItems ? (
+                  <TableRow>
+                    <TableCell colSpan={9} align="center">
+                      <CircularProgress />
+                    </TableCell>
+                  </TableRow>
+                ) : pendingExpenseReports.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={9} align="center">
+                      <Typography variant="body2" color="textSecondary">
+                        No pending expense reports
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  pendingExpenseReports.map((item) => (
+                    <TableRow key={`${item.type}-${item.entity_id}`}>
+                      <TableCell>{item.entity_id}</TableCell>
+                      <TableCell>{item.requester}</TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={item.prepayment_id ? "Prepayment" : "Reimbursement"} 
+                          color={item.prepayment_id ? "primary" : "secondary"}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>{item.reason || 'N/A'}</TableCell>
+                      <TableCell>{item.currency} {parseFloat(item.total_expenses || '0').toLocaleString()}</TableCell>
+                      <TableCell>
+                        {item.prepayment_id ? (
+                          `${item.currency} ${parseFloat(item.prepaid_amount || '0').toLocaleString()}`
+                        ) : (
+                          '-'
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {item.prepayment_id ? (
+                          (() => {
+                            const totalExpenses = parseFloat(item.total_expenses || '0');
+                            const prepaidAmount = parseFloat(item.prepaid_amount || '0');
+                            
+                            if (totalExpenses > prepaidAmount) {
+                              return (
+                                <Chip 
+                                  label="Over Budget" 
+                                  color="error"
+                                  size="small"
+                                  variant="outlined"
+                                />
+                              );
+                            } else if (totalExpenses < prepaidAmount) {
+                              return (
+                                <Chip 
+                                  label="Under Budget" 
+                                  color="warning"
+                                  size="small"
+                                  variant="outlined"
+                                />
+                              );
+                            } else {
+                              return (
+                                <Chip 
+                                  label="On Budget" 
+                                  color="success"
+                                  size="small"
+                                  variant="outlined"
+                                />
+                              );
+                            }
+                          })()
+                        ) : (
+                          '-'
+                        )}
+                      </TableCell>
+                      <TableCell>{item.report_date || item.request_date}</TableCell>
+                      <TableCell>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleApproveReport(item)}
+                          color="primary"
+                          title="Review & Approve/Reject"
+                          disabled={loading.action}
+                        >
+                          <AssignmentIcon />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
         </TabPanel>
       </Paper>
 
@@ -486,6 +661,14 @@ const ApprovalsPage: React.FC = () => {
         open={viewModal.open && viewModal.type === 'report'}
         onClose={() => setViewModal({ open: false, type: '', data: null })}
         report={viewModal.data}
+      />
+
+      {/* Report Approval Modal */}
+      <ReportApprovalModal
+        open={approvalModal.open}
+        onClose={() => setApprovalModal({ open: false, report: null })}
+        report={approvalModal.report}
+        onApprovalComplete={handleApprovalComplete}
       />
 
       {/* Rejection Reason Dialog */}

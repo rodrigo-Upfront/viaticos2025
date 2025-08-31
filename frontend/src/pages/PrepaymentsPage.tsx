@@ -4,6 +4,7 @@ import {
   Typography,
   Button,
   Paper,
+  TextField,
   Table,
   TableBody,
   TableCell,
@@ -16,12 +17,14 @@ import {
   Alert,
   CircularProgress,
 } from '@mui/material';
+// no SelectChangeEvent needed when using TextField with select
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Visibility as ViewIcon,
   Delete as DeleteIcon,
   Send as SendIcon,
+  Search as SearchIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import PrepaymentModal from '../components/forms/PrepaymentModal';
@@ -31,6 +34,7 @@ import apiClient from '../services/apiClient';
 import { prepaymentService, Prepayment as ApiPrepayment } from '../services/prepaymentService';
 import { currencyService, Currency } from '../services/currencyService';
 import { countryService, Country as ApiCountry } from '../services/countryService';
+// report creation from prepayments removed per requirements
 
 interface Prepayment {
   id?: number;
@@ -45,6 +49,7 @@ interface Prepayment {
   comment: string;
   justification_file?: string;
   status: string;
+  rejection_reason?: string;
 }
 
 interface Country {
@@ -53,7 +58,7 @@ interface Country {
 }
 
 const PrepaymentsPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   // Loading states
   const [loading, setLoading] = useState({
@@ -94,6 +99,11 @@ const PrepaymentsPage: React.FC = () => {
     prepayment: undefined as Prepayment | undefined
   });
 
+  // Filters/search state
+  const [searchText, setSearchText] = useState('');
+  const [filterCountryId, setFilterCountryId] = useState<number | ''>('');
+  const [filterStatus, setFilterStatus] = useState<string>('');
+
   // Load data on component mount
   useEffect(() => {
     loadPrepayments();
@@ -116,6 +126,7 @@ const PrepaymentsPage: React.FC = () => {
       comment: apiPrepayment.comment || '',
       justification_file: apiPrepayment.justification_file,
       status: apiPrepayment.status,
+      rejection_reason: (apiPrepayment as any).rejection_reason,
     };
   };
 
@@ -138,7 +149,12 @@ const PrepaymentsPage: React.FC = () => {
   const loadPrepayments = async () => {
     try {
       setLoading(prev => ({ ...prev, prepayments: true }));
-      const response = await prepaymentService.getPrepayments();
+      const response = await prepaymentService.getPrepayments({
+        search: searchText || undefined,
+        status_filter: filterStatus || undefined,
+        // country filter supported in backend using country_id
+        ...(filterCountryId ? { country_id: filterCountryId as number } : {} as any),
+      } as any);
       const mappedPrepayments = response.prepayments.map(mapApiToFrontend);
       setPrepayments(mappedPrepayments);
     } catch (error) {
@@ -184,9 +200,30 @@ const PrepaymentsPage: React.FC = () => {
         return 'success';
       case 'rejected':
         return 'error';
+      case 'supervisor_pending':
+      case 'accounting_pending':
+      case 'treasury_pending':
+        return 'info';
       default:
         return 'default';
     }
+  };
+
+  const PREPAYMENT_STATUS_LABELS: Record<string, { en: string; es: string }> = {
+    pending: { en: 'Pending', es: 'Pendiente' },
+    supervisor_pending: { en: 'Supervisor Pending', es: 'Pend. Jefatura' },
+    accounting_pending: { en: 'Accounting Pending', es: 'Pend. Contabilidad' },
+    treasury_pending: { en: 'Treasury Pending', es: 'Pend. Tesorería' },
+    approved_for_reimbursement: { en: 'Approved for Reimbursement', es: 'Aprobado para Reembolso' },
+    funds_return_pending: { en: 'Funds Return Pending', es: 'Devolución Pendiente' },
+    approved: { en: 'Approved', es: 'Aprobado' },
+    rejected: { en: 'Rejected', es: 'Rechazado' },
+  };
+
+  const getStatusLabel = (status: string) => {
+    const lang = i18n.language?.startsWith('es') ? 'es' : 'en';
+    const entry = PREPAYMENT_STATUS_LABELS[status];
+    return entry ? entry[lang] : status;
   };
 
   // CRUD operations
@@ -212,6 +249,10 @@ const PrepaymentsPage: React.FC = () => {
       console.error('Failed to load currencies:', error);
     }
   };
+
+  const canMutate = (status: string) => ['pending', 'rejected'].includes(status);
+
+  // removed create report action
 
   const handleDelete = (prepayment: Prepayment) => {
     setConfirmDialog({
@@ -333,6 +374,48 @@ const PrepaymentsPage: React.FC = () => {
         </Button>
       </Box>
 
+      {/* Search and filters */}
+      <Box display="flex" gap={2} alignItems="center" mb={2}>
+        <TextField
+          size="small"
+          placeholder="Search reason..."
+          value={searchText}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchText(e.target.value)}
+          InputProps={{ startAdornment: <SearchIcon fontSize="small" /> as any }}
+          sx={{ minWidth: 240 }}
+        />
+        <TextField
+          select
+          size="small"
+          label="Country"
+          value={filterCountryId}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFilterCountryId(e.target.value === '' ? '' : Number(e.target.value))}
+          sx={{ minWidth: 200 }}
+          SelectProps={{ native: true }}
+        >
+          <option value=""></option>
+          {countries.map(c => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </TextField>
+        <TextField
+          select
+          size="small"
+          label="Status"
+          value={filterStatus}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFilterStatus(e.target.value)}
+          sx={{ minWidth: 220 }}
+          SelectProps={{ native: true }}
+        >
+          <option value=""></option>
+          {Object.keys(PREPAYMENT_STATUS_LABELS).map(code => (
+            <option key={code} value={code}>{getStatusLabel(code)}</option>
+          ))}
+        </TextField>
+        <Button variant="outlined" onClick={loadPrepayments}>Apply</Button>
+        <Button variant="text" onClick={() => { setSearchText(''); setFilterCountryId(''); setFilterStatus(''); loadPrepayments(); }}>Reset</Button>
+      </Box>
+
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
@@ -376,7 +459,7 @@ const PrepaymentsPage: React.FC = () => {
                 <TableCell>{prepayment.currency} {prepayment.amount.toLocaleString()}</TableCell>
                 <TableCell>
                   <Chip
-                    label={prepayment.status}
+                    label={getStatusLabel(prepayment.status)}
                     color={getStatusColor(prepayment.status) as any}
                     size="small"
                   />
@@ -389,13 +472,16 @@ const PrepaymentsPage: React.FC = () => {
                   >
                     <ViewIcon />
                   </IconButton>
-                  <IconButton
-                    size="small"
-                    onClick={() => handleEdit(prepayment)}
-                    color="primary"
-                  >
-                    <EditIcon />
-                  </IconButton>
+                  {/* no create report action here */}
+                  {canMutate(prepayment.status) && (
+                    <IconButton
+                      size="small"
+                      onClick={() => handleEdit(prepayment)}
+                      color="primary"
+                    >
+                      <EditIcon />
+                    </IconButton>
+                  )}
                   {prepayment.status === 'pending' && (
                     <IconButton
                       size="small"
@@ -406,13 +492,15 @@ const PrepaymentsPage: React.FC = () => {
                       <SendIcon />
                     </IconButton>
                   )}
-                  <IconButton
-                    size="small"
-                    onClick={() => handleDelete(prepayment)}
-                    color="error"
-                  >
-                    <DeleteIcon />
-                  </IconButton>
+                  {canMutate(prepayment.status) && (
+                    <IconButton
+                      size="small"
+                      onClick={() => handleDelete(prepayment)}
+                      color="error"
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  )}
                 </TableCell>
               </TableRow>
               ))

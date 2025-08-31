@@ -27,15 +27,18 @@ import {
   Public as CountryIcon,
   Category as CategoryIcon,
   Business as SupplierIcon,
+  AttachMoney as CurrencyIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import CountryModal from '../components/forms/CountryModal';
 import CategoryModal from '../components/forms/CategoryModal';
 import SupplierModal from '../components/forms/SupplierModal';
+import CurrencyModal from '../components/forms/CurrencyModal';
 import ConfirmDialog from '../components/forms/ConfirmDialog';
 import { supplierService, Supplier as ApiSupplier } from '../services/supplierService';
 import { categoryService, Category as ApiCategory } from '../services/categoryService';
 import { countryService, Country as ApiCountry } from '../services/countryService';
+import { currencyService, Currency as ApiCurrency } from '../services/currencyService';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -77,6 +80,13 @@ interface Supplier {
   sapCode: string;
 }
 
+interface Currency {
+  id?: number;
+  name: string;
+  code: string;
+  symbol?: string;
+}
+
 const SettingsPage: React.FC = () => {
   const { t } = useTranslation();
   const [tabValue, setTabValue] = useState(0);
@@ -86,6 +96,7 @@ const SettingsPage: React.FC = () => {
     countries: true,
     categories: true,
     suppliers: true,
+    currencies: true,
   });
 
   // Countries state
@@ -99,6 +110,10 @@ const SettingsPage: React.FC = () => {
   // Suppliers state
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [supplierModal, setSupplierModal] = useState({ open: false, mode: 'create' as 'create' | 'edit', supplier: undefined as Supplier | undefined });
+
+  // Currencies state
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const [currencyModal, setCurrencyModal] = useState({ open: false, mode: 'create' as 'create' | 'edit', currency: undefined as Currency | undefined });
 
   // Confirmation dialog state
   const [confirmDialog, setConfirmDialog] = useState({
@@ -120,6 +135,7 @@ const SettingsPage: React.FC = () => {
     loadCountries();
     loadCategories();
     loadSuppliers();
+    loadCurrencies();
   }, []);
 
   const loadCountries = async () => {
@@ -186,6 +202,30 @@ const SettingsPage: React.FC = () => {
       });
     } finally {
       setLoading(prev => ({ ...prev, suppliers: false }));
+    }
+  };
+
+  const loadCurrencies = async () => {
+    try {
+      setLoading(prev => ({ ...prev, currencies: true }));
+      const currenciesData = await currencyService.getCurrencies();
+      // Map API data to frontend format
+      const mappedCurrencies = currenciesData.map((currency: ApiCurrency) => ({
+        id: currency.id,
+        name: currency.name,
+        code: currency.code,
+        symbol: currency.symbol
+      }));
+      setCurrencies(mappedCurrencies);
+    } catch (error) {
+      console.error('Error loading currencies:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to load currencies',
+        severity: 'error'
+      });
+    } finally {
+      setLoading(prev => ({ ...prev, currencies: false }));
     }
   };
 
@@ -445,6 +485,92 @@ const SettingsPage: React.FC = () => {
     }
   };
 
+  // Currency handlers
+  const handleCreateCurrency = () => {
+    setCurrencyModal({ open: true, mode: 'create', currency: undefined });
+  };
+
+  const handleEditCurrency = (currency: Currency) => {
+    setCurrencyModal({ open: true, mode: 'edit', currency });
+  };
+
+  const handleDeleteCurrency = (currency: Currency) => {
+    setConfirmDialog({
+      open: true,
+      title: 'Delete Currency',
+      message: `Are you sure you want to delete the currency "${currency.name}" (${currency.code})? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          await currencyService.deleteCurrency(currency.id!);
+          setCurrencies(prev => prev.filter(c => c.id !== currency.id));
+          setSnackbar({
+            open: true,
+            message: `Currency "${currency.name}" deleted successfully`,
+            severity: 'success'
+          });
+        } catch (error) {
+          console.error('Failed to delete currency:', error);
+          setSnackbar({
+            open: true,
+            message: `Failed to delete currency "${currency.name}"`,
+            severity: 'error'
+          });
+        }
+      }
+    });
+  };
+
+  const handleSaveCurrency = async (currencyData: Currency) => {
+    try {
+      if (currencyModal.mode === 'create') {
+        const apiData = {
+          name: currencyData.name,
+          code: currencyData.code.toUpperCase(),
+          symbol: currencyData.symbol
+        };
+        const newCurrency = await currencyService.createCurrency(apiData);
+        const mappedCurrency = {
+          id: newCurrency.id,
+          name: newCurrency.name,
+          code: newCurrency.code,
+          symbol: newCurrency.symbol
+        };
+        setCurrencies(prev => [...prev, mappedCurrency]);
+        setSnackbar({
+          open: true,
+          message: `Currency "${currencyData.name}" created successfully`,
+          severity: 'success'
+        });
+      } else if (currencyData.id) {
+        const apiData = {
+          name: currencyData.name,
+          code: currencyData.code.toUpperCase(),
+          symbol: currencyData.symbol
+        };
+        const updatedCurrency = await currencyService.updateCurrency(currencyData.id, apiData);
+        const mappedCurrency = {
+          id: updatedCurrency.id,
+          name: updatedCurrency.name,
+          code: updatedCurrency.code,
+          symbol: updatedCurrency.symbol
+        };
+        setCurrencies(prev => prev.map(c => c.id === currencyData.id ? mappedCurrency : c));
+        setSnackbar({
+          open: true,
+          message: `Currency "${currencyData.name}" updated successfully`,
+          severity: 'success'
+        });
+      }
+    } catch (error) {
+      console.error('Failed to save currency:', error);
+      setSnackbar({
+        open: true,
+        message: `Failed to save currency "${currencyData.name}"`,
+        severity: 'error'
+      });
+    }
+  };
+
   return (
     <Box>
       <Typography variant="h4" gutterBottom>
@@ -457,6 +583,7 @@ const SettingsPage: React.FC = () => {
             <Tab icon={<CountryIcon />} label="Countries" />
             <Tab icon={<CategoryIcon />} label="Expense Categories" />
             <Tab icon={<SupplierIcon />} label="Suppliers" />
+            <Tab icon={<CurrencyIcon />} label="Currencies" />
           </Tabs>
         </Box>
 
@@ -610,6 +737,58 @@ const SettingsPage: React.FC = () => {
             </Table>
           </TableContainer>
         </TabPanel>
+
+        <TabPanel value={tabValue} index={3}>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+            <Typography variant="h6">Currencies Management</Typography>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleCreateCurrency}
+            >
+              Add Currency
+            </Button>
+          </Box>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>ID</TableCell>
+                  <TableCell>Name</TableCell>
+                  <TableCell>Code</TableCell>
+                  <TableCell>Symbol</TableCell>
+                  <TableCell>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {currencies.map((currency) => (
+                  <TableRow key={currency.id}>
+                    <TableCell>{currency.id}</TableCell>
+                    <TableCell>{currency.name}</TableCell>
+                    <TableCell>{currency.code}</TableCell>
+                    <TableCell>{currency.symbol || '-'}</TableCell>
+                    <TableCell>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleEditCurrency(currency)}
+                        color="primary"
+                      >
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => handleDeleteCurrency(currency)}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </TabPanel>
       </Paper>
 
       {/* Country Modal */}
@@ -637,6 +816,15 @@ const SettingsPage: React.FC = () => {
         onSave={handleSaveSupplier}
         supplier={supplierModal.supplier}
         mode={supplierModal.mode}
+      />
+
+      {/* Currency Modal */}
+      <CurrencyModal
+        open={currencyModal.open}
+        onClose={() => setCurrencyModal({ open: false, mode: 'create', currency: undefined })}
+        onSave={handleSaveCurrency}
+        currency={currencyModal.currency}
+        mode={currencyModal.mode}
       />
 
       {/* Confirmation Dialog */}

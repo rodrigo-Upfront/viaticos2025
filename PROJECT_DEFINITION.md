@@ -13,17 +13,16 @@ Viaticos 2025 is a comprehensive travel expense management system that handles t
 ## 2. Technical Architecture
 
 ### 2.1 Technology Stack
-- **Operating System:** Windows Server 2022
-- **Containerization:** Docker
-- **Frontend:** Node.js + React
-- **Backend:** Python
-- **Database:** 
-  - Production: SQL Server
-  - Testing: PostgreSQL
+- **Operating System:** Ubuntu 22.04 LTS
+- **Containerization:** Docker + Docker Compose
+- **Frontend:** React (Node.js 18)
+- **Backend:** FastAPI (Python 3.11)
+- **Database:** PostgreSQL (local and production)
 
 ### 2.2 Deployment Architecture
 - Containerized application using Docker
-- Windows Server 2022 host environment
+- DigitalOcean Droplet host environment
+- Nginx reverse proxy in front of containers
 - Multi-tier architecture (Frontend, Backend, Database)
 
 ### 2.3 File Storage
@@ -42,7 +41,7 @@ Viaticos 2025 is a comprehensive travel expense management system that handles t
   - Spanish: dd/mm/yyyy
   - English: mm/dd/yyyy
 - **Number Format:** ###,###,###.## (consistent across languages)
-- **Currency:** Based on country selection
+- **Currency:** Selected independently from the Currencies master (not tied to country). Dashboard has independent Country and Currency filters.
 
 ## 4. Data Model
 
@@ -161,13 +160,25 @@ Viaticos 2025 is a comprehensive travel expense management system that handles t
   - REJECTED → "Rejected"
 - Currency selected independently from country
 
+Frontend status labels (EN/ES):
+  - PENDING: "Pending" / "Pendiente"
+  - SUPERVISOR_PENDING: "Supervisor Pending" / "Pend. Jefatura"
+  - ACCOUNTING_PENDING: "Accounting Pending" / "Pend. Contabilidad"
+  - TREASURY_PENDING: "Treasury Pending" / "Pend. Tesorería"
+  - APPROVED: "Approved" / "Aprobado"
+  - REJECTED: "Rejected" / "Rechazado"
+
 ### 4.7 Travel Expense Report
-**Purpose:** Expense reports linked to prepayments
+**Purpose:** Expense reports linked to prepayments or created manually for reimbursements
 
 **Fields:**
 - `id` (Primary Key, Auto-increment)
-- `prepayment_id` (Foreign Key to Prepayment, Mandatory, Unique)
-- `status` (Enum: 'pending', 'in_progress', 'approved', 'rejected', Default: 'pending')
+- `prepayment_id` (Foreign Key to Prepayment, Optional, Unique when present)
+- `report_type` (Enum: 'PREPAYMENT', 'REIMBURSEMENT', Mandatory)
+- `reason` (Text, Optional; required for REIMBURSEMENT)
+- `country_id` (Foreign Key to Country; inherited for PREPAYMENT, required for REIMBURSEMENT)
+- `currency_id` (Foreign Key to Currency; inherited for PREPAYMENT, required for REIMBURSEMENT)
+- `status` (Enum: 'pending', 'approved', 'rejected', Default: 'pending')
 - `requesting_user_id` (Foreign Key to User, Mandatory)
 - `created_at` (DateTime)
 - `updated_at` (DateTime)
@@ -178,9 +189,8 @@ Viaticos 2025 is a comprehensive travel expense management system that handles t
 - `budget_status` (Enum: 'Under-Budget', 'Over-Budget')
 
 **Business Rules:**
-- Created automatically when prepayment is approved
-- Cannot be created manually
-- Budget status: Over-Budget when expense_amount > prepaid_amount
+- Created automatically when prepayment is approved (report_type=PREPAYMENT) or manually as REIMBURSEMENT.
+- Budget status: Over-Budget when expense_amount > prepaid_amount (for PREPAYMENT reports).
 
 ### 4.8 Expense
 **Purpose:** Individual expense entries
@@ -194,8 +204,10 @@ Viaticos 2025 is a comprehensive travel expense management system that handles t
 - `boleta_supplier` (String, Conditional: Required when document_type = 'Boleta')
 - `factura_supplier_id` (Foreign Key to Factura Supplier, Conditional: Required when document_type = 'Factura')
 - `expense_date` (Date, Mandatory)
-- `country_id` (Foreign Key to Country, Inherited from expense report)
-- `currency_id` (Foreign Key to Currency, Inherited from expense report)
+- `country_id` (Foreign Key to Country)  
+  Inherited from report when linked; required explicitly for reimbursements.
+- `currency_id` (Foreign Key to Currency)  
+  Inherited from report when linked; required explicitly for reimbursements.
 - `amount` (Decimal, Mandatory, 2 decimals)
 - `document_number` (String, Mandatory)
 - `taxable` (Enum: 'Si', 'No', Default: 'No', Conditional: Only for Factura)
@@ -204,9 +216,12 @@ Viaticos 2025 is a comprehensive travel expense management system that handles t
 - `status` (Enum: 'pending', 'in_process', 'approved', Default: 'pending')
 - `created_at` (DateTime)
 - `updated_at` (DateTime)
+- `created_by_user_id` (Foreign Key to User, Optional)  
+  Set to the creator for reimbursements.
 
 **Business Rules:**
-- Country and currency inherited from travel expense report
+- Expense must belong to a report (prepayment-based or reimbursement report).
+- Country and currency default values are inherited from the selected report. Upon creation or edit, the user can change these values.
 - Supplier field requirements based on document type
 - Amount alert triggered if exceeds category alert amount
 

@@ -67,12 +67,18 @@ Last Updated: August 30, 2025
 
 ## 🟡 **MEDIUM PRIORITY ITEMS**
 
-### 5. **Frontend Compilation Warnings**
+### 5. **Email Notifications for Report Approval Workflow**
+   - **Status**: 🟡 PENDING IMPLEMENTATION
+   - **Issue**: Need to implement email service for travel expense report approval workflow
+   - **Details**: Same as prepayments - notify users at each approval stage (supervisor, accounting, treasury)
+   - **Impact**: User experience improvement for approval notifications
+
+### 6. **Frontend Compilation Warnings**
    - **Status**: 🟡 NON-BLOCKING
    - **Issue**: Multiple ESLint warnings about unused variables and missing dependencies
    - **Impact**: Code quality, no functional impact
 
-### 6. **Export/Download Functionality** 
+### 7. **Export/Download Functionality** 
    - **Status**: 🟡 PLACEHOLDER
    - **Issue**: Export buttons show placeholder alerts instead of real functionality
    - **Impact**: Feature incomplete but safe (no crashes)

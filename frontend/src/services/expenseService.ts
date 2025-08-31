@@ -87,6 +87,10 @@ export class ExpenseService {
     search?: string;
     status_filter?: string;
     report_id?: number;
+    category_id?: number;
+    country_id?: number;
+    start_date?: string;
+    end_date?: string;
   }): Promise<ExpenseListResponse> {
     const searchParams = new URLSearchParams();
     if (params?.skip) searchParams.append('skip', params.skip.toString());
@@ -94,8 +98,13 @@ export class ExpenseService {
     if (params?.search) searchParams.append('search', params.search);
     if (params?.status_filter) searchParams.append('status_filter', params.status_filter);
     if (params?.report_id) searchParams.append('report_id', params.report_id.toString());
+    if (params?.category_id) searchParams.append('category_id', params.category_id.toString());
+    if (params?.country_id) searchParams.append('country_id', params.country_id.toString());
+    if (params?.start_date) searchParams.append('start_date', params.start_date);
+    if (params?.end_date) searchParams.append('end_date', params.end_date);
     
-    const url = `${this.basePath}${searchParams.toString() ? `?${searchParams}` : ''}`;
+    // Use trailing slash to avoid 307 redirects that can drop CORS headers
+    const url = `${this.basePath}/${searchParams.toString() ? `?${searchParams}` : ''}`;
     const response = await apiClient.get(url);
     return response.data;
   }

@@ -25,6 +25,7 @@ class ExpenseBase(BaseModel):
     taxable: Optional[str] = Field("No", description="Taxable option (Si/No)")
     document_file: Optional[str] = Field(None, max_length=500, description="Document file path")
     comments: Optional[str] = Field(None, description="Additional comments")
+    rejection_reason: Optional[str] = Field(None, max_length=300, description="Rejection reason")
 
 
 class ExpenseCreate(ExpenseBase):
@@ -50,6 +51,7 @@ class ExpenseUpdate(ExpenseBase):
     taxable: Optional[str] = Field(None)
     document_file: Optional[str] = Field(None, max_length=500)
     comments: Optional[str] = Field(None)
+    rejection_reason: Optional[str] = Field(None, max_length=300)
 
 
 class ExpenseResponse(ExpenseBase):
@@ -88,6 +90,7 @@ class ExpenseResponse(ExpenseBase):
             taxable=obj.taxable.value if obj.taxable else "No",
             document_file=obj.document_file,
             comments=obj.comments,
+            rejection_reason=obj.rejection_reason,
             status=obj.status.value if obj.status else "pending",
             created_at=obj.created_at,
             updated_at=obj.updated_at,

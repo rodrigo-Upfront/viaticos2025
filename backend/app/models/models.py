@@ -23,12 +23,14 @@ class UserProfile(str, enum.Enum):
 
 
 class RequestStatus(str, enum.Enum):
-    PENDING = "pending"
-    SUPERVISOR_PENDING = "supervisor_pending"
-    ACCOUNTING_PENDING = "accounting_pending"
-    TREASURY_PENDING = "treasury_pending"
-    APPROVED = "approved"
-    REJECTED = "rejected"
+    PENDING = "PENDING"
+    SUPERVISOR_PENDING = "SUPERVISOR_PENDING"
+    ACCOUNTING_PENDING = "ACCOUNTING_PENDING"
+    TREASURY_PENDING = "TREASURY_PENDING"
+    APPROVED_FOR_REIMBURSEMENT = "APPROVED_FOR_REIMBURSEMENT"
+    FUNDS_RETURN_PENDING = "FUNDS_RETURN_PENDING"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
 
 
 class DocumentType(str, enum.Enum):
@@ -69,6 +71,11 @@ class BudgetStatus(str, enum.Enum):
     UNDER_BUDGET = "Under-Budget"
     OVER_BUDGET = "Over-Budget"
 
+
+# New enum for report type
+class ReportType(str, enum.Enum):
+    PREPAYMENT = "PREPAYMENT"
+    REIMBURSEMENT = "REIMBURSEMENT"
 
 # Models
 class User(Base):
@@ -188,6 +195,8 @@ class Prepayment(Base):
     amount = Column(Numeric(12, 2), nullable=False)
     justification_file = Column(String(500), nullable=True)
     comment = Column(Text, nullable=True)
+    # Reason provided when a prepayment was rejected in the approval flow
+    rejection_reason = Column(Text, nullable=True)
     status = Column(SQLEnum(RequestStatus), default=RequestStatus.PENDING, nullable=False)
     requesting_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -205,7 +214,14 @@ class TravelExpenseReport(Base):
     __tablename__ = "travel_expense_reports"
     
     id = Column(Integer, primary_key=True, index=True)
-    prepayment_id = Column(Integer, ForeignKey("prepayments.id"), unique=True, nullable=False)
+    prepayment_id = Column(Integer, ForeignKey("prepayments.id"), unique=True, nullable=True)
+    report_type = Column(SQLEnum(ReportType), nullable=False, default=ReportType.PREPAYMENT)
+    # Manual reimbursement fields (used when report_type = REIMBURSEMENT)
+    reason = Column(Text, nullable=True)
+    country_id = Column(Integer, ForeignKey("countries.id"), nullable=True)
+    currency_id = Column(Integer, ForeignKey("currencies.id"), nullable=True)
+    start_date = Column(Date, nullable=True)
+    end_date = Column(Date, nullable=True)
     status = Column(SQLEnum(RequestStatus), default=RequestStatus.PENDING, nullable=False)
     requesting_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -215,6 +231,8 @@ class TravelExpenseReport(Base):
     prepayment = relationship("Prepayment", back_populates="travel_expense_report")
     requesting_user = relationship("User", back_populates="expense_reports")
     expenses = relationship("Expense", back_populates="travel_expense_report")
+    country = relationship("Country")
+    currency = relationship("Currency")
 
 
 
@@ -236,6 +254,7 @@ class Expense(Base):
     taxable = Column(SQLEnum(TaxableOption), default=TaxableOption.NO, nullable=True)
     document_file = Column(String(500), nullable=True)
     comments = Column(Text, nullable=True)
+    rejection_reason = Column(String(300), nullable=True)
     status = Column(SQLEnum(ExpenseStatus), default=ExpenseStatus.PENDING, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
@@ -281,10 +300,29 @@ class ApprovalHistory(Base):
     from_status = Column(String(50), nullable=False)
     to_status = Column(String(50), nullable=False)
     comments = Column(Text, nullable=True)
+    expense_rejections = Column(Text, nullable=True)  # JSON string of expense rejection details
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships
     user = relationship("User", back_populates="approval_history")
+
+
+class ExpenseRejectionHistory(Base):
+    __tablename__ = "expense_rejection_history"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    expense_id = Column(Integer, ForeignKey("expenses.id"), nullable=False)
+    report_id = Column(Integer, ForeignKey("travel_expense_reports.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_role = Column(String(50), nullable=False)
+    rejection_reason = Column(String(300), nullable=False)
+    approval_stage = Column(String(50), nullable=False)  # SUPERVISOR_PENDING, ACCOUNTING_PENDING, etc.
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    expense = relationship("Expense")
+    report = relationship("TravelExpenseReport")
+    user = relationship("User")
 
 
 # Add indexes for performance

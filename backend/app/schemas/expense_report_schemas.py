@@ -5,18 +5,27 @@ Pydantic models for travel expense report data validation and serialization
 
 from pydantic import BaseModel, Field
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, date
 from decimal import Decimal
 
 
 class ExpenseReportBase(BaseModel):
     """Base expense report schema"""
-    prepayment_id: int = Field(..., description="Associated prepayment ID")
+    prepayment_id: Optional[int] = Field(None, description="Associated prepayment ID (null for reimbursements)")
 
 
 class ExpenseReportCreate(ExpenseReportBase):
     """Schema for creating an expense report"""
     pass
+
+
+class ExpenseReportManualCreate(BaseModel):
+    """Schema for creating a manual reimbursement report"""
+    reason: str = Field(..., description="Reason/Purpose for the reimbursement")
+    country_id: int = Field(..., description="Country where expenses occurred")
+    currency_id: int = Field(..., description="Currency for expenses")
+    start_date: date = Field(..., description="Start date of the trip")
+    end_date: date = Field(..., description="End date of the trip")
 
 
 class ExpenseReportUpdate(BaseModel):
@@ -32,12 +41,18 @@ class ExpenseReportResponse(ExpenseReportBase):
     requesting_user_id: int
     created_at: datetime
     updated_at: datetime
+    report_type: Optional[str] = None
     
     # Related data
     prepayment_reason: Optional[str] = None
     prepayment_amount: Optional[Decimal] = None
     prepayment_currency: Optional[str] = None
     prepayment_destination: Optional[str] = None
+    reimbursement_reason: Optional[str] = None
+    reimbursement_country: Optional[str] = None
+    reimbursement_currency: Optional[str] = None
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
     requesting_user_name: Optional[str] = None
     total_expenses: Optional[Decimal] = None
     expense_count: Optional[int] = None
@@ -61,10 +76,16 @@ class ExpenseReportResponse(ExpenseReportBase):
             requesting_user_id=obj.requesting_user_id,
             created_at=obj.created_at,
             updated_at=obj.updated_at,
+            report_type=(obj.report_type.value if getattr(obj, 'report_type', None) else None),
             prepayment_reason=obj.prepayment.reason if obj.prepayment else None,
             prepayment_amount=prepayment_amount,
             prepayment_currency=(obj.prepayment.currency.code if obj.prepayment and obj.prepayment.currency else None),
             prepayment_destination=obj.prepayment.destination_country.name if obj.prepayment and obj.prepayment.destination_country else None,
+            reimbursement_reason=getattr(obj, 'reason', None),
+            reimbursement_country=(obj.country.name if getattr(obj, 'country', None) else None),
+            reimbursement_currency=(obj.currency.code if getattr(obj, 'currency', None) else None),
+            start_date=getattr(obj, 'start_date', None),
+            end_date=getattr(obj, 'end_date', None),
             requesting_user_name=f"{obj.requesting_user.name} {obj.requesting_user.surname}" if obj.requesting_user else None,
             total_expenses=total_expenses,
             expense_count=expense_count,

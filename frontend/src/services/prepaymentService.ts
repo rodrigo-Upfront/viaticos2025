@@ -70,14 +70,17 @@ export class PrepaymentService {
     limit?: number;
     search?: string;
     status_filter?: string;
+    country_id?: number;
   }): Promise<PrepaymentListResponse> {
     const searchParams = new URLSearchParams();
     if (params?.skip) searchParams.append('skip', params.skip.toString());
     if (params?.limit) searchParams.append('limit', params.limit.toString());
     if (params?.search) searchParams.append('search', params.search);
     if (params?.status_filter) searchParams.append('status_filter', params.status_filter);
+    if (params?.country_id) searchParams.append('country_id', params.country_id.toString());
     
-    const url = `${this.basePath}${searchParams.toString() ? `?${searchParams}` : ''}`;
+    // Use trailing slash to avoid 307 redirects that can drop CORS headers
+    const url = `${this.basePath}/${searchParams.toString() ? `?${searchParams}` : ''}`;
     const response = await apiClient.get(url);
     return response.data;
   }

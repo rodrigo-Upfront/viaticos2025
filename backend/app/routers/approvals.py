@@ -5,18 +5,21 @@ Handles approval workflow operations
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import and_, or_
 from typing import List, Optional
 from datetime import datetime
 
 from app.database.connection import get_db
 from app.models.models import (
-    User, Approval, Prepayment, TravelExpenseReport, Country,
-    ApprovalStatus, EntityType, RequestStatus, UserProfile, ApprovalHistory, ApprovalAction as HistoryAction
+    User, Approval, Prepayment, TravelExpenseReport, Country, Expense, ExpenseStatus,
+    ApprovalStatus, EntityType, RequestStatus, UserProfile, ApprovalHistory, ApprovalAction as HistoryAction,
+    ExpenseRejectionHistory
 )
 from app.services.auth_service import AuthService, get_current_user, get_current_approver
 from app.schemas.approval_schemas import (
     ApprovalCreate, ApprovalResponse, ApprovalList, 
-    ApprovalAction, PendingApprovalItem, PendingApprovalsList
+    ApprovalAction, PendingApprovalItem, PendingApprovalsList,
+    ReportApprovalAction, ReportApprovalResponse, ExpenseRejection
 )
 
 router = APIRouter()
@@ -94,17 +97,63 @@ async def get_pending_approvals(
                 request_date=prepayment.created_at.strftime("%Y-%m-%d") if prepayment.created_at else "Unknown"
             ))
         
-        # Get pending expense reports
-        pending_reports = db.query(TravelExpenseReport).options(
+        # Get expense reports that are in approval stages with role-based filtering
+        report_query = db.query(TravelExpenseReport).options(
             joinedload(TravelExpenseReport.prepayment).joinedload(Prepayment.destination_country),
             joinedload(TravelExpenseReport.requesting_user),
-            joinedload(TravelExpenseReport.expenses)
-        ).filter(TravelExpenseReport.status == RequestStatus.PENDING).all()
+            joinedload(TravelExpenseReport.expenses),
+            joinedload(TravelExpenseReport.country),  # For reimbursement reports
+            joinedload(TravelExpenseReport.currency)   # For currency info
+        )
+
+        # Apply role-based filtering for expense reports
+        report_stage_filters = []
+        if current_user.is_approver or current_user.is_superuser:
+            # Supervisor stage: only reports where current user is the requester's supervisor
+            if current_user.profile == UserProfile.MANAGER or current_user.is_superuser:
+                report_stage_filters.append(
+                    and_(
+                        TravelExpenseReport.status == RequestStatus.SUPERVISOR_PENDING,
+                        TravelExpenseReport.requesting_user.has(User.supervisor_id == current_user.id)
+                    )
+                )
+            
+            # Accounting stage: only accounting users
+            if current_user.profile == UserProfile.ACCOUNTING or current_user.is_superuser:
+                report_stage_filters.append(TravelExpenseReport.status == RequestStatus.ACCOUNTING_PENDING)
+            
+            # Treasury stage: only treasury users
+            if current_user.profile == UserProfile.TREASURY or current_user.is_superuser:
+                report_stage_filters.append(TravelExpenseReport.status.in_([
+                    RequestStatus.TREASURY_PENDING,
+                    RequestStatus.APPROVED_FOR_REIMBURSEMENT,
+                    RequestStatus.FUNDS_RETURN_PENDING
+                ]))
+
+        if report_stage_filters:
+            pending_reports = report_query.filter(or_(*report_stage_filters)).all()
+        else:
+            pending_reports = []
         
         for report in pending_reports:
             item_counter += 1
             total_expenses = sum(expense.amount for expense in report.expenses) if report.expenses else 0
             prepaid_amount = float(report.prepayment.amount) if report.prepayment and report.prepayment.amount else 0
+            
+            # Get reason and destination from the appropriate source
+            # For prepayment reports: reason and destination come from the linked prepayment
+            # For reimbursement reports: reason and destination are stored directly in the report
+            reason = None
+            destination = None
+            
+            if report.prepayment_id and report.prepayment:
+                # Prepayment report - get data from the prepayment
+                reason = report.prepayment.reason
+                destination = report.prepayment.destination_country.name if report.prepayment.destination_country else None
+            else:
+                # Reimbursement report - get data from the report itself
+                reason = report.reason
+                destination = report.country.name if report.country else None
             
             pending_items.append(PendingApprovalItem(
                 id=item_counter,
@@ -117,7 +166,13 @@ async def get_pending_approvals(
                 prepaid_amount=str(prepaid_amount),
                 report_date=report.created_at.strftime("%Y-%m-%d") if report.created_at else "Unknown",
                 amount=str(float(total_expenses)),  # Use total expenses as the approval amount
-                currency=(report.prepayment.currency.code if report.prepayment and report.prepayment.currency else "USD")
+                currency=(
+                    report.currency.code if report.currency else 
+                    report.prepayment.currency.code if report.prepayment and report.prepayment.currency else 
+                    "USD"
+                ),
+                reason=reason,
+                destination=destination
             ))
         
         return PendingApprovalsList(
@@ -295,7 +350,8 @@ async def approve_prepayment(
         prepayment.status = next_status
         prepayment.updated_at = datetime.utcnow()
         if action_data.action == "reject" and action_data.rejection_reason:
-            prepayment.comment = (prepayment.comment or "") + f"\n[REJECTED] {action_data.rejection_reason}"
+            # Store only in rejection_reason, not in comment
+            prepayment.rejection_reason = action_data.rejection_reason
 
         # Approval record
         approval = Approval(
@@ -334,6 +390,12 @@ async def approve_prepayment(
                 db.add(report)
                 db.flush()  # get id
                 created_report_id = report.id
+            # Clear rejection reason on final approval
+            prepayment.rejection_reason = None
+        elif next_status == RequestStatus.REJECTED:
+            # Persist rejection reason if provided
+            if action_data.rejection_reason:
+                prepayment.rejection_reason = action_data.rejection_reason
 
         db.commit()
 
@@ -353,85 +415,7 @@ async def approve_prepayment(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to {action_data.action} prepayment: {str(e)}")
 
 
-@router.post("/reports/{report_id}/approve")
-async def approve_expense_report(
-    report_id: int,
-    action_data: ApprovalAction,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Approve or reject an expense report
-    """
-    # Check if user can approve (superuser or approver)
-    if not (current_user.is_superuser or current_user.is_approver):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions to approve/reject expense reports"
-        )
-    
-    report = db.query(TravelExpenseReport).filter(TravelExpenseReport.id == report_id).first()
-    
-    if not report:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Expense report not found"
-        )
-    
-    if report.status != RequestStatus.PENDING:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Expense report is not pending approval"
-        )
-    
-    # Validate action
-    if action_data.action not in ["approve", "reject"]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid action. Must be 'approve' or 'reject'"
-        )
-    
-    if action_data.action == "reject" and not action_data.rejection_reason:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Rejection reason is required when rejecting"
-        )
-    
-    try:
-        # Update report status
-        if action_data.action == "approve":
-            report.status = RequestStatus.APPROVED
-        else:
-            report.status = RequestStatus.REJECTED
-        
-        report.updated_at = datetime.utcnow()
-        
-        # Create approval record
-        approval = Approval(
-            entity_type=EntityType.TRAVEL_EXPENSE_REPORT,
-            entity_id=report_id,
-            approver_user_id=current_user.id,
-            status=ApprovalStatus.APPROVED if action_data.action == "approve" else ApprovalStatus.REJECTED,
-            approval_level=1,
-            rejection_reason=action_data.rejection_reason,
-            approved_at=datetime.utcnow() if action_data.action == "approve" else None
-        )
-        
-        db.add(approval)
-        db.commit()
-        
-        return {
-            "message": f"Expense report {action_data.action}d successfully",
-            "report_id": report_id,
-            "new_status": report.status.value
-        }
-        
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to {action_data.action} expense report: {str(e)}"
-        )
+
 
 
 @router.get("/", response_model=ApprovalList)
@@ -514,5 +498,285 @@ async def get_approval(
         )
     
     return ApprovalResponse.from_orm(approval)
+
+
+@router.post("/reports/{report_id}/submit")
+async def submit_report(
+    report_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Submit a travel expense report into the multi-stage approval workflow.
+    Allowed when status is PENDING or REJECTED.
+    """
+    report = db.query(TravelExpenseReport).options(
+        joinedload(TravelExpenseReport.requesting_user),
+        joinedload(TravelExpenseReport.expenses)
+    ).filter(TravelExpenseReport.id == report_id).first()
+
+    if not report:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
+
+    # Only owner or superuser can submit
+    if not current_user.is_superuser and report.requesting_user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions to submit")
+
+    if report.status not in [RequestStatus.PENDING, RequestStatus.REJECTED]:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Report cannot be submitted in its current status")
+
+    # Validate that report has expenses
+    if not report.expenses or len(report.expenses) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Cannot submit report for approval without expenses. Please add at least one expense before submitting."
+        )
+
+    requester = report.requesting_user
+    if not requester or requester.supervisor_id is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing supervisor")
+
+    supervisor = db.query(User).filter(User.id == requester.supervisor_id).first()
+    if not supervisor or not supervisor.is_approver:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Supervisor do not have approval permits")
+
+    try:
+        # Capture current status before changing it
+        current_status = report.status.value if hasattr(report.status, 'value') else str(report.status)
+        
+        # Reset rejected expenses (those with rejection reasons) and clear rejection reasons
+        for expense in report.expenses:
+            if expense.rejection_reason:  # If expense was rejected (has rejection reason)
+                expense.status = ExpenseStatus.PENDING
+                expense.rejection_reason = None
+                expense.updated_at = datetime.utcnow()
+
+        report.status = RequestStatus.SUPERVISOR_PENDING
+        report.updated_at = datetime.utcnow()
+
+        # History
+        db.add(ApprovalHistory(
+            entity_type=EntityType.TRAVEL_EXPENSE_REPORT,
+            entity_id=report.id,
+            user_id=current_user.id,
+            user_role=current_user.profile.value if current_user.profile else "employee",
+            action=HistoryAction.SUBMITTED,
+            from_status=current_status,
+            to_status=RequestStatus.SUPERVISOR_PENDING.value,
+            comments="Submitted for approval"
+        ))
+
+        db.commit()
+        return {"message": "Report submitted for approval", "status": "SUPERVISOR_PENDING"}
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to submit report: {str(e)}")
+
+
+@router.post("/reports/{report_id}/approve", response_model=ReportApprovalResponse)
+async def approve_report(
+    report_id: int,
+    action_data: ReportApprovalAction,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Approve or reject a travel expense report with expense-level rejection support
+    """
+    # Check if user can approve (superuser or approver)
+    if not (current_user.is_superuser or current_user.is_approver):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions to approve/reject reports"
+        )
+    
+    report = db.query(TravelExpenseReport).options(
+        joinedload(TravelExpenseReport.expenses),
+        joinedload(TravelExpenseReport.requesting_user)
+    ).filter(TravelExpenseReport.id == report_id).first()
+    
+    if not report:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
+    
+    if report.status == RequestStatus.APPROVED:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Report already approved")
+    
+    # Validate action
+    if action_data.action not in ["approve", "reject"]:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid action. Must be 'approve' or 'reject'")
+    
+    # Validation: Cannot approve if any expense has rejection_reason
+    if action_data.action == "approve":
+        expenses_with_rejections = [e for e in report.expenses if e.rejection_reason]
+        if expenses_with_rejections:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, 
+                detail="Cannot approve report with rejected expenses. Please resolve rejections first."
+            )
+    
+    # Validation: Must have at least one expense rejection to reject report
+    if action_data.action == "reject":
+        if not action_data.expense_rejections or len(action_data.expense_rejections) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="At least one expense must have a rejection reason to reject the report"
+            )
+
+    try:
+        requester = report.requesting_user
+        next_status = None
+        message = None
+        expense_updates = {}
+
+        # Determine stage and permissions
+        if report.status == RequestStatus.SUPERVISOR_PENDING:
+            if not (requester and requester.supervisor_id == current_user.id and current_user.is_approver):
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized for supervisor stage")
+            
+            if action_data.action == "approve":
+                # Check accounting approvers exist
+                has_accounting = db.query(User).filter(
+                    User.profile == UserProfile.ACCOUNTING,
+                    User.is_approver == True
+                ).count() > 0
+                if not has_accounting:
+                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Error - no accounting users available")
+                next_status = RequestStatus.ACCOUNTING_PENDING
+                message = "Report approved by supervisor; pending accounting approval"
+            else:
+                next_status = RequestStatus.REJECTED
+                message = "Report rejected at supervisor stage"
+
+        elif report.status == RequestStatus.ACCOUNTING_PENDING:
+            if not (current_user.is_approver and current_user.profile == UserProfile.ACCOUNTING):
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized for accounting stage")
+            
+            if action_data.action == "approve":
+                # Calculate total expenses
+                total_expenses = sum(expense.amount for expense in report.expenses) if report.expenses else 0
+                
+                # Get prepaid amount (for prepayment reports) or 0 (for reimbursement reports)
+                prepaid_amount = float(report.prepayment.amount) if report.prepayment and report.prepayment.amount else 0
+                
+                # Round to 2 decimals for strict comparison
+                total_expenses = round(float(total_expenses), 2)
+                prepaid_amount = round(prepaid_amount, 2)
+                
+                # Business Logic Implementation:
+                if report.prepayment_id and prepaid_amount == total_expenses:
+                    # Rule 1: Prepayment type - equal amounts - skip treasury
+                    next_status = RequestStatus.APPROVED
+                    message = "Report approved by accounting - amounts match, no treasury approval needed"
+                elif total_expenses > prepaid_amount:
+                    # Rule 2: Any case - under budget - needs reimbursement
+                    next_status = RequestStatus.APPROVED_FOR_REIMBURSEMENT
+                    message = "Report approved by accounting - pending treasury for reimbursement"
+                else:
+                    # Rule 3: Any case - over budget - needs fund return
+                    next_status = RequestStatus.FUNDS_RETURN_PENDING
+                    message = "Report approved by accounting - pending treasury for fund return"
+                
+                # Check treasury approvers exist for cases that need treasury
+                if next_status in [RequestStatus.APPROVED_FOR_REIMBURSEMENT, RequestStatus.FUNDS_RETURN_PENDING]:
+                    has_treasury = db.query(User).filter(
+                        User.profile == UserProfile.TREASURY,
+                        User.is_approver == True
+                    ).count() > 0
+                    if not has_treasury:
+                        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Error - no treasury users available")
+            else:
+                next_status = RequestStatus.REJECTED
+                message = "Report rejected at accounting stage"
+
+        elif report.status in [RequestStatus.TREASURY_PENDING, RequestStatus.APPROVED_FOR_REIMBURSEMENT, RequestStatus.FUNDS_RETURN_PENDING]:
+            if not (current_user.is_approver and current_user.profile == UserProfile.TREASURY):
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized for treasury stage")
+            
+            if action_data.action == "approve":
+                next_status = RequestStatus.APPROVED
+                if report.status == RequestStatus.APPROVED_FOR_REIMBURSEMENT:
+                    message = "Report approved by treasury - reimbursement processed"
+                elif report.status == RequestStatus.FUNDS_RETURN_PENDING:
+                    message = "Report approved by treasury - fund return processed"
+                else:
+                    message = "Report approved by treasury"
+                
+                # Set ALL expenses to APPROVED
+                for expense in report.expenses:
+                    expense.status = ExpenseStatus.APPROVED
+                    expense.updated_at = datetime.utcnow()
+                    expense_updates[expense.id] = "APPROVED"
+            else:
+                next_status = RequestStatus.REJECTED
+                if report.status == RequestStatus.APPROVED_FOR_REIMBURSEMENT:
+                    message = "Report rejected at treasury stage - reimbursement denied"
+                elif report.status == RequestStatus.FUNDS_RETURN_PENDING:
+                    message = "Report rejected at treasury stage - fund return denied"
+                else:
+                    message = "Report rejected at treasury stage"
+        else:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Report is not in an approval stage")
+
+        # Handle expense rejections
+        if action_data.action == "reject" and action_data.expense_rejections:
+            for expense_rejection in action_data.expense_rejections:
+                expense = db.query(Expense).filter(Expense.id == expense_rejection.expense_id).first()
+                if expense and expense.travel_expense_report_id == report.id:
+                    expense.rejection_reason = expense_rejection.rejection_reason
+                    # Keep expense as PENDING but with rejection reason (no REJECTED status in enum)
+                    expense.status = ExpenseStatus.PENDING
+                    expense.updated_at = datetime.utcnow()
+                    expense_updates[expense.id] = "REJECTED"
+                    
+                    # Save rejection history
+                    db.add(ExpenseRejectionHistory(
+                        expense_id=expense.id,
+                        report_id=report.id,
+                        user_id=current_user.id,
+                        user_role=current_user.profile.value if current_user.profile else "unknown",
+                        rejection_reason=expense_rejection.rejection_reason,
+                        approval_stage=report.status.value
+                    ))
+
+        # Update report status
+        report.status = next_status
+        report.updated_at = datetime.utcnow()
+
+        # Save approval history
+        expense_rejections_json = None
+        if action_data.expense_rejections:
+            expense_rejections_json = str([{
+                "expense_id": er.expense_id,
+                "rejection_reason": er.rejection_reason
+            } for er in action_data.expense_rejections])
+
+        db.add(ApprovalHistory(
+            entity_type=EntityType.TRAVEL_EXPENSE_REPORT,
+            entity_id=report.id,
+            user_id=current_user.id,
+            user_role=current_user.profile.value if current_user.profile else "unknown",
+            action=HistoryAction.APPROVED if action_data.action == "approve" else HistoryAction.REJECTED,
+            from_status=report.status.value,
+            to_status=next_status.value,
+            comments=action_data.rejection_reason or message,
+            expense_rejections=expense_rejections_json
+        ))
+
+        db.commit()
+        
+        return ReportApprovalResponse(
+            report_id=report.id,
+            status=next_status.value,
+            message=message,
+            expense_updates=expense_updates if expense_updates else None
+        )
+
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to process approval: {str(e)}")
 
 

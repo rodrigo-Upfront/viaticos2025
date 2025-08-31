@@ -33,6 +33,7 @@ interface Prepayment {
   currency: string;
   currency_id?: number;
   comment: string;
+  rejection_reason?: string;
   justification_file?: string;
   status: string;
 }
@@ -73,6 +74,7 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
     currency: 'USD',
     currency_id: undefined,
     comment: '',
+    rejection_reason: undefined,
     justification_file: '',
     status: 'pending'
   });
@@ -97,6 +99,7 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
         currency: 'USD',
         currency_id: undefined,
         comment: '',
+        rejection_reason: undefined,
         justification_file: '',
         status: 'pending'
       });
@@ -141,6 +144,15 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
       }));
     }
   };
+
+  // Live date validation when either date changes
+  useEffect(() => {
+    if (formData.startDate && formData.endDate && formData.startDate > formData.endDate) {
+      setErrors(prev => ({ ...prev, endDate: 'End date must be after start date' }));
+    } else {
+      setErrors(prev => ({ ...prev, endDate: '' }));
+    }
+  }, [formData.startDate, formData.endDate]);
 
   const handleCountryChange = (event: any) => {
     const countryId = event.target.value;
@@ -430,6 +442,20 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
             </Box>
           </Box>
         </Box>
+
+        {mode === 'edit' && formData.status === 'rejected' && (
+          <TextField
+            fullWidth
+            label="Rejection Reason"
+            value={formData.rejection_reason || ''}
+            onChange={handleChange('rejection_reason')}
+            margin="normal"
+            multiline
+            rows={2}
+            InputProps={{ readOnly: true }}
+            helperText="Provided by approver upon rejection"
+          />
+        )}
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose} color="inherit" disabled={loading}>

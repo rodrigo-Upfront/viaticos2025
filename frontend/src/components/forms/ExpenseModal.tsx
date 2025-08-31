@@ -117,10 +117,51 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [travelDates, setTravelDates] = useState<{ start_date?: string; end_date?: string }>({});
+
+  const fetchTravelDatesForReport = async (reportId: number) => {
+    console.log('Fetching travel dates for report:', reportId);
+    try {
+      const response = await apiClient.get(`/expense-reports/${reportId}`);
+      const reportDetails = response.data;
+      console.log('Report details received:', reportDetails);
+      console.log('Available fields:', Object.keys(reportDetails));
+      console.log('start_date:', reportDetails.start_date);
+      console.log('end_date:', reportDetails.end_date);
+      
+      const dates = {
+        start_date: reportDetails.start_date,
+        end_date: reportDetails.end_date
+      };
+      console.log('Setting travel dates:', dates);
+      setTravelDates(dates);
+      
+      // Validate expense date immediately after loading travel dates
+      if (formData.expense_date) {
+        const dateError = validateExpenseDateWithDates(formData.expense_date, dates);
+        console.log('Date validation after fetch:', dateError);
+        if (dateError) {
+          setErrors(prev => ({
+            ...prev,
+            expense_date: dateError
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch travel dates:', error);
+      setTravelDates({});
+    }
+  };
 
   useEffect(() => {
     if (expense && mode === 'edit') {
       setFormData(expense);
+      // Fetch travel dates for the existing expense's report
+      if (expense.travel_expense_report_id > 0) {
+        fetchTravelDatesForReport(expense.travel_expense_report_id);
+      } else {
+        setTravelDates({}); // Clear travel dates for reimbursement
+      }
     } else {
       setFormData({
         category_id: 0,
@@ -143,6 +184,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
         comments: '',
         status: 'pending',
       });
+      setTravelDates({}); // Clear travel dates for new expense
     }
     setErrors({});
     setSelectedFile(null);
@@ -154,12 +196,22 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
       ...prev,
       [field]: value
     }));
-    // Clear error when user starts typing
-    if (errors[field]) {
+    
+    // Special validation for expense_date
+    if (field === 'expense_date') {
+      const dateError = validateExpenseDate(value as string);
       setErrors(prev => ({
         ...prev,
-        [field]: ''
+        expense_date: dateError || ''
       }));
+    } else {
+      // Clear error when user starts typing for other fields
+      if (errors[field]) {
+        setErrors(prev => ({
+          ...prev,
+          [field]: ''
+        }));
+      }
     }
   };
 
@@ -238,6 +290,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
         country: '',
         currency: ''
       }));
+      setTravelDates({}); // Clear travel dates for reimbursement
       if (errors.travel_expense_report_id) {
         setErrors(prev => ({ ...prev, travel_expense_report_id: '' }));
       }
@@ -249,6 +302,10 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
       try {
         const response = await apiClient.get(`/expense-reports/${reportId}`);
         const reportDetails = response.data;
+        
+        // Store travel dates for validation
+        fetchTravelDatesForReport(reportId);
+        
         setFormData(prev => ({
           ...prev,
           travel_expense_report_id: reportId,
@@ -300,6 +357,27 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
     alert(`Download functionality not yet implemented for: ${filename}\n\nIn a real application, this would download the file from the server.`);
   };
 
+  const validateExpenseDateWithDates = (date: string, dates: { start_date?: string; end_date?: string }): string | null => {
+    if (!date) return 'Expense date is required';
+    
+    // If it's a prepayment report, validate against travel dates
+    if (formData.travel_expense_report_id > 0 && dates.start_date && dates.end_date) {
+      const expenseDate = new Date(date);
+      const startDate = new Date(dates.start_date);
+      const endDate = new Date(dates.end_date);
+      
+      if (expenseDate < startDate || expenseDate > endDate) {
+        return `Expense date must be between ${dates.start_date} and ${dates.end_date}`;
+      }
+    }
+    
+    return null;
+  };
+
+  const validateExpenseDate = (date: string): string | null => {
+    return validateExpenseDateWithDates(date, travelDates);
+  };
+
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
 
@@ -323,8 +401,10 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
       newErrors.factura_supplier_id = 'Supplier is required for Factura';
     }
 
-    if (!formData.expense_date) {
-      newErrors.expense_date = 'Expense date is required';
+    // Validate expense date with travel date constraints
+    const dateError = validateExpenseDate(formData.expense_date);
+    if (dateError) {
+      newErrors.expense_date = dateError;
     }
 
     if (formData.amount <= 0) {
@@ -350,10 +430,73 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
   };
 
   const handleSubmit = () => {
-    if (validateForm()) {
+    console.log('UPDATE CLICKED - Form data:', formData.expense_date, 'Travel dates:', travelDates);
+    
+    // If travel dates aren't loaded for a prepayment report, block the save
+    if (formData.travel_expense_report_id > 0 && (!travelDates.start_date || !travelDates.end_date)) {
+      setErrors({ expense_date: 'Loading travel dates... Please wait and try again.' });
+      return;
+    }
+    
+    // Force validation to run and check result immediately
+    const newErrors: { [key: string]: string } = {};
+
+    if (!formData.category_id || formData.category_id === 0) {
+      newErrors.category_id = 'Category is required';
+    }
+
+    if (formData.travel_expense_report_id === -1 as any) {
+      newErrors.travel_expense_report_id = 'Travel expense report is required';
+    }
+
+    if (!formData.purpose.trim()) {
+      newErrors.purpose = 'Purpose is required';
+    }
+
+    if (formData.document_type === 'Boleta' && !formData.boleta_supplier?.trim()) {
+      newErrors.boleta_supplier = 'Supplier name is required for Boleta';
+    }
+
+    if (formData.document_type === 'Factura' && (!formData.factura_supplier_id || formData.factura_supplier_id === 0)) {
+      newErrors.factura_supplier_id = 'Supplier is required for Factura';
+    }
+
+    // Validate expense date with travel date constraints
+    const dateError = validateExpenseDate(formData.expense_date);
+    if (dateError) {
+      newErrors.expense_date = dateError;
+    }
+
+    if (formData.amount <= 0) {
+      newErrors.amount = 'Amount must be greater than 0';
+    }
+
+    if (!formData.document_number.trim()) {
+      newErrors.document_number = 'Document number is required';
+    }
+
+    if (formData.travel_expense_report_id === 0) {
+      // Reimbursement: require country and currency selection
+      if (!formData.country_id || formData.country_id === 0) {
+        (newErrors as any).country_id = 'Country is required for reimbursement';
+      }
+      if (!formData.currency) {
+        (newErrors as any).currency = 'Currency is required for reimbursement';
+      }
+    }
+
+    // Update errors state
+    setErrors(newErrors);
+    
+    // Only proceed if no errors
+    if (Object.keys(newErrors).length === 0) {
+      console.log('Validation passed, calling onSave');
       onSave(formData);
       onClose();
+    } else {
+      console.log('Validation BLOCKED save. Errors:', newErrors);
     }
+    // If there are errors, do nothing - the form will show the errors
   };
 
   const handleClose = () => {

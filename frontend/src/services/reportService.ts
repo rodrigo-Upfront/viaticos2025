@@ -12,10 +12,14 @@ export interface ExpenseReport {
   requesting_user_id: number;
   created_at: string;
   updated_at: string;
+  report_type?: string;
   prepayment_reason?: string;
   prepayment_amount?: string;
   prepayment_currency?: string;
   prepayment_destination?: string;
+  reimbursement_reason?: string;
+  reimbursement_country?: string;
+  reimbursement_currency?: string;
   requesting_user_name?: string;
   total_expenses?: string;
   expense_count?: number;
@@ -24,6 +28,14 @@ export interface ExpenseReport {
 
 export interface ExpenseReportCreate {
   prepayment_id: number;
+}
+
+export interface ExpenseReportManualCreate {
+  reason: string;
+  country_id: number;
+  currency_id: number;
+  start_date: string;
+  end_date: string;
 }
 
 export interface ExpenseReportListResponse {
@@ -82,7 +94,16 @@ export class ReportService {
    * Create a new expense report
    */
   async createReport(data: ExpenseReportCreate): Promise<ExpenseReport> {
-    const response = await apiClient.post(this.basePath, data);
+    // Use trailing slash to avoid 307 redirect that may drop CORS headers
+    const response = await apiClient.post(`${this.basePath}/`, data);
+    return response.data;
+  }
+
+  /**
+   * Create a manual reimbursement report
+   */
+  async createManualReport(data: ExpenseReportManualCreate): Promise<ExpenseReport> {
+    const response = await apiClient.post(`${this.basePath}/manual`, data);
     return response.data;
   }
 

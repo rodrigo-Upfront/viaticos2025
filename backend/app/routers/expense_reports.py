@@ -12,11 +12,11 @@ from decimal import Decimal
 
 from app.database.connection import get_db
 from app.models.models import (
-    User, TravelExpenseReport, Prepayment, Expense, Country, RequestStatus
+    User, TravelExpenseReport, Prepayment, Expense, Country, RequestStatus, ReportType, Currency
 )
 from app.services.auth_service import AuthService, get_current_user, get_current_superuser
 from app.schemas.expense_report_schemas import (
-    ExpenseReportCreate, ExpenseReportUpdate, ExpenseReportResponse, 
+    ExpenseReportCreate, ExpenseReportManualCreate, ExpenseReportUpdate, ExpenseReportResponse, 
     ExpenseReportList, ExpenseReportStatusUpdate, ExpenseReportSummary
 )
 
@@ -213,6 +213,56 @@ async def create_expense_report(
             detail=f"Failed to create expense report: {str(e)}"
         )
 
+
+@router.post("/manual", response_model=ExpenseReportResponse)
+async def create_manual_reimbursement_report(
+    body: ExpenseReportManualCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Create a manual reimbursement travel expense report (no prepayment)
+    """
+    # Validate foreign keys
+    country = db.query(Country).filter(Country.id == body.country_id).first()
+    if not country:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Country not found")
+    currency = db.query(Currency).filter(Currency.id == body.currency_id).first()
+    if not currency:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Currency not found")
+
+    # Validate date range
+    if body.start_date >= body.end_date:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="End date must be after start date"
+        )
+
+    try:
+        report = TravelExpenseReport(
+            prepayment_id=None,
+            report_type=ReportType.REIMBURSEMENT,
+            reason=body.reason,
+            country_id=body.country_id,
+            currency_id=body.currency_id,
+            start_date=body.start_date,
+            end_date=body.end_date,
+            requesting_user_id=current_user.id,
+            status=RequestStatus.PENDING
+        )
+        db.add(report)
+        db.commit()
+        db.refresh(report)
+
+        report = db.query(TravelExpenseReport).options(
+            joinedload(TravelExpenseReport.requesting_user),
+            joinedload(TravelExpenseReport.expenses),
+            joinedload(TravelExpenseReport.prepayment).joinedload(Prepayment.destination_country)
+        ).filter(TravelExpenseReport.id == report.id).first()
+        return ExpenseReportResponse.from_orm(report)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to create reimbursement report: {str(e)}")
 
 @router.patch("/{report_id}/status", response_model=ExpenseReportResponse)
 async def update_expense_report_status(

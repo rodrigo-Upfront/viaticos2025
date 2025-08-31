@@ -20,9 +20,10 @@ class Settings(BaseSettings):
     )
     
     # JWT Settings
+    # Use JWT_SECRET_KEY if set; otherwise fall back to SECRET_KEY for compatibility
     JWT_SECRET_KEY: str = os.getenv(
-        "JWT_SECRET_KEY", 
-        "viaticos_super_secret_key_2025_change_in_production"
+        "JWT_SECRET_KEY",
+        os.getenv("SECRET_KEY", "viaticos_super_secret_key_2025_change_in_production")
     )
     JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "15"))
