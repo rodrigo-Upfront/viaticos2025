@@ -84,8 +84,14 @@ class ExpenseReportResponse(ExpenseReportBase):
             reimbursement_reason=getattr(obj, 'reason', None),
             reimbursement_country=(obj.country.name if getattr(obj, 'country', None) else None),
             reimbursement_currency=(obj.currency.code if getattr(obj, 'currency', None) else None),
-            start_date=getattr(obj, 'start_date', None),
-            end_date=getattr(obj, 'end_date', None),
+            start_date=(
+                obj.prepayment.start_date if obj.prepayment 
+                else getattr(obj, 'start_date', None)
+            ),
+            end_date=(
+                obj.prepayment.end_date if obj.prepayment 
+                else getattr(obj, 'end_date', None)
+            ),
             requesting_user_name=f"{obj.requesting_user.name} {obj.requesting_user.surname}" if obj.requesting_user else None,
             total_expenses=total_expenses,
             expense_count=expense_count,
