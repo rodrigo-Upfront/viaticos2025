@@ -97,7 +97,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
   const [formData, setFormData] = useState<Expense>({
     category_id: 0,
     category: '',
-    travel_expense_report_id: 0,
+    travel_expense_report_id: -1,
     travel_expense_report: '',
     purpose: '',
     document_type: 'Boleta',
@@ -281,22 +281,6 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
     const reportId = event.target.value;
     const selectedReport = travelExpenseReports.find(r => r.id === reportId);
     
-    // Reimbursement option
-    if (reportId === 0) {
-      setFormData(prev => ({
-        ...prev,
-        travel_expense_report_id: 0,
-        travel_expense_report: 'Reimbursement',
-        country: '',
-        currency: ''
-      }));
-      setTravelDates({}); // Clear travel dates for reimbursement
-      if (errors.travel_expense_report_id) {
-        setErrors(prev => ({ ...prev, travel_expense_report_id: '' }));
-      }
-      return;
-    }
-
     // Fetch the travel expense report details to get country/currency info
     if (reportId > 0) {
       try {
@@ -385,7 +369,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
       newErrors.category_id = 'Category is required';
     }
 
-    if (formData.travel_expense_report_id === -1 as any) {
+    if (!formData.travel_expense_report_id || formData.travel_expense_report_id <= 0) {
       newErrors.travel_expense_report_id = 'Travel expense report is required';
     }
 
@@ -415,15 +399,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
       newErrors.document_number = 'Document number is required';
     }
 
-    if (formData.travel_expense_report_id === 0) {
-      // Reimbursement: require country and currency selection
-      if (!formData.country_id || formData.country_id === 0) {
-        (newErrors as any).country_id = 'Country is required for reimbursement';
-      }
-      if (!formData.currency) {
-        (newErrors as any).currency = 'Currency is required for reimbursement';
-      }
-    }
+
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -445,7 +421,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
       newErrors.category_id = 'Category is required';
     }
 
-    if (formData.travel_expense_report_id === -1 as any) {
+    if (!formData.travel_expense_report_id || formData.travel_expense_report_id <= 0) {
       newErrors.travel_expense_report_id = 'Travel expense report is required';
     }
 
@@ -475,15 +451,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
       newErrors.document_number = 'Document number is required';
     }
 
-    if (formData.travel_expense_report_id === 0) {
-      // Reimbursement: require country and currency selection
-      if (!formData.country_id || formData.country_id === 0) {
-        (newErrors as any).country_id = 'Country is required for reimbursement';
-      }
-      if (!formData.currency) {
-        (newErrors as any).currency = 'Currency is required for reimbursement';
-      }
-    }
+
 
     // Update errors state
     setErrors(newErrors);

@@ -358,19 +358,38 @@ async def update_expense(
 @router.delete("/{expense_id}")
 async def delete_expense(
     expense_id: int,
-    current_user: User = Depends(get_current_superuser),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    Delete an expense (superuser only)
+    Delete an expense (users can delete their own pending expenses, superusers can delete any)
     """
-    expense = db.query(Expense).filter(Expense.id == expense_id).first()
+    expense = db.query(Expense).options(
+        joinedload(Expense.travel_expense_report)
+    ).filter(Expense.id == expense_id).first()
     
     if not expense:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Expense not found"
         )
+    
+    # Check permissions
+    if not current_user.is_superuser:
+        # Check if user owns the expense through the travel expense report
+        report = expense.travel_expense_report
+        if report and report.requesting_user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not enough permissions to delete this expense"
+            )
+        
+        # Only allow deletion of pending expenses for regular users
+        if expense.status != ExpenseStatus.PENDING:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Can only delete pending expenses"
+            )
     
     try:
         db.delete(expense)
