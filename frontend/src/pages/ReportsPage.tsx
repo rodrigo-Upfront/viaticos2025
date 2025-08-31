@@ -65,7 +65,7 @@ interface ExpenseReport {
 }
 
 const ReportsPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   // Loading state
   const [loading, setLoading] = useState({
@@ -215,18 +215,21 @@ const ReportsPage: React.FC = () => {
     return status === 'Under-Budget' ? 'success' : 'error';
   };
 
+  const REPORT_STATUS_LABELS: Record<string, { en: string; es: string }> = {
+    pending: { en: "Pending Submit", es: "Pendiente Envío" },
+    supervisor_pending: { en: "Supervisor Review", es: "Revisión Jefatura" },
+    accounting_pending: { en: "Accounting Review", es: "Revisión Contabilidad" },
+    treasury_pending: { en: "Treasury Review", es: "Revisión Tesorería" },
+    approved_for_reimbursement: { en: "Approved for Reimbursement", es: "Aprobado para Reembolso" },
+    funds_return_pending: { en: "Funds Return Pending", es: "Devolución Pendiente" },
+    approved: { en: "Approved", es: "Aprobado" },
+    rejected: { en: "Rejected", es: "Rechazado" },
+  };
+
   const getStatusLabel = (status: string) => {
-    const statusMap: Record<string, string> = {
-      'pending': 'Pending Submit',
-      'supervisor_pending': 'Supervisor Pending',
-      'accounting_pending': 'Accounting Pending',
-      'treasury_pending': 'Treasury Pending',
-      'approved_for_reimbursement': 'Approved for Reimbursement',
-      'funds_return_pending': 'Funds Return Pending',
-      'approved': 'Approved',
-      'rejected': 'Rejected'
-    };
-    return statusMap[status.toLowerCase()] || status;
+    const lang = i18n.language?.startsWith('es') ? 'es' : 'en';
+    const entry = REPORT_STATUS_LABELS[status.toLowerCase()];
+    return entry ? entry[lang] : status;
   };
 
   const getStatusColor = (status: string) => {
@@ -248,6 +251,8 @@ const ReportsPage: React.FC = () => {
         return 'default';
     }
   };
+
+
 
   const [viewModal, setViewModal] = useState({
     open: false,
@@ -284,7 +289,7 @@ const ReportsPage: React.FC = () => {
   });
 
   const handleSendForApproval = async (report: ExpenseReport) => {
-    if (report.status !== 'pending' && report.status !== 'rejected') {
+    if (report.status.toLowerCase() !== 'pending' && report.status.toLowerCase() !== 'rejected') {
       setSnackbar({
         open: true,
         message: 'Only pending or rejected reports can be sent for approval',
@@ -463,7 +468,7 @@ const ReportsPage: React.FC = () => {
                 Pending Approval
               </Typography>
               <Typography variant="h4">
-                {loading.summary ? '-' : (summary?.pending_reports || expenseReports.filter(r => r.status === 'pending').length)}
+                {loading.summary ? '-' : (summary?.pending_reports || expenseReports.filter(r => r.status.toLowerCase() === 'pending').length)}
               </Typography>
             </CardContent>
           </Card>
@@ -641,7 +646,7 @@ const ReportsPage: React.FC = () => {
                     >
                       <ViewIcon />
                     </IconButton>
-                    {(report.status === 'pending' || report.status === 'rejected') && (
+                    {(report.status.toLowerCase() === 'pending' || report.status.toLowerCase() === 'rejected') && (
                       <IconButton
                         size="small"
                         onClick={() => handleSendForApproval(report)}
@@ -649,7 +654,7 @@ const ReportsPage: React.FC = () => {
                         title={
                           report.expenseCount === 0
                             ? "Cannot send for approval: No expenses added" 
-                            : report.status === 'rejected' 
+                            : report.status.toLowerCase() === 'rejected' 
                               ? "Resubmit for Approval"
                               : "Send for Approval"
                         }

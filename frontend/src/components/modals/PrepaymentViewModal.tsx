@@ -191,7 +191,7 @@ const PrepaymentViewModal: React.FC<PrepaymentViewModalProps> = ({ open, onClose
             </Grid>
           )}
 
-          {prepayment.status === 'rejected' && prepayment.rejection_reason && (
+          {prepayment.status.toLowerCase() === 'rejected' && prepayment.rejection_reason && (
             <Grid item xs={12}>
               <Typography variant="subtitle2" color="textSecondary" gutterBottom>
                 Rejection Reason
@@ -249,10 +249,10 @@ const PrepaymentViewModal: React.FC<PrepaymentViewModalProps> = ({ open, onClose
                 size="medium"
               />
               <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
-                {prepayment.status === 'pending' && 'Waiting to be sent for approval'}
-                {prepayment.status === 'in_process' && 'Currently being reviewed'}
-                {prepayment.status === 'approved' && 'Approved and ready for travel'}
-                {prepayment.status === 'rejected' && 'Rejected - please review and resubmit'}
+                {prepayment.status.toLowerCase() === 'pending' && 'Waiting to be sent for approval'}
+                {prepayment.status.toLowerCase() === 'in_process' && 'Currently being reviewed'}
+                {prepayment.status.toLowerCase() === 'approved' && 'Approved and ready for travel'}
+                {prepayment.status.toLowerCase() === 'rejected' && 'Rejected - please review and resubmit'}
               </Typography>
             </Box>
           </Grid>

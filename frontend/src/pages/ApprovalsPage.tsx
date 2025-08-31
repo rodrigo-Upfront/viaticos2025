@@ -522,7 +522,80 @@ const ApprovalsPage: React.FC = () => {
 
         <TabPanel value={tabValue} index={1}>
           <Typography variant="h6" gutterBottom>Pending Prepayments</Typography>
-          {/* Prepayments table content */}
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>ID</TableCell>
+                  <TableCell>Requester</TableCell>
+                  <TableCell>Reason</TableCell>
+                  <TableCell>Destination</TableCell>
+                  <TableCell>Amount</TableCell>
+                  <TableCell>Request Date</TableCell>
+                  <TableCell>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {loading.pendingItems ? (
+                  <TableRow>
+                    <TableCell colSpan={7} align="center">
+                      <CircularProgress />
+                    </TableCell>
+                  </TableRow>
+                ) : pendingPrepayments.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} align="center">
+                      <Typography variant="body2" color="textSecondary">
+                        No pending prepayments
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  pendingPrepayments.map((item) => (
+                    <TableRow key={`prepayment-${item.entity_id}`}>
+                      <TableCell>{item.entity_id}</TableCell>
+                      <TableCell>{item.requester}</TableCell>
+                      <TableCell>{item.reason || 'No reason provided'}</TableCell>
+                      <TableCell>{item.destination || 'Unknown'}</TableCell>
+                      <TableCell>
+                        {item.currency} ${parseFloat(item.amount || '0').toLocaleString()}
+                      </TableCell>
+                      <TableCell>{item.request_date}</TableCell>
+                      <TableCell>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleView(item.id, item.type)}
+                          color="info"
+                          disabled={loading.action}
+                          title="View Details"
+                        >
+                          <ViewIcon />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          color="success"
+                          onClick={() => handleApprove(item.id, item.type)}
+                          disabled={loading.action}
+                          title="Approve"
+                        >
+                          <CheckIcon />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => handleReject(item.id, item.type)}
+                          disabled={loading.action}
+                          title="Reject"
+                        >
+                          <CloseIcon />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
         </TabPanel>
 
         <TabPanel value={tabValue} index={2}>

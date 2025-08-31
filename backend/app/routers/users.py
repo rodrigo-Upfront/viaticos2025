@@ -14,6 +14,9 @@ from app.services.auth_service import AuthService, get_current_user, get_current
 from app.schemas.user_schemas import (
     UserCreate, UserUpdate, UserResponse, UserList
 )
+from app.schemas.password_schemas import (
+    PasswordChangeRequest, AdminPasswordUpdateRequest, PasswordUpdateResponse
+)
 
 router = APIRouter()
 auth_service = AuthService()
@@ -273,4 +276,94 @@ async def delete_user(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete user: {str(e)}"
+        )
+
+
+@router.post("/change-password", response_model=PasswordUpdateResponse)
+async def change_own_password(
+    password_data: PasswordChangeRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Allow users to change their own password
+    """
+    try:
+        # Verify current password
+        if not auth_service.verify_password(password_data.current_password, current_user.password):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Current password is incorrect"
+            )
+        
+        # Update password
+        new_password_hash = auth_service.get_password_hash(password_data.new_password)
+        current_user.password = new_password_hash
+        current_user.force_password_change = False  # Clear force change flag
+        current_user.updated_at = datetime.utcnow()
+        
+        db.commit()
+        
+        return PasswordUpdateResponse(
+            message="Password updated successfully",
+            user_id=current_user.id,
+            force_password_change=False
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update password: {str(e)}"
+        )
+
+
+@router.post("/admin/update-password", response_model=PasswordUpdateResponse)
+async def admin_update_user_password(
+    password_data: AdminPasswordUpdateRequest,
+    current_user: User = Depends(get_current_superuser),
+    db: Session = Depends(get_db)
+):
+    """
+    Allow superadmin to update any user's password
+    """
+    try:
+        # Find the target user
+        target_user = db.query(User).filter(User.id == password_data.user_id).first()
+        if not target_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        # Prevent superadmin from updating their own password through this endpoint
+        if target_user.id == current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Use the change-password endpoint to update your own password"
+            )
+        
+        # Update password
+        new_password_hash = auth_service.get_password_hash(password_data.new_password)
+        target_user.password = new_password_hash
+        target_user.force_password_change = password_data.force_password_change
+        target_user.updated_at = datetime.utcnow()
+        
+        db.commit()
+        
+        return PasswordUpdateResponse(
+            message=f"Password updated successfully for user {target_user.name} {target_user.surname}",
+            user_id=target_user.id,
+            force_password_change=password_data.force_password_change
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update user password: {str(e)}"
         )

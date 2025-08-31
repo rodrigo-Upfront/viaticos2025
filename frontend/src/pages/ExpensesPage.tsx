@@ -80,7 +80,7 @@ interface Supplier {
 }
 
 const ExpensesPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   // Loading states
   const [loading, setLoading] = useState({
@@ -141,6 +141,20 @@ const ExpensesPage: React.FC = () => {
     open: false,
     expense: undefined as Expense | undefined
   });
+
+  // Expense status labels
+  const EXPENSE_STATUS_LABELS: Record<string, { en: string; es: string }> = {
+    pending: { en: "Pending", es: "Pendiente" },
+    in_process: { en: "In Process", es: "En Proceso" },
+    approved: { en: "Approved", es: "Aprobado" },
+    rejected: { en: "Rejected", es: "Rechazado" },
+  };
+
+  const getExpenseStatusLabel = (status: string) => {
+    const lang = i18n.language?.startsWith('es') ? 'es' : 'en';
+    const entry = EXPENSE_STATUS_LABELS[status.toLowerCase()];
+    return entry ? entry[lang] : status;
+  };
 
   // Helper functions to map between API and frontend formats
   const mapApiToFrontend = (apiExpense: ApiExpense): Expense => {
@@ -525,8 +539,8 @@ const ExpensesPage: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     <Chip
-                      label={expense.status}
-                      color={expense.status === 'approved' ? 'success' : expense.status === 'pending' ? 'warning' : 'default'}
+                      label={getExpenseStatusLabel(expense.status)}
+                      color={expense.status.toLowerCase() === 'approved' ? 'success' : expense.status.toLowerCase() === 'pending' ? 'warning' : 'default'}
                       size="small"
                     />
                   </TableCell>

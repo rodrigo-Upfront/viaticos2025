@@ -169,13 +169,13 @@ const ReportApprovalModal: React.FC<ReportApprovalModalProps> = ({
   };
 
   const getExpenseBackgroundColor = (expense: Expense) => {
-    if (expense.status === 'REJECTED') {
+    if (expense.status.toLowerCase() === 'rejected') {
       return '#ffebee'; // Red background for currently rejected
     }
-    if (expense.rejection_reason && expense.status === 'PENDING') {
+    if (expense.rejection_reason && expense.status.toLowerCase() === 'pending') {
       return '#fff3e0'; // Light red background for previously rejected
     }
-    if (expense.status === 'APPROVED') {
+    if (expense.status.toLowerCase() === 'approved') {
       return '#e8f5e8'; // Green background for approved
     }
     return 'transparent';

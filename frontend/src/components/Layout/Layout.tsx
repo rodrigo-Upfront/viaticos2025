@@ -30,6 +30,7 @@ import {
   Settings,
   Approval,
   Language,
+  Lock,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -38,6 +39,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { prepaymentService } from '../../services/prepaymentService';
 import { expenseService } from '../../services/expenseService';
 import { reportService } from '../../services/reportService';
+import PasswordChangeModal from '../forms/PasswordChangeModal';
 
 const drawerWidth = 260;
 const BRAND_PURPLE = '#6B5CF6';
@@ -54,6 +56,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [langAnchorEl, setLangAnchorEl] = useState<null | HTMLElement>(null);
+  const [passwordChangeOpen, setPasswordChangeOpen] = useState(false);
   
   const [counts, setCounts] = useState<{ prepayments: number; expenses: number; reports: number }>({ prepayments: 0, expenses: 0, reports: 0 });
 
@@ -108,6 +111,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     logout();
     handleClose();
     navigate('/login');
+  };
+
+  const handlePasswordChange = () => {
+    setPasswordChangeOpen(true);
+    handleClose();
+  };
+
+  const handlePasswordChangeSuccess = () => {
+    // Could show a success message here
+    console.log('Password changed successfully');
   };
 
   const navigationItems: NavItem[] = [
@@ -269,6 +282,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </ListItemIcon>
               Profile
             </MenuItem>
+            <MenuItem onClick={handlePasswordChange}>
+              <ListItemIcon>
+                <Lock fontSize="small" />
+              </ListItemIcon>
+              Change Password
+            </MenuItem>
             <MenuItem onClick={handleLogout}>
               <ListItemIcon>
                 <Logout fontSize="small" />
@@ -278,6 +297,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </Menu>
         </Toolbar>
       </AppBar>
+      
+      <PasswordChangeModal
+        open={passwordChangeOpen}
+        onClose={() => setPasswordChangeOpen(false)}
+        onSuccess={handlePasswordChangeSuccess}
+      />
       <Box component="nav" sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}>
         <Drawer
           variant="temporary"

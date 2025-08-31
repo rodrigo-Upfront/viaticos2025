@@ -443,7 +443,7 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
           </Box>
         </Box>
 
-        {mode === 'edit' && formData.status === 'rejected' && (
+        {mode === 'edit' && formData.status.toLowerCase() === 'rejected' && (
           <TextField
             fullWidth
             label="Rejection Reason"

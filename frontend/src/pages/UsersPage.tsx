@@ -23,10 +23,12 @@ import {
   Delete as DeleteIcon,
   SupervisorAccount as SupervisorIcon,
   Person as PersonIcon,
+  Lock as LockIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import UserModal from '../components/forms/UserModal';
 import ConfirmDialog from '../components/forms/ConfirmDialog';
+import AdminPasswordUpdateModal from '../components/forms/AdminPasswordUpdateModal';
 import { userService, User as ApiUser } from '../services/userService';
 import { countryService, Country as ApiCountry } from '../services/countryService';
 
@@ -158,6 +160,11 @@ const UsersPage: React.FC = () => {
     user: undefined as User | undefined
   });
 
+  const [passwordModal, setPasswordModal] = useState({
+    open: false,
+    user: null as User | null
+  });
+
   const [confirmDialog, setConfirmDialog] = useState({
     open: false,
     title: '',
@@ -222,6 +229,18 @@ const UsersPage: React.FC = () => {
           setLoading(prev => ({ ...prev, action: false }));
         }
       }
+    });
+  };
+
+  const handlePasswordUpdate = (user: User) => {
+    setPasswordModal({ open: true, user });
+  };
+
+  const handlePasswordUpdateSuccess = () => {
+    setSnackbar({
+      open: true,
+      message: 'Password updated successfully',
+      severity: 'success'
     });
   };
 
@@ -382,6 +401,15 @@ const UsersPage: React.FC = () => {
                     >
                       <EditIcon />
                     </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={() => handlePasswordUpdate(user)}
+                      color="warning"
+                      disabled={loading.action}
+                      title="Update Password"
+                    >
+                      <LockIcon />
+                    </IconButton>
                     {!user.is_superuser && (
                       <IconButton
                         size="small"
@@ -421,6 +449,14 @@ const UsersPage: React.FC = () => {
         message={confirmDialog.message}
         severity="error"
         confirmText="Delete"
+      />
+
+      {/* Admin Password Update Modal */}
+      <AdminPasswordUpdateModal
+        open={passwordModal.open}
+        user={passwordModal.user}
+        onClose={() => setPasswordModal({ open: false, user: null })}
+        onSuccess={handlePasswordUpdateSuccess}
       />
 
       {/* Success/Error Snackbar */}

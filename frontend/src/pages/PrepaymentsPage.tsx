@@ -193,7 +193,7 @@ const PrepaymentsPage: React.FC = () => {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case 'pending':
         return 'warning';
       case 'approved':
@@ -222,7 +222,7 @@ const PrepaymentsPage: React.FC = () => {
 
   const getStatusLabel = (status: string) => {
     const lang = i18n.language?.startsWith('es') ? 'es' : 'en';
-    const entry = PREPAYMENT_STATUS_LABELS[status];
+    const entry = PREPAYMENT_STATUS_LABELS[status.toLowerCase()];
     return entry ? entry[lang] : status;
   };
 
@@ -250,7 +250,9 @@ const PrepaymentsPage: React.FC = () => {
     }
   };
 
-  const canMutate = (status: string) => ['pending', 'rejected'].includes(status);
+  const canMutate = (status: string) => ['pending', 'rejected'].includes(status.toLowerCase());
+
+
 
   // removed create report action
 
@@ -326,7 +328,7 @@ const PrepaymentsPage: React.FC = () => {
   };
 
   const handleSendForApproval = (prepayment: Prepayment) => {
-    if (prepayment.status !== 'pending') {
+    if (prepayment.status.toLowerCase() !== 'pending') {
       setSnackbar({
         open: true,
         message: 'Only pending prepayments can be sent for approval',
@@ -482,7 +484,7 @@ const PrepaymentsPage: React.FC = () => {
                       <EditIcon />
                     </IconButton>
                   )}
-                  {prepayment.status === 'pending' && (
+                  {prepayment.status.toLowerCase() === 'pending' && (
                     <IconButton
                       size="small"
                       onClick={() => handleSendForApproval(prepayment)}
