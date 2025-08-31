@@ -543,7 +543,6 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
               <MenuItem value={-1} disabled>
                 <em>Select a travel expense report</em>
               </MenuItem>
-              <MenuItem value={0}>Reimbursement</MenuItem>
               {travelExpenseReports.map((report) => (
                 <MenuItem key={report.id} value={report.id}>
                   {report.displayName}
