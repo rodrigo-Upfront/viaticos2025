@@ -151,7 +151,7 @@ const PrepaymentsPage: React.FC = () => {
       setLoading(prev => ({ ...prev, prepayments: true }));
       const response = await prepaymentService.getPrepayments({
         search: searchText || undefined,
-        status_filter: filterStatus || undefined,
+        status_filter: filterStatus ? filterStatus.toUpperCase() : undefined,
         // country filter supported in backend using country_id
         ...(filterCountryId ? { country_id: filterCountryId as number } : {} as any),
       } as any);
