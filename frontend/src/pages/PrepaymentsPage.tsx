@@ -251,6 +251,7 @@ const PrepaymentsPage: React.FC = () => {
   };
 
   const canMutate = (status: string) => ['pending', 'rejected'].includes(status.toLowerCase());
+  const canDelete = (status: string) => status.toLowerCase() === 'pending';
 
 
 
@@ -494,7 +495,7 @@ const PrepaymentsPage: React.FC = () => {
                       <SendIcon />
                     </IconButton>
                   )}
-                  {canMutate(prepayment.status) && (
+                  {canDelete(prepayment.status) && (
                     <IconButton
                       size="small"
                       onClick={() => handleDelete(prepayment)}

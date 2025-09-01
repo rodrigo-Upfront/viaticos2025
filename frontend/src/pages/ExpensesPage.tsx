@@ -272,7 +272,12 @@ const ExpensesPage: React.FC = () => {
     try {
       setLoading(prev => ({ ...prev, reports: true }));
       const response = await reportService.getReports();
-      const mappedReports = response.reports.map((report: ApiReport) => ({
+      // Filter reports to only show those available for adding expenses
+      // Reports in approval process or completed should not be available for new expenses
+      const availableReports = response.reports.filter((report: ApiReport) => 
+        report.status === 'PENDING' || report.status === 'REJECTED'
+      );
+      const mappedReports = availableReports.map((report: ApiReport) => ({
         id: report.id,
         prepayment_id: report.prepayment_id,
         status: report.status,

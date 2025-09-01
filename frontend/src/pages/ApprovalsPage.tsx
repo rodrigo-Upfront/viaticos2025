@@ -575,7 +575,7 @@ const ApprovalsPage: React.FC = () => {
                         }
                       </TableCell>
                       <TableCell>
-                        ${item.type === 'prepayment' 
+                        {item.currency || 'USD'} {item.type === 'prepayment' 
                           ? parseFloat(item.amount || '0').toLocaleString()
                           : parseFloat(item.total_expenses || '0').toLocaleString()
                         }
