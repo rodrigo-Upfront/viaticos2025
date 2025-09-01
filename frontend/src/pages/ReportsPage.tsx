@@ -56,12 +56,11 @@ interface ExpenseReport {
   report_type?: string;
   reimbursement_reason?: string;
   reimbursement_country?: string;
-  reimbursement_currency?: string;
   reimbursement_start_date?: string;
   reimbursement_end_date?: string;
   prepayment_reason?: string;
   prepayment_destination?: string;
-  prepayment_currency?: string;
+  currency?: string;  // Unified currency field
 }
 
 const ReportsPage: React.FC = () => {
@@ -149,12 +148,11 @@ const ReportsPage: React.FC = () => {
       report_type: (apiReport as any).report_type,
       reimbursement_reason: (apiReport as any).reimbursement_reason,
       reimbursement_country: (apiReport as any).reimbursement_country,
-      reimbursement_currency: (apiReport as any).reimbursement_currency,
       reimbursement_start_date: (apiReport as any).start_date,
       reimbursement_end_date: (apiReport as any).end_date,
       prepayment_reason: (apiReport as any).prepayment_reason,
       prepayment_destination: (apiReport as any).prepayment_destination,
-      prepayment_currency: (apiReport as any).prepayment_currency,
+      currency: (apiReport as any).currency,  // Unified currency field
     };
   };
 
@@ -611,12 +609,12 @@ const ReportsPage: React.FC = () => {
                   </TableCell>
                   <TableCell>{report.reportDate}</TableCell>
                   <TableCell>
-                    {(report.reimbursement_currency || report.prepayment_currency || '$')}{report.totalExpenses.toLocaleString()}
+                    {(report.currency || '$')}{report.totalExpenses.toLocaleString()}
                   </TableCell>
                   <TableCell>
                     {report.report_type === 'REIMBURSEMENT' 
                       ? '-' 
-                      : `${report.prepayment_currency || '$'}${report.prepaidAmount.toLocaleString()}`
+                      : `${report.currency || '$'}${report.prepaidAmount.toLocaleString()}`
                     }
                   </TableCell>
                   <TableCell>

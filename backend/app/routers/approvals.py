@@ -19,7 +19,8 @@ from app.services.auth_service import AuthService, get_current_user, get_current
 from app.schemas.approval_schemas import (
     ApprovalCreate, ApprovalResponse, ApprovalList, 
     ApprovalAction, PendingApprovalItem, PendingApprovalsList,
-    ReportApprovalAction, ReportApprovalResponse, ExpenseRejection
+    ReportApprovalAction, ReportApprovalResponse, ExpenseRejection,
+    QuickApprovalAction, ExpenseApprovalAction
 )
 
 router = APIRouter()
@@ -94,7 +95,8 @@ async def get_pending_approvals(
                 currency=(prepayment.currency.code if getattr(prepayment, 'currency', None) else "USD"),
                 reason=prepayment.reason or "No reason provided",
                 destination=prepayment.destination_country.name if prepayment.destination_country else "Unknown",
-                request_date=prepayment.created_at.strftime("%Y-%m-%d") if prepayment.created_at else "Unknown"
+                request_date=prepayment.created_at.strftime("%Y-%m-%d") if prepayment.created_at else "Unknown",
+                status=prepayment.status.value if prepayment.status else "PENDING"
             ))
         
         # Get expense reports that are in approval stages with role-based filtering
@@ -172,7 +174,8 @@ async def get_pending_approvals(
                     "USD"
                 ),
                 reason=reason,
-                destination=destination
+                destination=destination,
+                status=report.status.value if report.status else "PENDING"
             ))
         
         return PendingApprovalsList(
@@ -778,5 +781,364 @@ async def approve_report(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to process approval: {str(e)}")
+
+
+@router.post("/reports/{report_id}/quick-approve", response_model=ReportApprovalResponse)
+async def quick_approve_report(
+    report_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Quick approve a travel expense report (supervisor/treasury only)
+    """
+    # Check if user can approve (superuser or approver)
+    if not (current_user.is_superuser or current_user.is_approver):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions to approve reports"
+        )
+    
+    report = db.query(TravelExpenseReport).options(
+        joinedload(TravelExpenseReport.expenses),
+        joinedload(TravelExpenseReport.requesting_user)
+    ).filter(TravelExpenseReport.id == report_id).first()
+    
+    if not report:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
+    
+    if report.status == RequestStatus.APPROVED:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Report already approved")
+    
+    try:
+        requester = report.requesting_user
+        next_status = None
+        message = None
+        expense_updates = {}
+
+        # Determine stage and permissions
+        if report.status == RequestStatus.SUPERVISOR_PENDING:
+            if not (requester and requester.supervisor_id == current_user.id and current_user.is_approver):
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized for supervisor stage")
+            
+            # Check accounting approvers exist
+            has_accounting = db.query(User).filter(
+                User.profile == UserProfile.ACCOUNTING,
+                User.is_approver == True
+            ).count() > 0
+            if not has_accounting:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Error - no accounting users available")
+            next_status = RequestStatus.ACCOUNTING_PENDING
+            message = "Report quickly approved by supervisor; pending accounting approval"
+
+        elif report.status in [RequestStatus.TREASURY_PENDING, RequestStatus.APPROVED_FOR_REIMBURSEMENT, RequestStatus.FUNDS_RETURN_PENDING]:
+            if not (current_user.is_approver and current_user.profile == UserProfile.TREASURY):
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized for treasury stage")
+            
+            next_status = RequestStatus.APPROVED
+            if report.status == RequestStatus.APPROVED_FOR_REIMBURSEMENT:
+                message = "Report quickly approved by treasury - reimbursement processed"
+            elif report.status == RequestStatus.FUNDS_RETURN_PENDING:
+                message = "Report quickly approved by treasury - fund return processed"
+            else:
+                message = "Report quickly approved by treasury"
+            
+            # Set ALL expenses to APPROVED
+            for expense in report.expenses:
+                expense.status = ExpenseStatus.APPROVED
+                expense.updated_at = datetime.utcnow()
+                expense_updates[expense.id] = "APPROVED"
+        else:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Report is not in a quick approval stage")
+
+        # Update report status
+        report.status = next_status
+        report.updated_at = datetime.utcnow()
+
+        # Create approval history record
+        approval_history = ApprovalHistory(
+            entity_type=EntityType.TRAVEL_EXPENSE_REPORT,
+            entity_id=report.id,
+            user_id=current_user.id,
+            user_role=current_user.profile.value if current_user.profile else "user",
+            action=HistoryAction.APPROVED,
+            from_status=report.status.value if hasattr(report.status, 'value') else str(report.status),
+            to_status=next_status.value if hasattr(next_status, 'value') else str(next_status),
+            comments="Quick approval"
+        )
+        db.add(approval_history)
+
+        db.commit()
+
+        return ReportApprovalResponse(
+            report_id=report.id,
+            status=next_status.value if hasattr(next_status, 'value') else str(next_status),
+            message=message,
+            expense_updates=expense_updates if expense_updates else None
+        )
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to quick approve report: {str(e)}")
+
+
+@router.post("/reports/{report_id}/quick-reject", response_model=ReportApprovalResponse)
+async def quick_reject_report(
+    report_id: int,
+    action_data: QuickApprovalAction,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Quick reject a travel expense report (supervisor/treasury only)
+    """
+    # Check if user can approve (superuser or approver)
+    if not (current_user.is_superuser or current_user.is_approver):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions to reject reports"
+        )
+    
+    # Validate rejection reason is provided
+    if not action_data.rejection_reason or action_data.rejection_reason.strip() == "":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Rejection reason is required"
+        )
+    
+    report = db.query(TravelExpenseReport).options(
+        joinedload(TravelExpenseReport.expenses),
+        joinedload(TravelExpenseReport.requesting_user)
+    ).filter(TravelExpenseReport.id == report_id).first()
+    
+    if not report:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
+    
+    if report.status == RequestStatus.REJECTED:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Report already rejected")
+    
+    try:
+        requester = report.requesting_user
+        message = None
+
+        # Determine stage and permissions
+        if report.status == RequestStatus.SUPERVISOR_PENDING:
+            if not (requester and requester.supervisor_id == current_user.id and current_user.is_approver):
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized for supervisor stage")
+            message = "Report quickly rejected at supervisor stage"
+
+        elif report.status in [RequestStatus.TREASURY_PENDING, RequestStatus.APPROVED_FOR_REIMBURSEMENT, RequestStatus.FUNDS_RETURN_PENDING]:
+            if not (current_user.is_approver and current_user.profile == UserProfile.TREASURY):
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized for treasury stage")
+            
+            if report.status == RequestStatus.APPROVED_FOR_REIMBURSEMENT:
+                message = "Report quickly rejected at treasury stage - reimbursement denied"
+            elif report.status == RequestStatus.FUNDS_RETURN_PENDING:
+                message = "Report quickly rejected at treasury stage - fund return denied"
+            else:
+                message = "Report quickly rejected at treasury stage"
+        else:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Report is not in a quick rejection stage")
+
+        # Update report status and rejection reason
+        old_status = report.status
+        report.status = RequestStatus.REJECTED
+        report.rejection_reason = action_data.rejection_reason
+        report.updated_at = datetime.utcnow()
+
+        # Create approval history record
+        approval_history = ApprovalHistory(
+            entity_type=EntityType.TRAVEL_EXPENSE_REPORT,
+            entity_id=report.id,
+            user_id=current_user.id,
+            user_role=current_user.profile.value if current_user.profile else "user",
+            action=HistoryAction.REJECTED,
+            from_status=old_status.value if hasattr(old_status, 'value') else str(old_status),
+            to_status=RequestStatus.REJECTED.value,
+            comments=f"Quick rejection: {action_data.rejection_reason}"
+        )
+        db.add(approval_history)
+
+        db.commit()
+
+        return ReportApprovalResponse(
+            report_id=report.id,
+            status=RequestStatus.REJECTED.value,
+            message=message,
+            expense_updates=None
+        )
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to quick reject report: {str(e)}")
+
+
+@router.post("/expenses/{expense_id}/approve", response_model=dict)
+async def approve_expense(
+    expense_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Approve an individual expense (accounting only)
+    """
+    # Check if user can approve (superuser or accounting approver)
+    if not (current_user.is_superuser or (current_user.is_approver and current_user.profile == UserProfile.ACCOUNTING)):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions to approve expenses"
+        )
+    
+    expense = db.query(Expense).options(
+        joinedload(Expense.travel_expense_report)
+    ).filter(Expense.id == expense_id).first()
+    
+    if not expense:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Expense not found")
+    
+    if not expense.travel_expense_report:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Expense must be linked to a report")
+    
+    report = expense.travel_expense_report
+    if report.status != RequestStatus.ACCOUNTING_PENDING:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Report is not in accounting approval stage")
+    
+    if expense.status == ExpenseStatus.APPROVED:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Expense is already approved")
+    
+    try:
+        # Update expense status
+        expense.status = ExpenseStatus.APPROVED
+        expense.rejection_reason = None  # Clear any previous rejection
+        expense.updated_at = datetime.utcnow()
+
+        # Check if all expenses in the report are now processed
+        all_expenses = report.expenses
+        unprocessed_expenses = [e for e in all_expenses if e.status not in [ExpenseStatus.APPROVED, ExpenseStatus.REJECTED]]
+        
+        report_status_changed = False
+        if len(unprocessed_expenses) == 0:
+            # All expenses are processed, determine report outcome
+            rejected_expenses = [e for e in all_expenses if e.status == ExpenseStatus.REJECTED]
+            
+            if len(rejected_expenses) > 0:
+                # At least one expense rejected, reject the entire report
+                report.status = RequestStatus.REJECTED
+                report.rejection_reason = f"Report rejected due to {len(rejected_expenses)} rejected expense(s)"
+                report_status_changed = True
+            else:
+                # All expenses approved, continue with normal approval logic
+                total_expenses = sum(expense.amount for expense in all_expenses) if all_expenses else 0
+                prepaid_amount = float(report.prepayment.amount) if report.prepayment and report.prepayment.amount else 0
+                
+                # Round to 2 decimals for strict comparison
+                total_expenses = round(float(total_expenses), 2)
+                prepaid_amount = round(prepaid_amount, 2)
+                
+                # Business Logic Implementation:
+                if report.prepayment_id and prepaid_amount == total_expenses:
+                    # Rule 1: Prepayment type - equal amounts - skip treasury
+                    report.status = RequestStatus.APPROVED
+                elif total_expenses > prepaid_amount:
+                    # Rule 2: Any case - over budget - needs reimbursement
+                    report.status = RequestStatus.APPROVED_FOR_REIMBURSEMENT
+                else:
+                    # Rule 3: Any case - under budget - needs fund return
+                    report.status = RequestStatus.FUNDS_RETURN_PENDING
+                
+                report_status_changed = True
+
+        if report_status_changed:
+            report.updated_at = datetime.utcnow()
+
+        db.commit()
+
+        return {
+            "message": "Expense approved successfully",
+            "expense_id": expense.id,
+            "expense_status": ExpenseStatus.APPROVED.value,
+            "report_status_changed": report_status_changed,
+            "new_report_status": report.status.value if report_status_changed else None
+        }
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to approve expense: {str(e)}")
+
+
+@router.post("/expenses/{expense_id}/reject", response_model=dict)
+async def reject_expense(
+    expense_id: int,
+    action_data: ExpenseApprovalAction,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Reject an individual expense (accounting only)
+    """
+    # Check if user can approve (superuser or accounting approver)
+    if not (current_user.is_superuser or (current_user.is_approver and current_user.profile == UserProfile.ACCOUNTING)):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions to reject expenses"
+        )
+    
+    # Validate rejection reason is provided
+    if not action_data.rejection_reason or action_data.rejection_reason.strip() == "":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Rejection reason is required"
+        )
+    
+    expense = db.query(Expense).options(
+        joinedload(Expense.travel_expense_report)
+    ).filter(Expense.id == expense_id).first()
+    
+    if not expense:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Expense not found")
+    
+    if not expense.travel_expense_report:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Expense must be linked to a report")
+    
+    report = expense.travel_expense_report
+    if report.status != RequestStatus.ACCOUNTING_PENDING:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Report is not in accounting approval stage")
+    
+    if expense.status == ExpenseStatus.REJECTED:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Expense is already rejected")
+    
+    try:
+        # Update expense status
+        expense.status = ExpenseStatus.REJECTED
+        expense.rejection_reason = action_data.rejection_reason
+        expense.updated_at = datetime.utcnow()
+
+        # Check if all expenses in the report are now processed
+        all_expenses = report.expenses
+        unprocessed_expenses = [e for e in all_expenses if e.status not in [ExpenseStatus.APPROVED, ExpenseStatus.REJECTED]]
+        
+        report_status_changed = False
+        if len(unprocessed_expenses) == 0:
+            # All expenses are processed, since at least one is rejected, reject the report
+            rejected_expenses = [e for e in all_expenses if e.status == ExpenseStatus.REJECTED]
+            report.status = RequestStatus.REJECTED
+            report.rejection_reason = f"Report rejected due to {len(rejected_expenses)} rejected expense(s)"
+            report.updated_at = datetime.utcnow()
+            report_status_changed = True
+
+        db.commit()
+
+        return {
+            "message": "Expense rejected successfully",
+            "expense_id": expense.id,
+            "expense_status": ExpenseStatus.REJECTED.value,
+            "rejection_reason": action_data.rejection_reason,
+            "report_status_changed": report_status_changed,
+            "new_report_status": report.status.value if report_status_changed else None
+        }
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to reject expense: {str(e)}")
 
 

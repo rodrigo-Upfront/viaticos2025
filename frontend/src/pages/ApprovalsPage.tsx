@@ -32,13 +32,17 @@ import {
   Visibility as ViewIcon,
   AccessTime as PendingIcon,
   Assignment as AssignmentIcon,
+  ThumbUp as QuickApproveIcon,
+  ThumbDown as QuickRejectIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../contexts/AuthContext';
 import ConfirmDialog from '../components/forms/ConfirmDialog';
 import PrepaymentViewModal from '../components/modals/PrepaymentViewModal';
 import ReportViewModal from '../components/modals/ReportViewModal';
 import ReportApprovalModal from '../components/modals/ReportApprovalModal';
 import { approvalService, PendingApprovalItem } from '../services/approvalService';
+import apiClient from '../services/apiClient';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -64,6 +68,7 @@ function TabPanel(props: TabPanelProps) {
 
 const ApprovalsPage: React.FC = () => {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [tabValue, setTabValue] = React.useState(0);
 
   // Loading state
@@ -131,6 +136,12 @@ const ApprovalsPage: React.FC = () => {
   const [approvalModal, setApprovalModal] = useState({
     open: false,
     report: null as any
+  });
+
+  const [quickRejectionDialog, setQuickRejectionDialog] = useState({
+    open: false,
+    reportId: null as number | null,
+    rejectionReason: '',
   });
 
   const [rejectionDialog, setRejectionDialog] = useState({
@@ -249,42 +260,40 @@ const ApprovalsPage: React.FC = () => {
     }
   };
 
-  const handleApproveReport = (item: PendingApprovalItem) => {
-    // Determine the current status based on business logic
-    // If treasury user is seeing this, it's likely in treasury approval stage
-    const totalExpenses = parseFloat(item.total_expenses || '0');
-    const prepaidAmount = parseFloat(item.prepaid_amount || '0');
-    
-    let currentStatus = 'pending_approval';
-    if (totalExpenses < prepaidAmount) {
-      currentStatus = 'funds_return_pending';
-    } else if (totalExpenses > prepaidAmount) {
-      currentStatus = 'approved_for_reimbursement';
-    } else {
-      currentStatus = 'treasury_pending';
+  const handleApproveReport = async (item: PendingApprovalItem) => {
+    try {
+      // Get the actual report status from the backend
+      const response = await apiClient.get(`/expense-reports/${item.entity_id}`);
+      const reportData = response.data;
+      
+      // Convert the API response to ReportApprovalModal format
+      const modalReportData = {
+        id: reportData.id,
+        prepaymentId: reportData.prepayment_id || 0,
+        reportDate: reportData.created_at || item.request_date,
+        totalExpenses: parseFloat(reportData.total_expenses || '0'),
+        prepaidAmount: parseFloat(reportData.prepayment_amount || item.prepaid_amount || '0'),
+        budgetStatus: 'Under-Budget', // This will be calculated properly in the modal
+        status: reportData.status, // Use the actual status from the backend
+        expenseCount: reportData.expense_count || 0,
+        requester: reportData.requesting_user_name || item.requester,
+        report_type: reportData.report_type || (item.prepayment_id ? 'PREPAYMENT' : 'REIMBURSEMENT'),
+        reimbursement_reason: reportData.reimbursement_reason || item.reason,
+        reimbursement_country: reportData.reimbursement_country || item.destination,
+        prepayment_reason: reportData.prepayment_reason || item.reason,
+        prepayment_destination: reportData.prepayment_destination || item.destination,
+        currency: reportData.currency || item.currency,  // Unified currency field
+      };
+      
+      setApprovalModal({ open: true, report: modalReportData });
+    } catch (error) {
+      console.error('Failed to load report details:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to load report details',
+        severity: 'error'
+      });
     }
-
-    // Convert the approval data format to ReportApprovalModal format
-    const reportData = {
-      id: item.entity_id,
-      prepaymentId: item.prepayment_id || 0,
-      reportDate: item.report_date || item.request_date,
-      totalExpenses: totalExpenses,
-      prepaidAmount: prepaidAmount,
-      budgetStatus: 'Under-Budget', // This will be calculated properly in the modal
-      status: currentStatus,
-      expenseCount: 0, // This will be fetched from the API
-      requester: item.requester,
-      report_type: item.prepayment_id ? 'PREPAYMENT' : 'REIMBURSEMENT',
-      reimbursement_reason: item.reason,
-      reimbursement_country: item.destination,
-      reimbursement_currency: item.currency,
-      prepayment_reason: item.reason,
-      prepayment_destination: item.destination,
-      prepayment_currency: item.currency,
-    };
-    
-    setApprovalModal({ open: true, report: reportData });
   };
 
   const handleApprovalComplete = async () => {
@@ -336,6 +345,108 @@ const ApprovalsPage: React.FC = () => {
         type: 'report',
         data: reportData
       });
+    }
+  };
+
+  // Helper function to determine user role based on report status
+  const getUserRole = (item: PendingApprovalItem) => {
+    if (item.type !== 'report') return 'other';
+    
+    // Get the current status from the item data
+    const reportData = item as any;
+    const status = reportData.status || 'unknown';
+    
+    // Check if the current user should see accounting actions for this report
+    if (status === 'ACCOUNTING_PENDING' && user?.profile === 'accounting') return 'accounting';
+    
+    // For all other cases (supervisor/treasury), use the traditional quick actions
+    return 'quick_actions';
+  };
+
+  // Quick approve handler for supervisor/treasury
+  const handleQuickApprove = async (reportId: number) => {
+    setConfirmDialog({
+      open: true,
+      title: 'Quick Approve',
+      message: 'Are you sure you want to quickly approve this report?',
+      onConfirm: async () => {
+        try {
+          setLoading(prev => ({ ...prev, action: true }));
+          
+          const response = await apiClient.post(`/approvals/reports/${reportId}/quick-approve`);
+
+          // Remove from pending list
+          setPendingItems(prev => prev.filter(item => !(item.type === 'report' && item.entity_id === reportId)));
+          
+          setSnackbar({
+            open: true,
+            message: 'Report approved successfully',
+            severity: 'success'
+          });
+        } catch (error) {
+          console.error('Failed to approve report:', error);
+          setSnackbar({
+            open: true,
+            message: 'Failed to approve report',
+            severity: 'error'
+          });
+        } finally {
+          setLoading(prev => ({ ...prev, action: false }));
+        }
+      },
+      confirmText: 'Approve',
+      cancelText: 'Cancel',
+      severity: 'info'
+    });
+  };
+
+  // Quick reject handler for supervisor/treasury
+  const handleQuickReject = (reportId: number) => {
+    setQuickRejectionDialog({
+      open: true,
+      reportId: reportId,
+      rejectionReason: ''
+    });
+  };
+
+  // Handle quick rejection confirmation
+  const handleQuickRejectConfirm = async () => {
+    if (!quickRejectionDialog.rejectionReason.trim()) {
+      setSnackbar({
+        open: true,
+        message: 'Rejection reason is required',
+        severity: 'error'
+      });
+      return;
+    }
+
+    try {
+      setLoading(prev => ({ ...prev, action: true }));
+      
+      const response = await apiClient.post(`/approvals/reports/${quickRejectionDialog.reportId}/quick-reject`, {
+        action: 'reject',
+        rejection_reason: quickRejectionDialog.rejectionReason
+      });
+
+      // Remove from pending list
+      setPendingItems(prev => prev.filter(item => !(item.type === 'report' && item.entity_id === quickRejectionDialog.reportId)));
+      
+      setQuickRejectionDialog({ open: false, reportId: null, rejectionReason: '' });
+      
+      setSnackbar({
+        open: true,
+        message: 'Report rejected successfully',
+        severity: 'success'
+      });
+    } catch (error) {
+      console.error('Failed to reject report:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to reject report',
+        severity: 'error'
+      });
+    } finally {
+      setLoading(prev => ({ ...prev, action: false }));
     }
   };
 
@@ -474,15 +585,50 @@ const ApprovalsPage: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         {item.type === 'report' ? (
-                          <IconButton
-                            size="small"
-                            color="primary"
-                            onClick={() => handleApproveReport(item)}
-                            title="Review & Approve/Reject"
-                            disabled={loading.action}
-                          >
-                            <AssignmentIcon />
-                          </IconButton>
+                          <>
+                            {/* Show quick actions for supervisor/treasury, detailed for accounting */}
+                            {getUserRole(item) === 'accounting' ? (
+                              <IconButton
+                                size="small"
+                                color="primary"
+                                onClick={() => handleApproveReport(item)}
+                                title="Review & Approve/Reject Expenses"
+                                disabled={loading.action}
+                              >
+                                <AssignmentIcon />
+                              </IconButton>
+                            ) : (
+                              <>
+                                <IconButton
+                                  size="small"
+                                  color="success"
+                                  onClick={() => handleQuickApprove(item.entity_id)}
+                                  title="Quick Approve"
+                                  disabled={loading.action}
+                                >
+                                  <QuickApproveIcon />
+                                </IconButton>
+                                <IconButton
+                                  size="small"
+                                  color="error"
+                                  onClick={() => handleQuickReject(item.entity_id)}
+                                  title="Quick Reject"
+                                  disabled={loading.action}
+                                >
+                                  <QuickRejectIcon />
+                                </IconButton>
+                                <IconButton
+                                  size="small"
+                                  color="primary"
+                                  onClick={() => handleApproveReport(item)}
+                                  title="Detailed Review"
+                                  disabled={loading.action}
+                                >
+                                  <AssignmentIcon />
+                                </IconButton>
+                              </>
+                            )}
+                          </>
                         ) : (
                           <>
                             <IconButton
@@ -692,15 +838,48 @@ const ApprovalsPage: React.FC = () => {
                       </TableCell>
                       <TableCell>{item.report_date || item.request_date}</TableCell>
                       <TableCell>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleApproveReport(item)}
-                          color="primary"
-                          title="Review & Approve/Reject"
-                          disabled={loading.action}
-                        >
-                          <AssignmentIcon />
-                        </IconButton>
+                        {/* Show quick actions for supervisor/treasury, detailed for accounting */}
+                        {getUserRole(item) === 'accounting' ? (
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => handleApproveReport(item)}
+                            title="Review & Approve/Reject Expenses"
+                            disabled={loading.action}
+                          >
+                            <AssignmentIcon />
+                          </IconButton>
+                        ) : (
+                          <>
+                            <IconButton
+                              size="small"
+                              color="success"
+                              onClick={() => handleQuickApprove(item.entity_id)}
+                              title="Quick Approve"
+                              disabled={loading.action}
+                            >
+                              <QuickApproveIcon />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => handleQuickReject(item.entity_id)}
+                              title="Quick Reject"
+                              disabled={loading.action}
+                            >
+                              <QuickRejectIcon />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={() => handleApproveReport(item)}
+                              title="Detailed Review"
+                              disabled={loading.action}
+                            >
+                              <AssignmentIcon />
+                            </IconButton>
+                          </>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
@@ -780,6 +959,51 @@ const ApprovalsPage: React.FC = () => {
             disabled={loading.action}
           >
             {loading.action ? <CircularProgress size={20} /> : 'Reject'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Quick Rejection Dialog */}
+      <Dialog 
+        open={quickRejectionDialog.open} 
+        onClose={() => setQuickRejectionDialog({ open: false, reportId: null, rejectionReason: '' })}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Quick Reject Report</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Please provide a reason for rejecting this report:
+          </Typography>
+          <TextField
+            fullWidth
+            multiline
+            rows={4}
+            label="Rejection Reason"
+            value={quickRejectionDialog.rejectionReason}
+            onChange={(e) => setQuickRejectionDialog(prev => ({ 
+              ...prev, 
+              rejectionReason: e.target.value 
+            }))}
+            required
+            error={!quickRejectionDialog.rejectionReason.trim()}
+            helperText={!quickRejectionDialog.rejectionReason.trim() ? "Rejection reason is required" : ""}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => setQuickRejectionDialog({ open: false, reportId: null, rejectionReason: '' })}
+            disabled={loading.action}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleQuickRejectConfirm}
+            color="error"
+            variant="contained"
+            disabled={loading.action || !quickRejectionDialog.rejectionReason.trim()}
+          >
+            {loading.action ? <CircularProgress size={20} /> : 'Reject Report'}
           </Button>
         </DialogActions>
       </Dialog>

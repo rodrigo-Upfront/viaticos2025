@@ -4,7 +4,7 @@ services:
   database:
     image: postgres:13
     environment:
-      POSTGRES_DB: viaticos_db
+      POSTGRES_DB: viaticos
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres123
     volumes:
@@ -18,7 +18,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: postgresql://postgres:postgres123@database:5432/viaticos_db
+      DATABASE_URL: postgresql://postgres:postgres123@database:5432/viaticos
       SECRET_KEY: your-super-secret-key-change-in-production-2024
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 30

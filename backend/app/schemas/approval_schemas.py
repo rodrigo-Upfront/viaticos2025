@@ -81,6 +81,7 @@ class PendingApprovalItem(BaseModel):
     reason: Optional[str] = None
     destination: Optional[str] = None
     request_date: str
+    status: Optional[str] = None  # Current approval status
     prepayment_id: Optional[int] = None  # For reports
     total_expenses: Optional[str] = None  # For reports
     prepaid_amount: Optional[str] = None  # For reports
@@ -104,6 +105,18 @@ class ReportApprovalAction(BaseModel):
     action: str = Field(..., description="Action: 'approve' or 'reject'")
     rejection_reason: Optional[str] = Field(None, description="Overall rejection reason")
     expense_rejections: Optional[List[ExpenseRejection]] = Field(None, description="Individual expense rejections")
+
+
+class QuickApprovalAction(BaseModel):
+    """Schema for quick approval/rejection action (supervisor/treasury)"""
+    action: str = Field(..., description="Action: 'approve' or 'reject'")
+    rejection_reason: Optional[str] = Field(None, description="Reason for rejection (required if action is 'reject')")
+
+
+class ExpenseApprovalAction(BaseModel):
+    """Schema for individual expense approval/rejection action (accounting)"""
+    action: str = Field(..., description="Action: 'approve' or 'reject'")
+    rejection_reason: Optional[str] = Field(None, description="Reason for rejection (required if action is 'reject')")
 
 
 class ReportApprovalResponse(BaseModel):

@@ -15,6 +15,7 @@ export interface PendingApprovalItem {
   reason?: string;
   destination?: string;
   request_date: string;
+  status?: string; // Current approval status
   prepayment_id?: number; // For reports
   total_expenses?: string; // For reports
   prepaid_amount?: string; // For reports

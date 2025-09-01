@@ -16,6 +16,7 @@ import {
   FlightTakeoff as TravelIcon,
   AccountBalance as MoneyIcon,
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 
 interface Prepayment {
   id?: number;
@@ -39,9 +40,45 @@ interface PrepaymentViewModalProps {
 }
 
 const PrepaymentViewModal: React.FC<PrepaymentViewModalProps> = ({ open, onClose, prepayment }) => {
+  const { i18n } = useTranslation();
+
   if (!prepayment) {
     return null;
   }
+
+  // Bilingual status labels
+  const PREPAYMENT_STATUS_LABELS: Record<string, { en: string; es: string }> = {
+    pending: { en: 'Pending', es: 'Pendiente' },
+    supervisor_pending: { en: 'Supervisor Pending', es: 'Pend. Jefatura' },
+    accounting_pending: { en: 'Accounting Pending', es: 'Pend. Contabilidad' },
+    treasury_pending: { en: 'Treasury Pending', es: 'Pend. Tesorería' },
+    approved_for_reimbursement: { en: 'Approved for Reimbursement', es: 'Aprobado para Reembolso' },
+    funds_return_pending: { en: 'Funds Return Pending', es: 'Devolución Pendiente' },
+    approved: { en: 'Approved', es: 'Aprobado' },
+    rejected: { en: 'Rejected', es: 'Rechazado' },
+  };
+
+  const getStatusLabel = (status: string) => {
+    const lang = i18n.language?.startsWith('es') ? 'es' : 'en';
+    const entry = PREPAYMENT_STATUS_LABELS[status.toLowerCase()];
+    return entry ? entry[lang] : status;
+  };
+
+  const getStatusDescription = (status: string) => {
+    const lang = i18n.language?.startsWith('es') ? 'es' : 'en';
+    const descriptions: Record<string, { en: string; es: string }> = {
+      pending: { en: 'Waiting to be sent for approval', es: 'Esperando ser enviado para aprobación' },
+      supervisor_pending: { en: 'Under supervisor review', es: 'En revisión por jefatura' },
+      accounting_pending: { en: 'Under accounting review', es: 'En revisión por contabilidad' },
+      treasury_pending: { en: 'Under treasury review', es: 'En revisión por tesorería' },
+      approved: { en: 'Approved and ready for travel', es: 'Aprobado y listo para viaje' },
+      approved_for_reimbursement: { en: 'Approved for reimbursement', es: 'Aprobado para reembolso' },
+      funds_return_pending: { en: 'Funds return pending', es: 'Devolución de fondos pendiente' },
+      rejected: { en: 'Rejected - please review and resubmit', es: 'Rechazado - revisar y reenviar' },
+    };
+    const entry = descriptions[status.toLowerCase()];
+    return entry ? entry[lang] : '';
+  };
 
   const handleFileDownload = (filename: string) => {
     // Navigate to backend storage path (basic implementation)
@@ -55,15 +92,20 @@ const PrepaymentViewModal: React.FC<PrepaymentViewModalProps> = ({ open, onClose
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case 'pending':
         return 'warning';
-      case 'in_process':
+      case 'supervisor_pending':
+      case 'accounting_pending':
+      case 'treasury_pending':
         return 'info';
       case 'approved':
+      case 'approved_for_reimbursement':
         return 'success';
       case 'rejected':
         return 'error';
+      case 'funds_return_pending':
+        return 'warning';
       default:
         return 'default';
     }
@@ -83,7 +125,7 @@ const PrepaymentViewModal: React.FC<PrepaymentViewModalProps> = ({ open, onClose
         <Box display="flex" alignItems="center" justifyContent="space-between">
           <Typography variant="h6">Prepayment Details (ID: {prepayment.id})</Typography>
           <Chip
-            label={prepayment.status}
+            label={getStatusLabel(prepayment.status)}
             color={getStatusColor(prepayment.status) as any}
             variant="outlined"
           />
@@ -244,15 +286,12 @@ const PrepaymentViewModal: React.FC<PrepaymentViewModalProps> = ({ open, onClose
             </Typography>
             <Box display="flex" alignItems="center">
               <Chip
-                label={prepayment.status.toUpperCase()}
+                label={getStatusLabel(prepayment.status)}
                 color={getStatusColor(prepayment.status) as any}
                 size="medium"
               />
               <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
-                {prepayment.status.toLowerCase() === 'pending' && 'Waiting to be sent for approval'}
-                {prepayment.status.toLowerCase() === 'in_process' && 'Currently being reviewed'}
-                {prepayment.status.toLowerCase() === 'approved' && 'Approved and ready for travel'}
-                {prepayment.status.toLowerCase() === 'rejected' && 'Rejected - please review and resubmit'}
+                {getStatusDescription(prepayment.status)}
               </Typography>
             </Box>
           </Grid>

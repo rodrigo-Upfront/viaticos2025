@@ -55,12 +55,11 @@ interface ExpenseReport {
   report_type?: string;
   reimbursement_reason?: string;
   reimbursement_country?: string;
-  reimbursement_currency?: string;
   reimbursement_start_date?: string;
   reimbursement_end_date?: string;
   prepayment_reason?: string;
   prepayment_destination?: string;
-  prepayment_currency?: string;
+  currency?: string;  // Unified currency field
   expenses?: Array<{
     id: number;
     category: string;
@@ -181,7 +180,7 @@ const ReportViewModal: React.FC<ReportViewModalProps> = ({ open, onClose, report
               <Paper sx={{ p: 2, textAlign: 'center' }}>
                 <MoneyIcon color="primary" sx={{ fontSize: 40, mb: 1 }} />
                 <Typography variant="h6" color="primary">
-                  {report.prepayment_currency || '$'}{(report.prepaidAmount || 0).toLocaleString()}
+                  {report.currency || '$'}{(report.prepaidAmount || 0).toLocaleString()}
                 </Typography>
                 <Typography variant="body2" color="textSecondary">
                   Prepaid Amount
@@ -194,7 +193,7 @@ const ReportViewModal: React.FC<ReportViewModalProps> = ({ open, onClose, report
             <Paper sx={{ p: 2, textAlign: 'center' }}>
               <ReceiptIcon color="warning" sx={{ fontSize: 40, mb: 1 }} />
               <Typography variant="h6" color="warning.main">
-                {(report.reimbursement_currency || report.prepayment_currency || '$')}{(report.totalExpenses || 0).toLocaleString()}
+                {report.currency || '$'}{(report.totalExpenses || 0).toLocaleString()}
               </Typography>
               <Typography variant="body2" color="textSecondary">
                 Total Expenses
@@ -211,7 +210,7 @@ const ReportViewModal: React.FC<ReportViewModalProps> = ({ open, onClose, report
                   color={isOverBudget ? 'error.main' : 'success.main'}
                   sx={{ mt: 1 }}
                 >
-                  {report.prepayment_currency || '$'}{Math.abs(remainingBudget || 0).toLocaleString()}
+                  {report.currency || '$'}{Math.abs(remainingBudget || 0).toLocaleString()}
                 </Typography>
                 <Typography variant="body2" color="textSecondary">
                   {isOverBudget ? 'Over Budget' : 'Remaining'}

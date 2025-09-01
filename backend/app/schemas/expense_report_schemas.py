@@ -46,16 +46,16 @@ class ExpenseReportResponse(ExpenseReportBase):
     # Related data
     prepayment_reason: Optional[str] = None
     prepayment_amount: Optional[Decimal] = None
-    prepayment_currency: Optional[str] = None
     prepayment_destination: Optional[str] = None
     reimbursement_reason: Optional[str] = None
     reimbursement_country: Optional[str] = None
-    reimbursement_currency: Optional[str] = None
+    currency: Optional[str] = None  # Unified currency field for all report types
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     requesting_user_name: Optional[str] = None
     total_expenses: Optional[Decimal] = None
     expense_count: Optional[int] = None
+    rejection_reason: Optional[str] = None
     balance: Optional[Decimal] = None  # prepayment_amount - total_expenses
 
     class Config:
@@ -79,11 +79,14 @@ class ExpenseReportResponse(ExpenseReportBase):
             report_type=(obj.report_type.value if getattr(obj, 'report_type', None) else None),
             prepayment_reason=obj.prepayment.reason if obj.prepayment else None,
             prepayment_amount=prepayment_amount,
-            prepayment_currency=(obj.prepayment.currency.code if obj.prepayment and obj.prepayment.currency else None),
             prepayment_destination=obj.prepayment.destination_country.name if obj.prepayment and obj.prepayment.destination_country else None,
             reimbursement_reason=getattr(obj, 'reason', None),
             reimbursement_country=(obj.country.name if getattr(obj, 'country', None) else None),
-            reimbursement_currency=(obj.currency.code if getattr(obj, 'currency', None) else None),
+            currency=(
+                obj.currency.code if getattr(obj, 'currency', None) and obj.currency
+                else obj.prepayment.currency.code if obj.prepayment and obj.prepayment.currency 
+                else None
+            ),
             start_date=(
                 obj.prepayment.start_date if obj.prepayment 
                 else getattr(obj, 'start_date', None)
@@ -95,6 +98,7 @@ class ExpenseReportResponse(ExpenseReportBase):
             requesting_user_name=f"{obj.requesting_user.name} {obj.requesting_user.surname}" if obj.requesting_user else None,
             total_expenses=total_expenses,
             expense_count=expense_count,
+            rejection_reason=getattr(obj, 'rejection_reason', None),
             balance=balance
         )
 

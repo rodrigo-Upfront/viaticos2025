@@ -21,7 +21,7 @@ from app.models.models import (
 )
 
 # Database setup
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres123@database:5432/viaticos_db")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres123@database:5432/viaticos")
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

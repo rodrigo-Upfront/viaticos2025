@@ -12,7 +12,7 @@ from decimal import Decimal
 
 from app.database.connection import get_db
 from app.models.models import (
-    User, TravelExpenseReport, Prepayment, Expense, Country, RequestStatus, ReportType, Currency
+    User, TravelExpenseReport, Prepayment, Expense, Country, RequestStatus, ReportType, Currency, UserProfile
 )
 from app.services.auth_service import AuthService, get_current_user, get_current_superuser
 from app.schemas.expense_report_schemas import (
@@ -134,12 +134,38 @@ async def get_expense_report(
             detail="Expense report not found"
         )
     
-    # Non-superusers can only access their own reports
+    # Permission check: 
+    # 1. Superusers can access any report
+    # 2. Report owners can access their own reports  
+    # 3. Approvers can access reports in their approval stage
     if not current_user.is_superuser and report.requesting_user_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions"
-        )
+        # Check if current user is an approver who can approve this report
+        can_approve = False
+        
+        if current_user.is_approver:
+            # Supervisor can approve reports in SUPERVISOR_PENDING stage
+            if (report.status == RequestStatus.SUPERVISOR_PENDING and 
+                current_user.profile == UserProfile.MANAGER and
+                report.requesting_user and report.requesting_user.supervisor_id == current_user.id):
+                can_approve = True
+            
+            # Accounting can approve reports in ACCOUNTING_PENDING stage  
+            elif (report.status == RequestStatus.ACCOUNTING_PENDING and
+                  current_user.profile == UserProfile.ACCOUNTING):
+                can_approve = True
+            
+            # Treasury can approve reports in treasury stages
+            elif (report.status in [RequestStatus.TREASURY_PENDING, 
+                                    RequestStatus.APPROVED_FOR_REIMBURSEMENT, 
+                                    RequestStatus.FUNDS_RETURN_PENDING] and
+                  current_user.profile == UserProfile.TREASURY):
+                can_approve = True
+        
+        if not can_approve:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not enough permissions"
+            )
     
     return ExpenseReportResponse.from_orm(report)
 

@@ -15,11 +15,10 @@ export interface ExpenseReport {
   report_type?: string;
   prepayment_reason?: string;
   prepayment_amount?: string;
-  prepayment_currency?: string;
   prepayment_destination?: string;
   reimbursement_reason?: string;
   reimbursement_country?: string;
-  reimbursement_currency?: string;
+  currency?: string;  // Unified currency field
   requesting_user_name?: string;
   total_expenses?: string;
   expense_count?: number;
@@ -120,6 +119,14 @@ export class ReportService {
    */
   async updateReportStatus(id: number, data: ExpenseReportStatusUpdate): Promise<ExpenseReport> {
     const response = await apiClient.patch(`${this.basePath}/${id}/status`, data);
+    return response.data;
+  }
+
+  /**
+   * Submit expense report for approval
+   */
+  async submitReport(id: number): Promise<{ message: string; status: string }> {
+    const response = await apiClient.post(`/approvals/reports/${id}/submit`);
     return response.data;
   }
 

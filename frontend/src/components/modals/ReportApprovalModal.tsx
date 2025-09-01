@@ -27,6 +27,8 @@ import {
   ExpandLess as ExpandLessIcon,
   CheckCircle as ApproveIcon,
   Cancel as RejectIcon,
+  Check as CheckIcon,
+  Close as CloseIcon,
 } from '@mui/icons-material';
 import apiClient from '../../services/apiClient';
 
@@ -54,12 +56,11 @@ interface ExpenseReport {
   report_type?: string;
   reimbursement_reason?: string;
   reimbursement_country?: string;
-  reimbursement_currency?: string;
   reimbursement_start_date?: string;
   reimbursement_end_date?: string;
   prepayment_reason?: string;
   prepayment_destination?: string;
-  prepayment_currency?: string;
+  currency?: string;  // Unified currency field
 }
 
 interface ExpenseRejection {
@@ -102,6 +103,21 @@ const ReportApprovalModal: React.FC<ReportApprovalModalProps> = ({
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [rejectionReasons, setRejectionReasons] = useState<Record<number, string>>({});
   const [error, setError] = useState<string>('');
+  // const [expenseActions, setExpenseActions] = useState<Record<number, 'approve' | 'reject' | null>>({});
+  const [expenseRejectionReasons, setExpenseRejectionReasons] = useState<Record<number, string>>({});
+
+  // Helper function to determine user role based on report status
+  const getUserRole = () => {
+    if (!report) return 'other';
+    
+    const status = report.status || 'unknown';
+    if (status === 'SUPERVISOR_PENDING') return 'supervisor';
+    if (status === 'ACCOUNTING_PENDING') return 'accounting';
+    if (status === 'TREASURY_PENDING' || status === 'APPROVED_FOR_REIMBURSEMENT' || status === 'FUNDS_RETURN_PENDING') return 'treasury';
+    return 'other';
+  };
+
+  const isAccountingUser = getUserRole() === 'accounting';
 
   useEffect(() => {
     if (open && report?.id) {
@@ -252,6 +268,71 @@ const ReportApprovalModal: React.FC<ReportApprovalModalProps> = ({
     }
   };
 
+  // Expense-level approval handlers for accounting users
+  const handleExpenseApprove = async (expenseId: number) => {
+    try {
+      setSubmitting(true);
+      setError('');
+      
+      const response = await apiClient.post(`/approvals/expenses/${expenseId}/approve`);
+      
+      // Update local expense status
+      setExpenses(prev => prev.map(expense => 
+        expense.id === expenseId 
+          ? { ...expense, status: 'APPROVED', rejection_reason: undefined }
+          : expense
+      ));
+      
+      // Check if report status changed (all expenses processed)
+      if (response.data.report_status_changed) {
+        if (onApprovalComplete) {
+          onApprovalComplete();
+        }
+        onClose();
+      }
+    } catch (error: any) {
+      setError(error?.response?.data?.detail || 'Failed to approve expense');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleExpenseReject = async (expenseId: number, rejectionReason: string) => {
+    if (!rejectionReason.trim()) {
+      setError('Rejection reason is required');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      setError('');
+      
+      const response = await apiClient.post(`/approvals/expenses/${expenseId}/reject`, {
+        action: 'reject',
+        rejection_reason: rejectionReason
+      });
+      
+      // Update local expense status
+      setExpenses(prev => prev.map(expense => 
+        expense.id === expenseId 
+          ? { ...expense, status: 'REJECTED', rejection_reason: rejectionReason }
+          : expense
+      ));
+      
+      // Check if report status changed (all expenses processed)
+      if (response.data.report_status_changed) {
+        if (onApprovalComplete) {
+          onApprovalComplete();
+        }
+        onClose();
+      }
+    } catch (error: any) {
+      setError(error?.response?.data?.detail || 'Failed to reject expense');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   if (!report) {
     return null;
   }
@@ -366,6 +447,8 @@ const ReportApprovalModal: React.FC<ReportApprovalModalProps> = ({
                     <TableCell>Category</TableCell>
                     <TableCell>Purpose</TableCell>
                     <TableCell align="right">Amount</TableCell>
+                    {isAccountingUser && <TableCell>Status</TableCell>}
+                    {isAccountingUser && <TableCell>Actions</TableCell>}
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -391,22 +474,80 @@ const ReportApprovalModal: React.FC<ReportApprovalModalProps> = ({
                         <TableCell align="right">
                           <strong>{expense.currency_code} {parseFloat(expense.amount).toLocaleString()}</strong>
                         </TableCell>
+                        {isAccountingUser && (
+                          <TableCell>
+                            <Chip 
+                              label={expense.status || 'PENDING'} 
+                              color={
+                                expense.status === 'APPROVED' ? 'success' : 
+                                expense.status === 'REJECTED' ? 'error' : 
+                                'warning'
+                              }
+                              size="small"
+                            />
+                          </TableCell>
+                        )}
+                        {isAccountingUser && (
+                          <TableCell>
+                            {expense.status === 'APPROVED' || expense.status === 'REJECTED' ? (
+                              <Typography variant="caption" color="text.secondary">
+                                {expense.status === 'APPROVED' ? 'Approved' : 'Rejected'}
+                              </Typography>
+                            ) : (
+                              <Box sx={{ display: 'flex', gap: 1 }}>
+                                <IconButton
+                                  size="small"
+                                  color="success"
+                                  onClick={() => handleExpenseApprove(expense.id)}
+                                  disabled={submitting}
+                                  title="Approve Expense"
+                                >
+                                  <CheckIcon />
+                                </IconButton>
+                                <IconButton
+                                  size="small"
+                                  color="error"
+                                  onClick={() => {
+                                    const reason = expenseRejectionReasons[expense.id] || '';
+                                    if (!reason.trim()) {
+                                      // Expand the row to show rejection reason field
+                                      setExpandedRows(prev => new Set(Array.from(prev).concat([expense.id])));
+                                      setError('Please enter a rejection reason in the expanded section');
+                                    } else {
+                                      handleExpenseReject(expense.id, reason);
+                                    }
+                                  }}
+                                  disabled={submitting}
+                                  title="Reject Expense"
+                                >
+                                  <CloseIcon />
+                                </IconButton>
+                              </Box>
+                            )}
+                          </TableCell>
+                        )}
                       </TableRow>
                       
                       <TableRow>
-                        <TableCell colSpan={5} sx={{ py: 0, border: 0 }}>
+                        <TableCell colSpan={isAccountingUser ? 7 : 5} sx={{ py: 0, border: 0 }}>
                           <Collapse in={expandedRows.has(expense.id)} timeout="auto" unmountOnExit>
                             <Box sx={{ p: 2, backgroundColor: '#f5f5f5' }}>
                               <Typography variant="subtitle2" gutterBottom>
-                                Rejection Reason
+                                {isAccountingUser ? 'Expense Rejection Reason' : 'Rejection Reason'}
                               </Typography>
                               <TextField
                                 fullWidth
                                 multiline
                                 rows={3}
                                 placeholder={expense.rejection_reason || "Enter rejection reason (max 300 characters)"}
-                                value={rejectionReasons[expense.id] || ''}
-                                onChange={(e) => handleRejectionReasonChange(expense.id, e.target.value)}
+                                value={isAccountingUser ? (expenseRejectionReasons[expense.id] || '') : (rejectionReasons[expense.id] || '')}
+                                onChange={(e) => {
+                                  if (isAccountingUser) {
+                                    setExpenseRejectionReasons(prev => ({ ...prev, [expense.id]: e.target.value }));
+                                  } else {
+                                    handleRejectionReasonChange(expense.id, e.target.value);
+                                  }
+                                }}
                                 inputProps={{ maxLength: 300 }}
                                 helperText={`${(rejectionReasons[expense.id] || '').length}/300 characters`}
                                 size="small"
@@ -438,24 +579,33 @@ const ReportApprovalModal: React.FC<ReportApprovalModalProps> = ({
         <Button onClick={onClose} disabled={submitting}>
           Cancel
         </Button>
-        <Button
-          onClick={handleReject}
-          color="error"
-          variant="outlined"
-          startIcon={<RejectIcon />}
-          disabled={submitting || loading}
-        >
-          {submitting ? 'Rejecting...' : 'Reject'}
-        </Button>
-        <Button
-          onClick={handleApprove}
-          color="success"
-          variant="contained"
-          startIcon={<ApproveIcon />}
-          disabled={submitting || loading}
-        >
-          {submitting ? 'Approving...' : 'Approve'}
-        </Button>
+        {!isAccountingUser && (
+          <>
+            <Button
+              onClick={handleReject}
+              color="error"
+              variant="outlined"
+              startIcon={<RejectIcon />}
+              disabled={submitting || loading}
+            >
+              {submitting ? 'Rejecting...' : 'Reject'}
+            </Button>
+            <Button
+              onClick={handleApprove}
+              color="success"
+              variant="contained"
+              startIcon={<ApproveIcon />}
+              disabled={submitting || loading}
+            >
+              {submitting ? 'Approving...' : 'Approve'}
+            </Button>
+          </>
+        )}
+        {isAccountingUser && (
+          <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
+            Approve or reject individual expenses above. The report will be automatically processed when all expenses are reviewed.
+          </Typography>
+        )}
       </DialogActions>
     </Dialog>
   );

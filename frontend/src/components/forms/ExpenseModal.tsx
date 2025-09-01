@@ -295,7 +295,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
           travel_expense_report_id: reportId,
           travel_expense_report: selectedReport?.displayName || '',
           country: reportDetails.prepayment_destination || 'Country not found',
-          currency: reportDetails.prepayment_currency || 'Currency not found'
+          currency: reportDetails.currency || 'Currency not found'
         }));
       } catch (error) {
         setFormData(prev => ({

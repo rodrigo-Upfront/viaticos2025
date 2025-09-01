@@ -44,9 +44,10 @@ class TaxableOption(str, enum.Enum):
 
 
 class ExpenseStatus(str, enum.Enum):
-    PENDING = "pending"
-    IN_PROCESS = "in_process"
-    APPROVED = "approved"
+    PENDING = "PENDING"
+    IN_PROCESS = "IN_PROCESS"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
 
 
 class ApprovalStatus(str, enum.Enum):
