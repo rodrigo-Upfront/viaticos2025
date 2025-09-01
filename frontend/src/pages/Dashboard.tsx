@@ -451,7 +451,7 @@ const Dashboard: React.FC = () => {
 
         {/* Monthly Expenses Bar Chart */}
         <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3, height: 400 }}>
+          <Paper sx={{ p: 3, height: 400, borderRadius: 4 }}>
             <Typography variant="h6" gutterBottom fontWeight="bold">
               Gastos Mensuales
             </Typography>
@@ -491,7 +491,7 @@ const Dashboard: React.FC = () => {
 
         {/* Expenses by Category Pie Chart */}
         <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3, height: 400 }}>
+          <Paper sx={{ p: 3, height: 400, borderRadius: 4 }}>
             <Typography variant="h6" gutterBottom fontWeight="bold">
               Gastos por Categoría
             </Typography>
@@ -546,7 +546,7 @@ const Dashboard: React.FC = () => {
 
         {/* Recent Prepayments Table */}
         <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3, height: 400 }}>
+          <Paper sx={{ p: 3, height: 400, borderRadius: 4 }}>
             <Typography variant="h6" gutterBottom fontWeight="bold">
               Solicitudes de Viaje Recientes
             </Typography>
@@ -595,7 +595,7 @@ const Dashboard: React.FC = () => {
 
         {/* Recent Expenses Table */}
         <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3, height: 400 }}>
+          <Paper sx={{ p: 3, height: 400, borderRadius: 4 }}>
             <Typography variant="h6" gutterBottom fontWeight="bold">
               Gastos Recientes
             </Typography>
