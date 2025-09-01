@@ -270,7 +270,7 @@ const Dashboard: React.FC = () => {
       position: 'relative',
       overflow: 'visible',
       border: '1px solid rgba(0,0,0,0.08)',
-      borderRadius: 3
+      borderRadius: 4
     }}>
       <CardContent sx={{ p: 3 }}>
         {/* Header with Icon */}
