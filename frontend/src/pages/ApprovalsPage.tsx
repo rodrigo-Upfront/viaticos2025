@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -39,8 +40,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import ConfirmDialog from '../components/forms/ConfirmDialog';
 import PrepaymentViewModal from '../components/modals/PrepaymentViewModal';
-import ReportViewModal from '../components/modals/ReportViewModal';
-import ReportApprovalModal from '../components/modals/ReportApprovalModal';
+
 import { approvalService, PendingApprovalItem } from '../services/approvalService';
 import apiClient from '../services/apiClient';
 
@@ -69,6 +69,8 @@ function TabPanel(props: TabPanelProps) {
 const ApprovalsPage: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [tabValue, setTabValue] = React.useState(0);
 
   // Loading state
@@ -83,7 +85,18 @@ const ApprovalsPage: React.FC = () => {
   // Load pending approvals on component mount
   useEffect(() => {
     loadPendingApprovals();
-  }, []);
+    
+    // Handle navigation state messages
+    if (location.state?.message) {
+      setSnackbar({
+        open: true,
+        message: location.state.message,
+        severity: location.state.severity || 'success'
+      });
+      // Clear the state to prevent showing the message on refresh
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location.state]);
 
   const loadPendingApprovals = async () => {
     try {
@@ -133,10 +146,7 @@ const ApprovalsPage: React.FC = () => {
     data: null as any
   });
 
-  const [approvalModal, setApprovalModal] = useState({
-    open: false,
-    report: null as any
-  });
+
 
   const [quickRejectionDialog, setQuickRejectionDialog] = useState({
     open: false,
@@ -260,40 +270,8 @@ const ApprovalsPage: React.FC = () => {
     }
   };
 
-  const handleApproveReport = async (item: PendingApprovalItem) => {
-    try {
-      // Get the actual report status from the backend
-      const response = await apiClient.get(`/expense-reports/${item.entity_id}`);
-      const reportData = response.data;
-      
-      // Convert the API response to ReportApprovalModal format
-      const modalReportData = {
-        id: reportData.id,
-        prepaymentId: reportData.prepayment_id || 0,
-        reportDate: reportData.created_at || item.request_date,
-        totalExpenses: parseFloat(reportData.total_expenses || '0'),
-        prepaidAmount: parseFloat(reportData.prepayment_amount || item.prepaid_amount || '0'),
-        budgetStatus: 'Under-Budget', // This will be calculated properly in the modal
-        status: reportData.status, // Use the actual status from the backend
-        expenseCount: reportData.expense_count || 0,
-        requester: reportData.requesting_user_name || item.requester,
-        report_type: reportData.report_type || (item.prepayment_id ? 'PREPAYMENT' : 'REIMBURSEMENT'),
-        reimbursement_reason: reportData.reimbursement_reason || item.reason,
-        reimbursement_country: reportData.reimbursement_country || item.destination,
-        prepayment_reason: reportData.prepayment_reason || item.reason,
-        prepayment_destination: reportData.prepayment_destination || item.destination,
-        currency: reportData.currency || item.currency,  // Unified currency field
-      };
-      
-      setApprovalModal({ open: true, report: modalReportData });
-    } catch (error) {
-      console.error('Failed to load report details:', error);
-      setSnackbar({
-        open: true,
-        message: 'Failed to load report details',
-        severity: 'error'
-      });
-    }
+  const handleApproveReport = (item: PendingApprovalItem) => {
+    navigate(`/approvals/report/${item.entity_id}`);
   };
 
   const handleApprovalComplete = async () => {
@@ -330,21 +308,8 @@ const ApprovalsPage: React.FC = () => {
         data: prepaymentData
       });
     } else if (item.type === 'report') {
-      // Convert the approval data format to ReportViewModal format
-      const reportData = {
-        id: item.entity_id,
-        prepaymentId: item.prepayment_id || 0,
-        reportDate: item.report_date || item.request_date,
-        totalExpenses: parseFloat(item.total_expenses || '0'),
-        prepaidAmount: parseFloat(item.prepaid_amount || '0'),
-        budgetStatus: (parseFloat(item.total_expenses || '0') > parseFloat(item.prepaid_amount || '0')) ? 'Over-Budget' : 'Under-Budget',
-        status: 'pending'
-      };
-      setViewModal({
-        open: true,
-        type: 'report',
-        data: reportData
-      });
+      // Navigate to full-page report view instead of modal
+      navigate(`/approvals/report/${item.entity_id}`);
     }
   };
 
@@ -909,19 +874,9 @@ const ApprovalsPage: React.FC = () => {
         prepayment={viewModal.data}
       />
 
-      <ReportViewModal
-        open={viewModal.open && viewModal.type === 'report'}
-        onClose={() => setViewModal({ open: false, type: '', data: null })}
-        report={viewModal.data}
-      />
 
-      {/* Report Approval Modal */}
-      <ReportApprovalModal
-        open={approvalModal.open}
-        onClose={() => setApprovalModal({ open: false, report: null })}
-        report={approvalModal.report}
-        onApprovalComplete={handleApprovalComplete}
-      />
+
+
 
       {/* Rejection Reason Dialog */}
       <Dialog

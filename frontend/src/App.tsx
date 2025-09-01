@@ -19,6 +19,8 @@ import ReportsPage from './pages/ReportsPage';
 import ApprovalsPage from './pages/ApprovalsPage';
 import UsersPage from './pages/UsersPage';
 import SettingsPage from './pages/SettingsPage';
+import ReportApprovalPage from './pages/ReportApprovalPage';
+import ReportViewPage from './pages/ReportViewPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Import internationalization
@@ -60,7 +62,9 @@ function App() {
                           <Route path="/prepayments" element={<PrepaymentsPage />} />
                           <Route path="/expenses" element={<ExpensesPage />} />
                           <Route path="/reports" element={<ReportsPage />} />
+                          <Route path="/reports/view/:reportId" element={<ReportViewPage />} />
                           <Route path="/approvals" element={<ApprovalsPage />} />
+                          <Route path="/approvals/report/:reportId" element={<ReportApprovalPage />} />
                           <Route path="/users" element={<UsersPage />} />
                           <Route path="/settings" element={<SettingsPage />} />
                         </Routes>

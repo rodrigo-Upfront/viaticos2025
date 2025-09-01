@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -37,7 +38,7 @@ import {
   CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import ReportViewModal from '../components/modals/ReportViewModal';
+
 import ConfirmDialog from '../components/forms/ConfirmDialog';
 import { reportService, ExpenseReport as ApiReport, ExpenseReportSummary, ExpenseReportManualCreate } from '../services/reportService';
 import { countryService, Country as ApiCountry } from '../services/countryService';
@@ -65,6 +66,7 @@ interface ExpenseReport {
 
 const ReportsPage: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
 
   // Loading state
   const [loading, setLoading] = useState({
@@ -252,15 +254,12 @@ const ReportsPage: React.FC = () => {
 
 
 
-  const [viewModal, setViewModal] = useState({
-    open: false,
-    report: undefined as typeof expenseReports[0] | undefined
-  });
+
 
 
 
   const handleViewReport = (report: typeof expenseReports[0]) => {
-    setViewModal({ open: true, report });
+    navigate(`/reports/view/${report.id}`);
   };
 
   const [confirmDialog, setConfirmDialog] = useState({
@@ -683,12 +682,7 @@ const ReportsPage: React.FC = () => {
         </Table>
       </TableContainer>
 
-      {/* Report View Modal */}
-      <ReportViewModal
-        open={viewModal.open}
-        onClose={() => setViewModal({ open: false, report: undefined })}
-        report={viewModal.report}
-      />
+
 
 
 
