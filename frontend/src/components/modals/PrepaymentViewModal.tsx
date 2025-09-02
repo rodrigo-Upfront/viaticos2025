@@ -17,6 +17,7 @@ import {
   AccountBalance as MoneyIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import apiClient from '../../services/apiClient';
 
 interface Prepayment {
   id?: number;
@@ -80,15 +81,37 @@ const PrepaymentViewModal: React.FC<PrepaymentViewModalProps> = ({ open, onClose
     return entry ? entry[lang] : '';
   };
 
-  const handleFileDownload = (filename: string) => {
-    // Navigate to backend storage path (basic implementation)
-    const url = `/storage/uploads/prepayments/${filename}`;
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleFileDownload = async (filename: string) => {
+    try {
+      // Use authenticated API call to download the file
+      const response = await apiClient.get(`/prepayments/${prepayment?.id}/download/${filename}`, {
+        responseType: 'blob'
+      });
+      
+      // Create a temporary URL for the blob and trigger download
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      console.error('Error downloading file:', error);
+      
+      // Show user-friendly error message
+      let errorMessage = 'Failed to download file';
+      if (error.response?.status === 404) {
+        errorMessage = 'File not found. The file may have been moved or deleted.';
+      } else if (error.response?.status === 403) {
+        errorMessage = 'You do not have permission to download this file.';
+      }
+      
+      // You can replace this with a proper toast notification
+      alert(errorMessage);
+    }
   };
 
   const getStatusColor = (status: string) => {

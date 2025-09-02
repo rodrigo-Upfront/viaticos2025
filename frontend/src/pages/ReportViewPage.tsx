@@ -27,6 +27,7 @@ import {
 import apiClient from '../services/apiClient';
 import { useAuth } from '../contexts/AuthContext';
 import ExpenseViewModal from '../components/modals/ExpenseViewModal';
+import FundReturnDocumentModal from '../components/modals/FundReturnDocumentModal';
 
 interface Expense {
   id: number;
@@ -56,6 +57,14 @@ interface ExpenseReport {
   prepayment_reason?: string;
   prepayment_destination?: string;
   currency: string;
+  // Fund return fields
+  return_document_number?: string;
+  return_document_files?: Array<{
+    original_name: string;
+    stored_name: string;
+    file_path: string;
+    size: number;
+  }>;
 }
 
 interface CategorySummary {
@@ -76,6 +85,7 @@ const ReportViewPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string>('');
+  const [fundReturnModalOpen, setFundReturnModalOpen] = useState(false);
   
   // ExpenseViewModal state
   const [selectedExpense, setSelectedExpense] = useState<{
@@ -110,8 +120,12 @@ const ReportViewPage: React.FC = () => {
       'accounting_pending': 'Accounting Review', 
       'treasury_pending': 'Treasury Review',
       'funds_return_pending': 'Funds Return Pending',
+      'review_return': 'Fund return review',
       'approved_for_reimbursement': 'Approved for Reimbursement',
       'approved': 'Approved',
+      'approved_expenses': 'Expenses Approved',
+      'approved_repaid': 'Trip Reimbursed',
+      'approved_returned_funds': 'Refund completed',
       'rejected': 'Rejected',
       'pending_approval': 'Pending Approval'
     };
@@ -121,13 +135,20 @@ const ReportViewPage: React.FC = () => {
   const getStatusColor = (status: string): "success" | "error" | "warning" | "info" | "default" => {
     switch (status?.toLowerCase()) {
       case 'approved':
+      case 'approved_expenses':
+      case 'approved_repaid':
+      case 'approved_returned_funds':
         return 'success';
       case 'rejected':
         return 'error';
       case 'supervisor_pending':
       case 'accounting_pending':
       case 'treasury_pending':
+      case 'funds_return_pending':
+      case 'review_return':
         return 'warning';
+      case 'approved_for_reimbursement':
+        return 'info';
       default:
         return 'default';
     }
@@ -160,8 +181,7 @@ const ReportViewPage: React.FC = () => {
   };
 
   // Load report and expenses data
-  useEffect(() => {
-    const loadReportData = async () => {
+  const loadReportData = async () => {
       if (!reportId) return;
       
       try {
@@ -176,22 +196,25 @@ const ReportViewPage: React.FC = () => {
           id: reportData.id,
           prepaymentId: reportData.prepayment_id,
           reportDate: reportData.created_at,
-          totalExpenses: reportData.total_expenses || 0,
-          prepaidAmount: reportData.prepaid_amount || 0,
+          totalExpenses: Number(reportData.total_expenses) || 0,
+          prepaidAmount: Number(reportData.prepayment_amount) || 0,
           budgetStatus: reportData.budget_status || 'PENDING',
           status: reportData.status || 'PENDING',
-          requester: reportData.requesting_user?.email || 
+          requester: reportData.requesting_user_name || 
+                    reportData.requesting_user?.email || 
                     (reportData.requesting_user?.name && reportData.requesting_user?.surname 
                       ? `${reportData.requesting_user.name} ${reportData.requesting_user.surname}`
                       : 'N/A'),
           report_type: reportData.report_type || (reportData.prepayment_id ? 'PREPAYMENT' : 'REIMBURSEMENT'),
           reimbursement_reason: reportData.reimbursement_reason,
           reimbursement_country: reportData.reimbursement_country,
-          reimbursement_start_date: reportData.reimbursement_start_date,
-          reimbursement_end_date: reportData.reimbursement_end_date,
+          reimbursement_start_date: reportData.start_date,
+          reimbursement_end_date: reportData.end_date,
           prepayment_reason: reportData.prepayment_reason,
           prepayment_destination: reportData.prepayment_destination,
           currency: reportData.currency,
+          return_document_number: reportData.return_document_number,
+          return_document_files: reportData.return_document_files,
         };
         
         setReport(reportDetails);
@@ -213,8 +236,10 @@ const ReportViewPage: React.FC = () => {
       } finally {
         setLoading(false);
       }
-    };
+  };
 
+  // Load report and expenses data on mount
+  useEffect(() => {
     loadReportData();
   }, [reportId]);
 
@@ -260,8 +285,8 @@ const ReportViewPage: React.FC = () => {
         id: reportData.id,
         prepaymentId: reportData.prepayment_id,
         reportDate: reportData.created_at,
-        totalExpenses: reportData.total_expenses || 0,
-        prepaidAmount: reportData.prepaid_amount || 0,
+        totalExpenses: Number(reportData.total_expenses) || 0,
+        prepaidAmount: Number(reportData.prepayment_amount) || 0,
         budgetStatus: reportData.budget_status || 'PENDING',
         status: reportData.status || 'PENDING',
         requester: reportData.requesting_user?.name && reportData.requesting_user?.surname 
@@ -283,6 +308,62 @@ const ReportViewPage: React.FC = () => {
       setError('Failed to submit report for approval');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleFundReturnSubmission = async (documentNumber: string, files: File[]) => {
+    if (!reportId) return;
+    
+    const formData = new FormData();
+    formData.append('document_number', documentNumber);
+    
+    files.forEach((file) => {
+      formData.append('files', file);
+    });
+    
+    try {
+      await apiClient.post(`/approvals/reports/${reportId}/submit-return-documents`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      // Refresh the report data to show updated status
+      await loadReportData();
+      
+    } catch (error: any) {
+      console.error('Error submitting fund return documents:', error);
+      throw new Error(error.response?.data?.detail || 'Failed to submit documents');
+    }
+  };
+
+  const handleDownloadFile = async (file: any) => {
+    try {
+      const response = await apiClient.get(
+        `/approvals/reports/${report?.id}/return-documents/${file.stored_name}`,
+        { 
+          responseType: 'blob',
+          headers: {
+            'Accept': 'application/octet-stream'
+          }
+        }
+      );
+      
+      // Create blob URL and trigger download
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = file.original_name;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      console.error('Failed to download file:', error);
+      setError(`Failed to download file: ${error?.response?.data?.detail || error.message}`);
     }
   };
 
@@ -423,13 +504,13 @@ const ReportViewPage: React.FC = () => {
                   </TableCell>
                 </TableRow>
                 <TableRow sx={{ 
-                  backgroundColor: total > report.prepaidAmount ? '#ffebee' : '#f3e5f5' 
+                  backgroundColor: total > report.prepaidAmount ? '#ffebee' : '#e8f5e8' 
                 }}>
                   <TableCell><strong>Assigned Budget</strong></TableCell>
                   <TableCell align="center"><strong>1</strong></TableCell>
                   <TableCell align="right">
                     <Typography fontWeight="bold">
-                      {report.currency} {report.prepaidAmount.toFixed(2)}
+                      {report.currency} {Number(report.prepaidAmount || 0).toFixed(2)}
                     </Typography>
                   </TableCell>
                 </TableRow>
@@ -461,7 +542,7 @@ const ReportViewPage: React.FC = () => {
                   <TableCell><strong>Assigned Amount</strong></TableCell>
                   <TableCell align="right">
                     <Typography color="primary.main" fontWeight="bold">
-                      {report.currency} {report.prepaidAmount.toFixed(2)}
+                      {report.currency} {Number(report.prepaidAmount || 0).toFixed(2)}
                     </Typography>
                   </TableCell>
                 </TableRow>
@@ -563,7 +644,81 @@ const ReportViewPage: React.FC = () => {
         </Box>
       </Paper>
 
-
+      {/* Fund Return Document Section */}
+      {(report.status === 'FUNDS_RETURN_PENDING' || (report.return_document_number && report.return_document_files)) && (
+        <Paper sx={{ borderRadius: 2, boxShadow: 1, mb: 3 }}>
+          <Box sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Fund Return Documents
+            </Typography>
+            
+            {report.status === 'FUNDS_RETURN_PENDING' && (
+              <Box>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Please submit supporting documents for fund return verification.
+                </Typography>
+                
+                <Alert severity="info" sx={{ mb: 3 }}>
+                  You need to submit documents to proceed with the fund return process.
+                </Alert>
+                
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<SendIcon />}
+                  onClick={() => setFundReturnModalOpen(true)}
+                >
+                  Submit Return Documents
+                </Button>
+              </Box>
+            )}
+            
+            {report.return_document_number && report.return_document_files && (
+              <Box>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Document Number: <strong>{report.return_document_number}</strong>
+                </Typography>
+                
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  Submitted Files:
+                </Typography>
+                
+                {report.return_document_files.map((file: any, index: number) => (
+                  <Box key={index} sx={{ ml: 2, mb: 1 }}>
+                    <Typography 
+                      variant="body2" 
+                      component="span"
+                      onClick={() => handleDownloadFile(file)}
+                      sx={{ 
+                        color: 'primary.main',
+                        textDecoration: 'none',
+                        cursor: 'pointer',
+                        '&:hover': {
+                          textDecoration: 'underline'
+                        }
+                      }}
+                    >
+                      📎 {file.original_name} ({(file.size / 1024).toFixed(1)} KB)
+                    </Typography>
+                  </Box>
+                ))}
+                
+                {report.status === 'REVIEW_RETURN' && (
+                  <Alert severity="info" sx={{ mt: 2 }}>
+                    Documents submitted for treasury review.
+                  </Alert>
+                )}
+                
+                {report.status === 'APPROVED_RETURNED_FUNDS' && (
+                  <Alert severity="success" sx={{ mt: 2 }}>
+                    Fund return approved and processed.
+                  </Alert>
+                )}
+              </Box>
+            )}
+          </Box>
+        </Paper>
+      )}
 
       {/* Expense Detail Modal */}
       {selectedExpense && (
@@ -576,6 +731,14 @@ const ReportViewPage: React.FC = () => {
           }}
         />
       )}
+
+      {/* Fund Return Document Modal */}
+      <FundReturnDocumentModal
+        open={fundReturnModalOpen}
+        onClose={() => setFundReturnModalOpen(false)}
+        onSubmit={handleFundReturnSubmission}
+        reportId={parseInt(reportId || '0')}
+      />
       </Container>
     </Box>
   );

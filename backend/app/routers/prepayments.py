@@ -3,10 +3,14 @@ Prepayments Router
 Handles prepayment management operations
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from datetime import datetime
+import os
+import uuid
+import shutil
 
 from app.database.connection import get_db
 from app.models.models import User, Prepayment, Country, Currency, RequestStatus
@@ -349,4 +353,133 @@ async def delete_prepayment(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete prepayment: {str(e)}"
+        )
+
+
+@router.get("/{prepayment_id}/download/{file_name}")
+async def download_prepayment_file(
+    prepayment_id: int,
+    file_name: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Download a prepayment justification file"""
+    
+    # Get the prepayment
+    prepayment = db.query(Prepayment).filter(Prepayment.id == prepayment_id).first()
+    
+    if not prepayment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Prepayment not found"
+        )
+    
+    # Check permissions - users can download their own files, or supervisors/admin can download any
+    if not (current_user.is_superuser or 
+            prepayment.requesting_user_id == current_user.id or
+            current_user.profile.value in ['manager', 'accounting', 'treasury']):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions to download this file"
+        )
+    
+    # Verify the file matches the prepayment's justification file
+    if prepayment.justification_file != file_name:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="File not found for this prepayment"
+        )
+    
+    # Construct file path (assuming files are stored in storage/uploads/prepayments/)
+    file_path = os.path.join("storage", "uploads", "prepayments", file_name)
+    
+    if not os.path.exists(file_path):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="File not found on disk"
+        )
+    
+    return FileResponse(
+        path=file_path,
+        filename=file_name,
+        media_type='application/octet-stream'
+    )
+
+
+@router.post("/{prepayment_id}/upload-file")
+async def upload_prepayment_file(
+    prepayment_id: int,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Upload a justification file for a prepayment"""
+    
+    # Get the prepayment
+    prepayment = db.query(Prepayment).filter(Prepayment.id == prepayment_id).first()
+    
+    if not prepayment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Prepayment not found"
+        )
+    
+    # Check permissions - users can only upload files for their own prepayments, or admin can upload any
+    if not (current_user.is_superuser or prepayment.requesting_user_id == current_user.id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions to upload file for this prepayment"
+        )
+    
+    # Validate file type
+    allowed_extensions = {'.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'}
+    file_extension = os.path.splitext(file.filename or '')[1].lower()
+    if file_extension not in allowed_extensions:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"File type not allowed. Allowed types: {', '.join(allowed_extensions)}"
+        )
+    
+    # Validate file size (10MB limit)
+    max_size = 10 * 1024 * 1024  # 10MB
+    file_content = await file.read()
+    if len(file_content) > max_size:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="File size too large. Maximum size is 10MB"
+        )
+    
+    try:
+        # Create upload directory if it doesn't exist
+        upload_dir = "storage/uploads/prepayments"
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        # Generate unique filename to avoid conflicts
+        unique_filename = f"{uuid.uuid4()}_{file.filename}"
+        file_path = os.path.join(upload_dir, unique_filename)
+        
+        # Save file to disk
+        with open(file_path, "wb") as buffer:
+            buffer.write(file_content)
+        
+        # Update prepayment with new file
+        prepayment.justification_file = unique_filename
+        prepayment.updated_at = datetime.utcnow()
+        db.commit()
+        
+        return {
+            "message": "File uploaded successfully",
+            "filename": unique_filename,
+            "original_filename": file.filename
+        }
+        
+    except Exception as e:
+        # Clean up file if database update fails
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to upload file: {str(e)}"
         )

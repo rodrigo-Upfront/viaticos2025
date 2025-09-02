@@ -90,111 +90,105 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
         </Box>
       </DialogTitle>
       <DialogContent dividers>
-        <Grid container spacing={3}>
+        <Grid container spacing={2}>
           {/* Basic Information */}
           <Grid item xs={12}>
             <Typography variant="h6" gutterBottom color="primary">
               Basic Information
             </Typography>
-            <Divider sx={{ mb: 2 }} />
+            <Divider sx={{ mb: 1.5 }} />
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+            <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
               Category
             </Typography>
-            <Typography variant="body1" paragraph>
+            <Typography variant="body1" sx={{ mb: 1.5 }}>
               {expense.category}
             </Typography>
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+            <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
               Travel Expense Report
             </Typography>
-            <Typography variant="body1" paragraph>
+            <Typography variant="body1" sx={{ mb: 1.5 }}>
               {expense.travel_expense_report_id ? (expense.travel_expense_report || `Report`) : 'Reimbursement'}
             </Typography>
           </Grid>
 
+          <Grid item xs={12} sm={6}>
+            <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
+              Country
+            </Typography>
+            <Typography variant="body1" sx={{ mb: 1.5 }}>
+              {expense.country}
+            </Typography>
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
+              Expense Date
+            </Typography>
+            <Typography variant="body1" sx={{ mb: 1.5 }}>
+              {expense.expense_date}
+            </Typography>
+          </Grid>
+
           <Grid item xs={12}>
-            <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+            <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
               Purpose
             </Typography>
-            <Typography variant="body1" paragraph>
+            <Typography variant="body1" sx={{ mb: 1.5 }}>
               {expense.purpose}
             </Typography>
           </Grid>
 
           {/* Financial Information */}
           <Grid item xs={12}>
-            <Typography variant="h6" gutterBottom color="primary">
+            <Typography variant="h6" gutterBottom color="primary" sx={{ mt: 2 }}>
               Financial Information
             </Typography>
-            <Divider sx={{ mb: 2 }} />
+            <Divider sx={{ mb: 1.5 }} />
           </Grid>
 
-          <Grid item xs={12} sm={4}>
-            <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+          <Grid item xs={12} sm={6}>
+            <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
               Amount
             </Typography>
-            <Typography variant="body1" paragraph>
-              <strong>{expense.currency} {expense.amount.toLocaleString()}</strong>
-            </Typography>
-          </Grid>
-
-          <Grid item xs={12} sm={4}>
-            <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-              Country
-            </Typography>
-            <Typography variant="body1" paragraph>
-              {expense.country}
-            </Typography>
-          </Grid>
-
-          <Grid item xs={12} sm={4}>
-            <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-              Expense Date
-            </Typography>
-            <Typography variant="body1" paragraph>
-              {expense.expense_date}
+            <Typography variant="body1" sx={{ mb: 1.5, fontWeight: 'bold' }}>
+              {expense.currency} {expense.amount.toLocaleString()}
             </Typography>
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+            <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
               Taxable
             </Typography>
-            <Chip
-              label={expense.taxable}
-              color={expense.taxable === 'Si' ? 'success' : 'default'}
-              size="small"
-            />
-          </Grid>
-
-          {/* Comment */}
-          <Grid item xs={12}>
-            <Typography variant="h6" gutterBottom color="primary">
-              Comment
-            </Typography>
-            <Divider sx={{ mb: 2 }} />
+            <Box sx={{ mb: 1.5 }}>
+              <Chip
+                label={expense.taxable}
+                color={expense.taxable === 'Si' ? 'success' : 'default'}
+                size="small"
+              />
+            </Box>
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+            <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
               Document Type
             </Typography>
-            <Box display="flex" alignItems="center">
+            <Box display="flex" alignItems="center" sx={{ mb: 1.5 }}>
               <ReceiptIcon fontSize="small" sx={{ mr: 1 }} />
               <Typography variant="body1">{expense.document_type}</Typography>
             </Box>
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+            <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
               Document Number
             </Typography>
-            <Typography variant="body1" paragraph>
+            <Typography variant="body1" sx={{ mb: 1.5 }}>
               {expense.document_number}
             </Typography>
           </Grid>
@@ -202,10 +196,10 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
           {/* Supplier Information */}
           {expense.document_type === 'Boleta' && expense.boleta_supplier && (
             <Grid item xs={12}>
-              <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+              <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
                 Boleta Supplier
               </Typography>
-              <Typography variant="body1" paragraph>
+              <Typography variant="body1" sx={{ mb: 1.5 }}>
                 {expense.boleta_supplier}
               </Typography>
             </Grid>
@@ -213,19 +207,29 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
 
           {expense.document_type === 'Factura' && expense.factura_supplier && (
             <Grid item xs={12}>
-              <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+              <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
                 Factura Supplier
               </Typography>
-              <Typography variant="body1" paragraph>
+              <Typography variant="body1" sx={{ mb: 1.5 }}>
                 {expense.factura_supplier}
               </Typography>
+            </Grid>
+          )}
+
+          {/* Additional Information */}
+          {(expense.document_file || expense.comments) && (
+            <Grid item xs={12}>
+              <Typography variant="h6" gutterBottom color="primary" sx={{ mt: 2 }}>
+                Additional Information
+              </Typography>
+              <Divider sx={{ mb: 1.5 }} />
             </Grid>
           )}
 
           {/* Document File */}
           {expense.document_file && (
             <Grid item xs={12}>
-              <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+              <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
                 Document File
               </Typography>
               <Box 
@@ -237,6 +241,7 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
                   border: 1, 
                   borderColor: 'divider', 
                   borderRadius: 1,
+                  mb: 1.5,
                   '&:hover': { 
                     bgcolor: 'action.hover',
                     borderColor: 'primary.main'
@@ -260,10 +265,10 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
           {/* Comments */}
           {expense.comments && (
             <Grid item xs={12}>
-              <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+              <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
                 Comments
               </Typography>
-              <Typography variant="body1" paragraph>
+              <Typography variant="body1" sx={{ mb: 1.5 }}>
                 {expense.comments}
               </Typography>
             </Grid>

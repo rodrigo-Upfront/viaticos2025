@@ -16,6 +16,7 @@ import {
   IconButton,
 } from '@mui/material';
 import { currencyService, Currency } from '../../services/currencyService';
+import apiClient from '../../services/apiClient';
 import {
   Download as DownloadIcon,
   Description as DocumentIcon,
@@ -46,7 +47,7 @@ interface Country {
 interface PrepaymentModalProps {
   open: boolean;
   onClose: () => void;
-  onSave: (prepayment: Prepayment) => void;
+  onSave: (prepayment: Prepayment, file?: File) => Promise<void>;
   prepayment?: Prepayment;
   mode: 'create' | 'edit';
   countries: Country[];
@@ -80,6 +81,7 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [fileUploading, setFileUploading] = useState(false);
 
   useEffect(() => {
     if (prepayment && mode === 'edit') {
@@ -175,25 +177,69 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
     const file = event.target.files?.[0];
     if (file) {
       setSelectedFile(file);
-      setFormData(prev => ({
-        ...prev,
-        justification_file: file.name
-      }));
+      // Don't update justification_file in formData yet - will be set after upload
     }
   };
 
-  const handleFileDownload = (filename: string) => {
-    // Placeholder for file download functionality
-    console.log('Download file:', filename);
-    
-    // Create a temporary download link for demonstration
-    // In a real application, this would call the backend API
-    const link = document.createElement('a');
-    link.href = '#'; // This would be the actual file URL from backend
-    link.download = filename;
-    link.click();
-    
-    alert(`Download functionality not yet implemented for: ${filename}\n\nIn a real application, this would download the file from the server.`);
+  const uploadFile = async (prepaymentId: number, file: File): Promise<string> => {
+    setFileUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await apiClient.post(`/prepayments/${prepaymentId}/upload-file`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      return response.data.filename;
+    } catch (error) {
+      console.error('File upload failed:', error);
+      throw error;
+    } finally {
+      setFileUploading(false);
+    }
+  };
+
+  const handleFileDownload = async (filename: string) => {
+    try {
+      // Get the prepayment ID from either the prop or the form data
+      const prepaymentId = prepayment?.id || formData.id;
+      
+      if (!prepaymentId) {
+        alert('Cannot download file: Prepayment ID not available');
+        return;
+      }
+
+      // Use authenticated API call to download the file
+      const response = await apiClient.get(`/prepayments/${prepaymentId}/download/${filename}`, {
+        responseType: 'blob'
+      });
+      
+      // Create a temporary URL for the blob and trigger download
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      console.error('Error downloading file:', error);
+      
+      // Show user-friendly error message
+      let errorMessage = 'Failed to download file';
+      if (error.response?.status === 404) {
+        errorMessage = 'File not found. The file may have been moved or deleted.';
+      } else if (error.response?.status === 403) {
+        errorMessage = 'You do not have permission to download this file.';
+      }
+      
+      alert(errorMessage);
+    }
   };
 
 
@@ -233,10 +279,16 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (validateForm()) {
-      onSave(formData);
-      onClose();
+      try {
+        // Pass the selected file to the parent component
+        await onSave(formData, selectedFile || undefined);
+        onClose();
+      } catch (error) {
+        console.error('Failed to save prepayment:', error);
+        // Error handling is done in parent component
+      }
     }
   };
 

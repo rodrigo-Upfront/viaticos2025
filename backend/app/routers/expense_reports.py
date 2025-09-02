@@ -157,7 +157,8 @@ async def get_expense_report(
             # Treasury can approve reports in treasury stages
             elif (report.status in [RequestStatus.TREASURY_PENDING, 
                                     RequestStatus.APPROVED_FOR_REIMBURSEMENT, 
-                                    RequestStatus.FUNDS_RETURN_PENDING] and
+                                    RequestStatus.FUNDS_RETURN_PENDING,
+                                    RequestStatus.REVIEW_RETURN] and
                   current_user.profile == UserProfile.TREASURY):
                 can_approve = True
         

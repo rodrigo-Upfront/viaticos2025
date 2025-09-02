@@ -57,6 +57,10 @@ class ExpenseReportResponse(ExpenseReportBase):
     expense_count: Optional[int] = None
     rejection_reason: Optional[str] = None
     balance: Optional[Decimal] = None  # prepayment_amount - total_expenses
+    
+    # Fund return fields
+    return_document_number: Optional[str] = None
+    return_document_files: Optional[List] = None
 
     class Config:
         from_attributes = True
@@ -99,7 +103,9 @@ class ExpenseReportResponse(ExpenseReportBase):
             total_expenses=total_expenses,
             expense_count=expense_count,
             rejection_reason=getattr(obj, 'rejection_reason', None),
-            balance=balance
+            balance=balance,
+            return_document_number=getattr(obj, 'return_document_number', None),
+            return_document_files=getattr(obj, 'return_document_files', None)
         )
 
 

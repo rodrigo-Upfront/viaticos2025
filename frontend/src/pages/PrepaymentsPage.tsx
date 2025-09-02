@@ -291,14 +291,35 @@ const PrepaymentsPage: React.FC = () => {
     });
   };
 
-  const handleSave = async (prepaymentData: Prepayment) => {
+  const uploadFile = async (prepaymentId: number, file: File): Promise<void> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    await apiClient.post(`/prepayments/${prepaymentId}/upload-file`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  };
+
+  const handleSave = async (prepaymentData: Prepayment, file?: File) => {
     try {
       setLoading(prev => ({ ...prev, action: true }));
       
+      let savedPrepayment: any;
+      
       if (modal.mode === 'create') {
         const apiData = mapFrontendToApi(prepaymentData);
-        const newPrepayment = await prepaymentService.createPrepayment(apiData);
-        const mappedPrepayment = mapApiToFrontend(newPrepayment);
+        savedPrepayment = await prepaymentService.createPrepayment(apiData);
+        
+        // Upload file if provided
+        if (file && savedPrepayment.id) {
+          await uploadFile(savedPrepayment.id, file);
+          // Refetch the prepayment to get updated file info
+          savedPrepayment = await prepaymentService.getPrepayment(savedPrepayment.id);
+        }
+        
+        const mappedPrepayment = mapApiToFrontend(savedPrepayment);
         setPrepayments(prev => [...prev, mappedPrepayment]);
         setSnackbar({
           open: true,
@@ -307,8 +328,16 @@ const PrepaymentsPage: React.FC = () => {
         });
       } else if (prepaymentData.id) {
         const apiData = mapFrontendToApi(prepaymentData);
-        const updatedPrepayment = await prepaymentService.updatePrepayment(prepaymentData.id, apiData);
-        const mappedPrepayment = mapApiToFrontend(updatedPrepayment);
+        savedPrepayment = await prepaymentService.updatePrepayment(prepaymentData.id, apiData);
+        
+        // Upload file if provided
+        if (file) {
+          await uploadFile(prepaymentData.id, file);
+          // Refetch the prepayment to get updated file info
+          savedPrepayment = await prepaymentService.getPrepayment(prepaymentData.id);
+        }
+        
+        const mappedPrepayment = mapApiToFrontend(savedPrepayment);
         setPrepayments(prev => prev.map(p => p.id === prepaymentData.id ? mappedPrepayment : p));
         setSnackbar({
           open: true,
@@ -323,6 +352,7 @@ const PrepaymentsPage: React.FC = () => {
         message: `Failed to ${modal.mode === 'create' ? 'create' : 'update'} prepayment`,
         severity: 'error'
       });
+      throw error; // Re-throw to let modal handle it
     } finally {
       setLoading(prev => ({ ...prev, action: false }));
     }

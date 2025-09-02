@@ -36,11 +36,24 @@ import ExpenseViewModal from '../components/modals/ExpenseViewModal';
 
 interface Expense {
   id: number;
+  category_id: number;
   category_name: string;
+  travel_expense_report_id: number;
   purpose: string;
+  document_type: string;
+  boleta_supplier?: string;
+  factura_supplier_id?: number;
+  factura_supplier_name?: string;
   amount: string;
   currency_code: string;
+  currency_id: number;
   expense_date: string;
+  country_id: number;
+  country_name: string;
+  document_number: string;
+  taxable: string;
+  document_file?: string;
+  comments?: string;
   status: string;
   rejection_reason?: string;
 }
@@ -63,6 +76,14 @@ interface ExpenseReport {
   prepayment_reason?: string;
   prepayment_destination?: string;
   currency?: string;  // Unified currency field
+  // Fund return fields
+  return_document_number?: string;
+  return_document_files?: Array<{
+    original_name: string;
+    stored_name: string;
+    file_path: string;
+    size: number;
+  }>;
 }
 
 interface ExpenseRejection {
@@ -130,8 +151,12 @@ const ReportApprovalPage: React.FC = () => {
       'accounting_pending': 'Accounting Review', 
       'treasury_pending': 'Treasury Review',
       'funds_return_pending': 'Funds Return Pending',
+      'review_return': 'Fund return review',
       'approved_for_reimbursement': 'Approved for Reimbursement',
       'approved': 'Approved',
+      'approved_expenses': 'Expenses Approved',
+      'approved_repaid': 'Trip Reimbursed',
+      'approved_returned_funds': 'Refund completed',
       'rejected': 'Rejected',
       'pending_approval': 'Pending Approval'
     };
@@ -141,13 +166,21 @@ const ReportApprovalPage: React.FC = () => {
   const getStatusColor = (status: string): "success" | "error" | "warning" | "info" | "default" => {
     switch (status?.toLowerCase()) {
       case 'approved':
-        return 'success';
+      case 'approved_expenses':
+      case 'approved_repaid':
+      case 'approved_returned_funds':
+        return 'success'; // Green for all approved types
       case 'rejected':
         return 'error';
       case 'supervisor_pending':
       case 'accounting_pending':
       case 'treasury_pending':
         return 'warning';
+      case 'funds_return_pending':
+      case 'review_return':
+        return 'warning'; // Orange for intermediate statuses
+      case 'approved_for_reimbursement':
+        return 'info';
       default:
         return 'default';
     }
@@ -160,7 +193,7 @@ const ReportApprovalPage: React.FC = () => {
     const status = report.status || 'unknown';
     if (status === 'SUPERVISOR_PENDING') return 'supervisor';
     if (status === 'ACCOUNTING_PENDING') return 'accounting';
-    if (status === 'TREASURY_PENDING' || status === 'APPROVED_FOR_REIMBURSEMENT' || status === 'FUNDS_RETURN_PENDING') return 'treasury';
+    if (status === 'TREASURY_PENDING' || status === 'APPROVED_FOR_REIMBURSEMENT' || status === 'REVIEW_RETURN') return 'treasury';
     return 'other';
   };
 
@@ -214,21 +247,25 @@ const ReportApprovalPage: React.FC = () => {
         id: reportData.id,
         prepaymentId: reportData.prepayment_id,
         reportDate: reportData.created_at,
-        totalExpenses: reportData.total_expenses || 0,
-        prepaidAmount: reportData.prepaid_amount || 0,
+        totalExpenses: Number(reportData.total_expenses) || 0,
+        prepaidAmount: Number(reportData.prepayment_amount) || 0,
         budgetStatus: reportData.budget_status || 'PENDING',
         status: reportData.status || 'PENDING',
-        requester: reportData.requesting_user?.name && reportData.requesting_user?.surname 
-          ? `${reportData.requesting_user.name} ${reportData.requesting_user.surname}`
-          : reportData.requesting_user?.email || 'N/A',
+        requester: reportData.requesting_user_name || 
+          reportData.requesting_user?.email ||
+          (reportData.requesting_user?.name && reportData.requesting_user?.surname 
+            ? `${reportData.requesting_user.name} ${reportData.requesting_user.surname}`
+            : 'N/A'),
         report_type: reportData.report_type || (reportData.prepayment_id ? 'PREPAYMENT' : 'REIMBURSEMENT'),
         reimbursement_reason: reportData.reimbursement_reason,
         reimbursement_country: reportData.reimbursement_country,
-        reimbursement_start_date: reportData.reimbursement_start_date,
-        reimbursement_end_date: reportData.reimbursement_end_date,
+        reimbursement_start_date: reportData.start_date,
+        reimbursement_end_date: reportData.end_date,
         prepayment_reason: reportData.prepayment_reason,
         prepayment_destination: reportData.prepayment_destination,
         currency: reportData.currency,
+        return_document_number: reportData.return_document_number,
+        return_document_files: reportData.return_document_files,
       };
       
       setReport(reportDetails);
@@ -299,6 +336,36 @@ const ReportApprovalPage: React.FC = () => {
       const amount = parseFloat(expense.amount) || 0;
       return sum + amount;
     }, 0);
+  };
+
+  const handleDownloadFile = async (file: any) => {
+    try {
+      const response = await apiClient.get(
+        `/approvals/reports/${report?.id}/return-documents/${file.stored_name}`,
+        { 
+          responseType: 'blob',
+          headers: {
+            'Accept': 'application/octet-stream'
+          }
+        }
+      );
+      
+      // Create blob URL and trigger download
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = file.original_name;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      console.error('Failed to download file:', error);
+      setError(`Failed to download file: ${error?.response?.data?.detail || error.message}`);
+    }
   };
 
   const handleApprove = async () => {
@@ -430,24 +497,24 @@ const ReportApprovalPage: React.FC = () => {
     // Convert our expense format to the format expected by ExpenseViewModal
     const convertedExpense = {
       id: expense.id,
-      category_id: 1, // Default value since we don't have this
+      category_id: expense.category_id,
       category: expense.category_name,
-      travel_expense_report_id: parseInt(reportId || '0'),
-      travel_expense_report: `Report ${reportId}`,
+      travel_expense_report_id: expense.travel_expense_report_id,
+      travel_expense_report: `Report ${expense.travel_expense_report_id}`,
       purpose: expense.purpose,
-      document_type: 'Factura' as const, // Default value
-      boleta_supplier: undefined,
-      factura_supplier_id: 1, // Default value
-      factura_supplier: 'Unknown Supplier',
+      document_type: expense.document_type as 'Boleta' | 'Factura',
+      boleta_supplier: expense.boleta_supplier,
+      factura_supplier_id: expense.factura_supplier_id,
+      factura_supplier: expense.factura_supplier_name,
       expense_date: expense.expense_date,
-      country_id: 1, // Default value since we don't have this
-      country: 'Unknown',
+      country_id: expense.country_id,
+      country: expense.country_name,
       currency: expense.currency_code,
       amount: parseFloat(expense.amount),
-      document_number: 'N/A',
-      taxable: 'No' as const, // Default value
-      document_file: undefined,
-      comments: expense.rejection_reason || undefined,
+      document_number: expense.document_number,
+      taxable: expense.taxable as 'Si' | 'No',
+      document_file: expense.document_file,
+      comments: expense.comments || expense.rejection_reason || undefined,
       status: (expense.status.toLowerCase() === 'rejected' ? 'pending' : expense.status.toLowerCase()) as 'pending' | 'in_process' | 'approved'
     };
     
@@ -545,7 +612,7 @@ const ReportApprovalPage: React.FC = () => {
             </Box>
             
             {/* Action buttons for approvers - only show if report is in an approval stage and user has approval authority */}
-            {!isAccountingUser && report?.status && ['SUPERVISOR_PENDING', 'TREASURY_PENDING', 'FUNDS_RETURN_PENDING'].includes(report.status.toUpperCase()) && (
+            {!isAccountingUser && report?.status && ['SUPERVISOR_PENDING', 'TREASURY_PENDING', 'FUNDS_RETURN_PENDING', 'REVIEW_RETURN', 'APPROVED_FOR_REIMBURSEMENT'].includes(report.status.toUpperCase()) && (
               <Box display="flex" justifyContent="flex-end" gap={2}>
                 <Button
                   onClick={handleReject}
@@ -843,6 +910,58 @@ const ReportApprovalPage: React.FC = () => {
             </Typography>
           </Box>
         )}
+      
+      {/* Fund Return Document Section */}
+      {(report.status === 'REVIEW_RETURN' || (report.return_document_number && report.return_document_files)) && (
+        <Paper sx={{ borderRadius: 2, boxShadow: 1, mb: 3 }}>
+          <Box sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Fund Return Documents
+            </Typography>
+            
+            {report.return_document_number && report.return_document_files && (
+              <Box>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Document Number: <strong>{report.return_document_number}</strong>
+                </Typography>
+                
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  Submitted Files:
+                </Typography>
+                
+                {report.return_document_files.map((file: any, index: number) => (
+                  <Box key={index} sx={{ ml: 2, mb: 1 }}>
+                    <Typography 
+                      variant="body2" 
+                      component="span"
+                      onClick={() => handleDownloadFile(file)}
+                      sx={{ 
+                        color: 'primary.main',
+                        textDecoration: 'none',
+                        cursor: 'pointer',
+                        '&:hover': {
+                          textDecoration: 'underline'
+                        }
+                      }}
+                    >
+                      📎 {file.original_name} ({(file.size / 1024).toFixed(1)} KB)
+                    </Typography>
+                  </Box>
+                ))}
+                
+
+                
+                {report.status === 'APPROVED_RETURNED_FUNDS' && (
+                  <Alert severity="success" sx={{ mt: 2 }}>
+                    Fund return approved and processed.
+                  </Alert>
+                )}
+              </Box>
+            )}
+          </Box>
+        </Paper>
+      )}
+      
       </Container>
 
       {/* Expense Detail Modal */}

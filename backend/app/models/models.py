@@ -4,7 +4,7 @@ Database Models for Viaticos 2025
 
 from sqlalchemy import (
     Column, Integer, String, Text, Boolean, DateTime, Date, 
-    ForeignKey, Enum as SQLEnum, UniqueConstraint, Numeric
+    ForeignKey, Enum as SQLEnum, UniqueConstraint, Numeric, JSON
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -29,7 +29,11 @@ class RequestStatus(str, enum.Enum):
     TREASURY_PENDING = "TREASURY_PENDING"
     APPROVED_FOR_REIMBURSEMENT = "APPROVED_FOR_REIMBURSEMENT"
     FUNDS_RETURN_PENDING = "FUNDS_RETURN_PENDING"
-    APPROVED = "APPROVED"
+    REVIEW_RETURN = "REVIEW_RETURN"
+    APPROVED = "APPROVED"  # Keep for backward compatibility
+    APPROVED_EXPENSES = "APPROVED_EXPENSES"
+    APPROVED_REPAID = "APPROVED_REPAID"
+    APPROVED_RETURNED_FUNDS = "APPROVED_RETURNED_FUNDS"
     REJECTED = "REJECTED"
 
 
@@ -225,6 +229,11 @@ class TravelExpenseReport(Base):
     end_date = Column(Date, nullable=True)
     status = Column(SQLEnum(RequestStatus), default=RequestStatus.PENDING, nullable=False)
     requesting_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    
+    # Fund return fields (for FUNDS_RETURN_PENDING workflow)
+    return_document_number = Column(String(100), nullable=True)
+    return_document_files = Column(JSON, nullable=True)  # Array of file paths
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     

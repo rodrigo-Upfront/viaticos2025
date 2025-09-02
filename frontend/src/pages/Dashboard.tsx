@@ -235,7 +235,11 @@ const Dashboard: React.FC = () => {
       'ACCOUNTING_PENDING': 'VB Contabilidad',
       'TREASURY_PENDING': 'VB Tesorería',
       'FUNDS_RETURN_PENDING': 'Devolución Pendiente',
+      'REVIEW_RETURN': 'Revisar Doc. Devolución',
       'APPROVED': 'Aprobado',
+      'APPROVED_EXPENSES': 'Gastos Aprobados',
+      'APPROVED_REPAID': 'Viaje Reembolsado',
+      'APPROVED_RETURNED_FUNDS': 'Devolución realizada',
       'REJECTED': 'Rechazado'
     };
     return statusLabels[status] || status;
@@ -248,7 +252,11 @@ const Dashboard: React.FC = () => {
       'ACCOUNTING_PENDING': 'warning',
       'TREASURY_PENDING': 'warning',
       'FUNDS_RETURN_PENDING': 'warning',
+      'REVIEW_RETURN': 'warning',
       'APPROVED': 'success',
+      'APPROVED_EXPENSES': 'success',
+      'APPROVED_REPAID': 'success',
+      'APPROVED_RETURNED_FUNDS': 'success',
       'REJECTED': 'error'
     };
     return statusColors[status] || 'default';

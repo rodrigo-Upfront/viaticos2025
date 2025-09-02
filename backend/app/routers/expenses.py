@@ -74,7 +74,8 @@ async def get_expenses(
                 RequestStatus.ACCOUNTING_PENDING, 
                 RequestStatus.TREASURY_PENDING,
                 RequestStatus.APPROVED_FOR_REIMBURSEMENT,
-                RequestStatus.FUNDS_RETURN_PENDING
+                RequestStatus.FUNDS_RETURN_PENDING,
+                RequestStatus.REVIEW_RETURN
             ])
             base_conditions.append(approval_conditions)
         

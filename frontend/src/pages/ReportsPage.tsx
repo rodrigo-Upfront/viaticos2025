@@ -221,8 +221,12 @@ const ReportsPage: React.FC = () => {
     accounting_pending: { en: "Accounting Review", es: "Revisión Contabilidad" },
     treasury_pending: { en: "Treasury Review", es: "Revisión Tesorería" },
     approved_for_reimbursement: { en: "Approved for Reimbursement", es: "Aprobado para Reembolso" },
-    funds_return_pending: { en: "Funds Return Pending", es: "Devolución Pendiente" },
+    funds_return_pending: { en: "Funds Return Pending", es: "Pendiente de Devolución" },
+    review_return: { en: "Fund return review", es: "Revisar Doc. Devolución" },
     approved: { en: "Approved", es: "Aprobado" },
+    approved_expenses: { en: "Expenses Approved", es: "Gastos Aprobados" },
+    approved_repaid: { en: "Trip Reimbursed", es: "Viaje Reembolsado" },
+    approved_returned_funds: { en: "Refund completed", es: "Devolución realizada" },
     rejected: { en: "Rejected", es: "Rechazado" },
   };
 
@@ -241,10 +245,15 @@ const ReportsPage: React.FC = () => {
       case 'treasury_pending':
         return 'warning';
       case 'approved_for_reimbursement':
-      case 'funds_return_pending':
         return 'info';
+      case 'funds_return_pending':
+      case 'review_return':
+        return 'warning'; // Orange for intermediate statuses
       case 'approved':
-        return 'success';
+      case 'approved_expenses':
+      case 'approved_repaid':
+      case 'approved_returned_funds':
+        return 'success'; // Green for all approved types
       case 'rejected':
         return 'error';
       default:

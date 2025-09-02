@@ -3,11 +3,15 @@ Approvals Router
 Handles approval workflow operations
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_, or_
 from typing import List, Optional
 from datetime import datetime
+import os
+import json
+import uuid
 
 from app.database.connection import get_db
 from app.models.models import (
@@ -129,7 +133,7 @@ async def get_pending_approvals(
                 report_stage_filters.append(TravelExpenseReport.status.in_([
                     RequestStatus.TREASURY_PENDING,
                     RequestStatus.APPROVED_FOR_REIMBURSEMENT,
-                    RequestStatus.FUNDS_RETURN_PENDING
+                    RequestStatus.REVIEW_RETURN
                 ]))
 
         if report_stage_filters:
@@ -669,16 +673,16 @@ async def approve_report(
                 # Business Logic Implementation:
                 if report.prepayment_id and prepaid_amount == total_expenses:
                     # Rule 1: Prepayment type - equal amounts - skip treasury
-                    next_status = RequestStatus.APPROVED
+                    next_status = RequestStatus.APPROVED_EXPENSES
                     message = "Report approved by accounting - amounts match, no treasury approval needed"
                 elif total_expenses > prepaid_amount:
-                    # Rule 2: Any case - under budget - needs reimbursement
+                    # Rule 2: Any case - over budget - needs reimbursement
                     next_status = RequestStatus.APPROVED_FOR_REIMBURSEMENT
                     message = "Report approved by accounting - pending treasury for reimbursement"
                 else:
-                    # Rule 3: Any case - over budget - needs fund return
+                    # Rule 3: Any case - under budget - needs fund return documents
                     next_status = RequestStatus.FUNDS_RETURN_PENDING
-                    message = "Report approved by accounting - pending treasury for fund return"
+                    message = "Report approved by accounting - employee must submit fund return documents"
                 
                 # Check treasury approvers exist for cases that need treasury
                 if next_status in [RequestStatus.APPROVED_FOR_REIMBURSEMENT, RequestStatus.FUNDS_RETURN_PENDING]:
@@ -692,17 +696,19 @@ async def approve_report(
                 next_status = RequestStatus.REJECTED
                 message = "Report rejected at accounting stage"
 
-        elif report.status in [RequestStatus.TREASURY_PENDING, RequestStatus.APPROVED_FOR_REIMBURSEMENT, RequestStatus.FUNDS_RETURN_PENDING]:
+        elif report.status in [RequestStatus.TREASURY_PENDING, RequestStatus.APPROVED_FOR_REIMBURSEMENT, RequestStatus.REVIEW_RETURN]:
             if not (current_user.is_approver and current_user.profile == UserProfile.TREASURY):
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized for treasury stage")
             
             if action_data.action == "approve":
-                next_status = RequestStatus.APPROVED
                 if report.status == RequestStatus.APPROVED_FOR_REIMBURSEMENT:
+                    next_status = RequestStatus.APPROVED_REPAID
                     message = "Report approved by treasury - reimbursement processed"
-                elif report.status == RequestStatus.FUNDS_RETURN_PENDING:
+                elif report.status == RequestStatus.REVIEW_RETURN:
+                    next_status = RequestStatus.APPROVED_RETURNED_FUNDS
                     message = "Report approved by treasury - fund return processed"
                 else:
+                    next_status = RequestStatus.APPROVED_EXPENSES
                     message = "Report approved by treasury"
                 
                 # Set ALL expenses to APPROVED
@@ -714,8 +720,10 @@ async def approve_report(
                 next_status = RequestStatus.REJECTED
                 if report.status == RequestStatus.APPROVED_FOR_REIMBURSEMENT:
                     message = "Report rejected at treasury stage - reimbursement denied"
-                elif report.status == RequestStatus.FUNDS_RETURN_PENDING:
-                    message = "Report rejected at treasury stage - fund return denied"
+                elif report.status == RequestStatus.REVIEW_RETURN:
+                    # Special case: rejection sends back to FUNDS_RETURN_PENDING for resubmission
+                    next_status = RequestStatus.FUNDS_RETURN_PENDING
+                    message = "Fund return documents rejected - employee must resubmit"
                 else:
                     message = "Report rejected at treasury stage"
         else:
@@ -831,16 +839,18 @@ async def quick_approve_report(
             next_status = RequestStatus.ACCOUNTING_PENDING
             message = "Report quickly approved by supervisor; pending accounting approval"
 
-        elif report.status in [RequestStatus.TREASURY_PENDING, RequestStatus.APPROVED_FOR_REIMBURSEMENT, RequestStatus.FUNDS_RETURN_PENDING]:
+        elif report.status in [RequestStatus.TREASURY_PENDING, RequestStatus.APPROVED_FOR_REIMBURSEMENT, RequestStatus.REVIEW_RETURN]:
             if not (current_user.is_approver and current_user.profile == UserProfile.TREASURY):
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized for treasury stage")
             
-            next_status = RequestStatus.APPROVED
             if report.status == RequestStatus.APPROVED_FOR_REIMBURSEMENT:
+                next_status = RequestStatus.APPROVED_REPAID
                 message = "Report quickly approved by treasury - reimbursement processed"
-            elif report.status == RequestStatus.FUNDS_RETURN_PENDING:
+            elif report.status == RequestStatus.REVIEW_RETURN:
+                next_status = RequestStatus.APPROVED_RETURNED_FUNDS
                 message = "Report quickly approved by treasury - fund return processed"
             else:
+                next_status = RequestStatus.APPROVED_EXPENSES
                 message = "Report quickly approved by treasury"
             
             # Set ALL expenses to APPROVED
@@ -927,13 +937,13 @@ async def quick_reject_report(
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized for supervisor stage")
             message = "Report quickly rejected at supervisor stage"
 
-        elif report.status in [RequestStatus.TREASURY_PENDING, RequestStatus.APPROVED_FOR_REIMBURSEMENT, RequestStatus.FUNDS_RETURN_PENDING]:
+        elif report.status in [RequestStatus.TREASURY_PENDING, RequestStatus.APPROVED_FOR_REIMBURSEMENT, RequestStatus.REVIEW_RETURN]:
             if not (current_user.is_approver and current_user.profile == UserProfile.TREASURY):
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized for treasury stage")
             
             if report.status == RequestStatus.APPROVED_FOR_REIMBURSEMENT:
                 message = "Report quickly rejected at treasury stage - reimbursement denied"
-            elif report.status == RequestStatus.FUNDS_RETURN_PENDING:
+            elif report.status == RequestStatus.REVIEW_RETURN:
                 message = "Report quickly rejected at treasury stage - fund return denied"
             else:
                 message = "Report quickly rejected at treasury stage"
@@ -942,7 +952,14 @@ async def quick_reject_report(
 
         # Update report status and rejection reason
         old_status = report.status
-        report.status = RequestStatus.REJECTED
+        
+        # Special case: REVIEW_RETURN rejections go back to FUNDS_RETURN_PENDING
+        if report.status == RequestStatus.REVIEW_RETURN:
+            report.status = RequestStatus.FUNDS_RETURN_PENDING
+            message = "Fund return documents rejected - employee must resubmit"
+        else:
+            report.status = RequestStatus.REJECTED
+            
         report.rejection_reason = action_data.rejection_reason
         report.updated_at = datetime.utcnow()
 
@@ -954,7 +971,7 @@ async def quick_reject_report(
             user_role=current_user.profile.value if current_user.profile else "user",
             action=HistoryAction.REJECTED,
             from_status=old_status.value if hasattr(old_status, 'value') else str(old_status),
-            to_status=RequestStatus.REJECTED.value,
+            to_status=report.status.value,
             comments=f"Quick rejection: {action_data.rejection_reason}"
         )
         db.add(approval_history)
@@ -963,7 +980,7 @@ async def quick_reject_report(
 
         return ReportApprovalResponse(
             report_id=report.id,
-            status=RequestStatus.REJECTED.value,
+            status=report.status.value,
             message=message,
             expense_updates=None
         )
@@ -1038,12 +1055,12 @@ async def approve_expense(
                 # Business Logic Implementation:
                 if report.prepayment_id and prepaid_amount == total_expenses:
                     # Rule 1: Prepayment type - equal amounts - skip treasury
-                    report.status = RequestStatus.APPROVED
+                    report.status = RequestStatus.APPROVED_EXPENSES
                 elif total_expenses > prepaid_amount:
                     # Rule 2: Any case - over budget - needs reimbursement
                     report.status = RequestStatus.APPROVED_FOR_REIMBURSEMENT
                 else:
-                    # Rule 3: Any case - under budget - needs fund return
+                    # Rule 3: Any case - under budget - needs fund return documents
                     report.status = RequestStatus.FUNDS_RETURN_PENDING
                 
                 report_status_changed = True
@@ -1140,5 +1157,209 @@ async def reject_expense(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to reject expense: {str(e)}")
+
+
+@router.post("/reports/{report_id}/submit-return-documents")
+async def submit_fund_return_documents(
+    report_id: int,
+    document_number: str = Form(...),
+    files: List[UploadFile] = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Submit fund return documents for a report in FUNDS_RETURN_PENDING status.
+    Employee uploads supporting documents and document number, then status changes to REVIEW_RETURN.
+    """
+    # Get the report
+    report = db.query(TravelExpenseReport).filter(TravelExpenseReport.id == report_id).first()
+    
+    if not report:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
+    
+    # Check permissions - only owner or superuser can submit
+    if not current_user.is_superuser and report.requesting_user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions to submit documents")
+    
+    # Check status
+    if report.status != RequestStatus.FUNDS_RETURN_PENDING:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail=f"Report must be in FUNDS_RETURN_PENDING status to submit documents. Current status: {report.status.value}"
+        )
+    
+    # Validate files
+    if not files or len(files) == 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="At least one file must be uploaded")
+    
+    # Validate file sizes (10MB limit)
+    max_file_size = 10 * 1024 * 1024  # 10MB in bytes
+    for file in files:
+        if file.size and file.size > max_file_size:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, 
+                detail=f"File {file.filename} exceeds 10MB limit"
+            )
+    
+    try:
+        # Create storage directory
+        storage_dir = f"/app/storage/uploads/reports/fund-returns/{report_id}"
+        os.makedirs(storage_dir, exist_ok=True)
+        
+        # Save files and collect file paths
+        saved_files = []
+        for file in files:
+            # Generate unique filename
+            file_extension = os.path.splitext(file.filename)[1] if file.filename else ""
+            unique_filename = f"{uuid.uuid4()}{file_extension}"
+            file_path = os.path.join(storage_dir, unique_filename)
+            
+            # Save file
+            with open(file_path, "wb") as buffer:
+                content = await file.read()
+                buffer.write(content)
+            
+            saved_files.append({
+                "original_name": file.filename,
+                "stored_name": unique_filename,
+                "file_path": file_path,
+                "size": len(content)
+            })
+        
+        # Update report with document info and change status
+        report.return_document_number = document_number
+        report.return_document_files = saved_files
+        report.status = RequestStatus.REVIEW_RETURN
+        report.updated_at = datetime.utcnow()
+        
+        # Create approval history record
+        approval_history = ApprovalHistory(
+            entity_type=EntityType.TRAVEL_EXPENSE_REPORT,
+            entity_id=report.id,
+            user_id=current_user.id,
+            user_role=current_user.profile.value if current_user.profile else "employee",
+            action=HistoryAction.SUBMITTED,
+            from_status=RequestStatus.FUNDS_RETURN_PENDING.value,
+            to_status=RequestStatus.REVIEW_RETURN.value,
+            comments=f"Fund return documents submitted - Document #: {document_number}"
+        )
+        db.add(approval_history)
+        
+        db.commit()
+        
+        return {
+            "message": "Fund return documents submitted successfully",
+            "report_id": report_id,
+            "new_status": RequestStatus.REVIEW_RETURN.value,
+            "document_number": document_number,
+            "files_uploaded": len(saved_files)
+        }
+        
+    except Exception as e:
+        db.rollback()
+        # Clean up uploaded files on error
+        for file_info in saved_files:
+            try:
+                if os.path.exists(file_info["file_path"]):
+                    os.remove(file_info["file_path"])
+            except:
+                pass
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Failed to submit fund return documents: {str(e)}"
+        )
+
+
+@router.get("/reports/{report_id}/return-documents")
+async def get_fund_return_documents(
+    report_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get fund return documents for a report.
+    Available to report owner, treasury users, and superusers.
+    """
+    # Get the report
+    report = db.query(TravelExpenseReport).filter(TravelExpenseReport.id == report_id).first()
+    
+    if not report:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
+    
+    # Check permissions
+    is_owner = report.requesting_user_id == current_user.id
+    is_treasury = current_user.profile == UserProfile.TREASURY and current_user.is_approver
+    
+    if not (current_user.is_superuser or is_owner or is_treasury):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions to view documents")
+    
+    # Check if documents exist
+    if not report.return_document_number or not report.return_document_files:
+        return {
+            "report_id": report_id,
+            "document_number": None,
+            "files": [],
+            "status": report.status.value
+        }
+    
+    return {
+        "report_id": report_id,
+        "document_number": report.return_document_number,
+        "files": report.return_document_files,
+        "status": report.status.value
+    }
+
+
+@router.get("/reports/{report_id}/return-documents/{file_name}")
+async def download_fund_return_document(
+    report_id: int,
+    file_name: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Download a specific fund return document file.
+    Available to report owner, treasury users, and superusers.
+    """
+    # Get the report
+    report = db.query(TravelExpenseReport).filter(TravelExpenseReport.id == report_id).first()
+    
+    if not report:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found")
+    
+    # Check permissions
+    is_owner = report.requesting_user_id == current_user.id
+    is_treasury = current_user.profile == UserProfile.TREASURY and current_user.is_approver
+    
+    if not (current_user.is_superuser or is_owner or is_treasury):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions to download file")
+    
+    # Check if documents exist
+    if not report.return_document_files:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No return documents found")
+    
+    # Find the file in the stored files
+    target_file = None
+    for file_info in report.return_document_files:
+        if file_info.get('stored_name') == file_name:
+            target_file = file_info
+            break
+    
+    if not target_file:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
+    
+    # Use the file path stored in the database
+    file_path = target_file.get('file_path', '')
+    
+    # Check if file exists on disk
+    if not file_path or not os.path.exists(file_path):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found on disk")
+    
+    # Return the file
+    return FileResponse(
+        path=file_path,
+        filename=target_file.get('original_name', file_name),
+        media_type='application/octet-stream'
+    )
 
 
