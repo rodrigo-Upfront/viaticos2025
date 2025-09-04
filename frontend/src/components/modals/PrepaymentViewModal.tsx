@@ -256,6 +256,42 @@ const PrepaymentViewModal: React.FC<PrepaymentViewModalProps> = ({ open, onClose
             </Grid>
           )}
 
+          {/* Justification File */}
+          {prepayment.justification_file && (
+            <Grid item xs={12}>
+              <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
+                Justification File
+              </Typography>
+              <Box 
+                display="flex" 
+                alignItems="center" 
+                sx={{ 
+                  cursor: 'pointer', 
+                  p: 1.5, 
+                  border: 1, 
+                  borderColor: 'divider', 
+                  borderRadius: 1,
+                  mb: 1.5,
+                  '&:hover': { 
+                    bgcolor: 'action.hover',
+                    borderColor: 'primary.main'
+                  }
+                }}
+                onClick={() => handleFileDownload(prepayment.justification_file!)}
+              >
+                <DocumentIcon sx={{ mr: 2, color: 'primary.main', fontSize: 30 }} />
+                <Box>
+                  <Typography variant="body1" color="primary" sx={{ fontWeight: 'medium' }}>
+                    {prepayment.justification_file}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Click to download • Justification attachment
+                  </Typography>
+                </Box>
+              </Box>
+            </Grid>
+          )}
+
           {prepayment.status.toLowerCase() === 'rejected' && prepayment.rejection_reason && (
             <Grid item xs={12}>
               <Typography variant="subtitle2" color="textSecondary" gutterBottom>

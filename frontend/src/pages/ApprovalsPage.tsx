@@ -283,30 +283,45 @@ const ApprovalsPage: React.FC = () => {
     });
   };
 
-  const handleView = (listItemId: number, type: string) => {
+  const handleView = async (listItemId: number, type: string) => {
     const item = pendingItems.find(p => p.id === listItemId);
     if (!item) return;
 
     if (item.type === 'prepayment') {
-      // Convert the approval data format to PrepaymentViewModal format
-      const prepaymentData = {
-        id: item.entity_id,
-        reason: item.reason || 'No reason provided',
-        destination_country_id: 1, // TODO: Get from API
-        destination: item.destination || 'Unknown',
-        startDate: item.request_date,
-        endDate: item.request_date, // TODO: Get actual end date from API
-        amount: parseFloat(item.amount || '0'),
-        currency: item.currency || 'USD',
-        comment: 'Business travel request pending approval',
-        justification_file: null,
-        status: 'pending'
-      };
-      setViewModal({
-        open: true,
-        type: 'prepayment',
-        data: prepaymentData
-      });
+      try {
+        // Fetch the actual prepayment data from the API
+        const response = await apiClient.get(`/prepayments/${item.entity_id}`);
+        const prepaymentData = response.data;
+        
+        // Convert API data to PrepaymentViewModal format
+        const modalData = {
+          id: prepaymentData.id,
+          reason: prepaymentData.reason,
+          destination_country_id: prepaymentData.destination_country_id,
+          destination: prepaymentData.destination_country_name || 'Unknown',
+          startDate: prepaymentData.start_date,
+          endDate: prepaymentData.end_date,
+          amount: parseFloat(prepaymentData.amount),
+          currency: prepaymentData.currency_code || prepaymentData.currency_name || 'USD',
+          comment: prepaymentData.comment || '', // Use real comment from API
+          justification_file: prepaymentData.justification_file || null, // Use real file from API
+          status: prepaymentData.status || 'pending',
+          rejection_reason: prepaymentData.rejection_reason
+        };
+        
+        setViewModal({
+          open: true,
+          type: 'prepayment',
+          data: modalData
+        });
+      } catch (error) {
+        console.error('Failed to fetch prepayment details:', error);
+        setSnackbar({
+          open: true,
+          message: 'Failed to load prepayment details',
+          severity: 'error'
+        });
+      }
     } else if (item.type === 'report') {
       // Navigate to full-page report view instead of modal
       navigate(`/approvals/report/${item.entity_id}`);
