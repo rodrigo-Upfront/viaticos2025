@@ -136,6 +136,19 @@ export class ReportService {
   async deleteReport(id: number): Promise<void> {
     await apiClient.delete(`${this.basePath}/${id}`);
   }
+
+  /**
+   * Get filter options based on user's visible data
+   */
+  async getFilterOptions(): Promise<{
+    statuses: string[];
+    countries: Array<{id: number; name: string}>;
+    budget_statuses: string[];
+    types: string[];
+  }> {
+    const response = await apiClient.get(`${this.basePath}/filter-options`);
+    return response.data;
+  }
 }
 
 // Export singleton instance
