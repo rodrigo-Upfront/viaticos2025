@@ -30,6 +30,7 @@ This script will:
 - ✅ Deploy with production configuration
 - ✅ Start all services
 - ✅ Verify deployment
+- ✅ Ensure required DB columns exist (fund-return workflow)
 
 ### Option 2: Manual Deployment
 
@@ -62,6 +63,34 @@ docker-compose ps
 # View logs
 docker-compose logs -f
 ```
+
+### Pre-Deploy Checklist (Production)
+
+1) Frontend API base URL
+- Prior working practice: frontend calls backend directly at `http://161.35.39.205:8000/api`.
+- Confirm `docker-compose.prod.yml` has:
+  - build.args.REACT_APP_API_BASE_URL: `http://161.35.39.205:8000/api`
+  - environment.REACT_APP_API_BASE_URL: `http://161.35.39.205:8000/api`
+
+2) Backend CORS origins
+- Confirm `backend/main.py` CORS `allow_origins` includes:
+  - `http://161.35.39.205`
+  - (keep `http://localhost:3000` if used locally)
+
+3) Database schema – fund-return workflow
+- Ensure columns exist on `travel_expense_reports`:
+  - `return_document_number VARCHAR(100)`
+  - `return_document_files JSON`
+- If needed, apply once (idempotent):
+```bash
+docker exec -i viaticos2025_database_1 \
+  psql -U postgres -d viaticos -c \
+  "ALTER TABLE travel_expense_reports ADD COLUMN IF NOT EXISTS return_document_number VARCHAR(100); \
+   ALTER TABLE travel_expense_reports ADD COLUMN IF NOT EXISTS return_document_files JSON;"
+```
+
+4) Validation
+- Run `./validate-deployment.sh` and confirm all checks pass.
 
 ## Service Configuration
 

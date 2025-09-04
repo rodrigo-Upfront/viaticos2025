@@ -452,7 +452,7 @@ async def get_approvals(
     # Apply filters
     if entity_type:
         try:
-            entity_enum = EntityType(entity_type)
+            entity_enum = EntityType(entity_type.upper())
             query = query.filter(Approval.entity_type == entity_enum)
         except ValueError:
             raise HTTPException(
@@ -462,7 +462,7 @@ async def get_approvals(
     
     if status_filter:
         try:
-            status_enum = ApprovalStatus(status_filter)
+            status_enum = ApprovalStatus(status_filter.upper())
             query = query.filter(Approval.status == status_enum)
         except ValueError:
             raise HTTPException(
@@ -482,6 +482,127 @@ async def get_approvals(
         skip=skip,
         limit=limit
     )
+
+
+@router.get("/filter-options")
+async def get_approval_filter_options(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get distinct filter options for approvals based on user's visible data
+    """
+    # Check if user can approve (superuser or approver)
+    if not (current_user.is_superuser or current_user.is_approver):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions to view approval filter options"
+        )
+    
+    # Get both pending approvals (new unified logic)
+    pending_approvals = []
+    
+    # Prepayments pending approval
+    prepayment_query = db.query(Prepayment).options(
+        joinedload(Prepayment.destination_country),
+        joinedload(Prepayment.requesting_user)
+    )
+    
+    # Filter prepayments based on user role and permissions
+    if not current_user.is_superuser:
+        prepayment_conditions = []
+        
+        if current_user.profile == UserProfile.MANAGER:
+            # Managers approve subordinates' prepayments
+            subordinate_ids = db.query(User.id).filter(User.supervisor_id == current_user.id).subquery()
+            prepayment_conditions.append(
+                and_(
+                    Prepayment.requesting_user_id.in_(subordinate_ids),
+                    Prepayment.status == RequestStatus.SUPERVISOR_PENDING
+                )
+            )
+        elif current_user.profile == UserProfile.ACCOUNTING:
+            prepayment_conditions.append(Prepayment.status == RequestStatus.ACCOUNTING_PENDING)
+        elif current_user.profile == UserProfile.TREASURY:
+            prepayment_conditions.append(Prepayment.status == RequestStatus.TREASURY_PENDING)
+        
+        if prepayment_conditions:
+            prepayment_query = prepayment_query.filter(or_(*prepayment_conditions))
+        else:
+            prepayment_query = prepayment_query.filter(False)  # No results
+    
+    prepayments = prepayment_query.all()
+    
+    # Travel Expense Reports pending approval
+    report_query = db.query(TravelExpenseReport).options(
+        joinedload(TravelExpenseReport.country),
+        joinedload(TravelExpenseReport.requesting_user),
+        joinedload(TravelExpenseReport.prepayment)
+    )
+    
+    # Filter reports based on user role and permissions
+    if not current_user.is_superuser:
+        report_conditions = []
+        
+        if current_user.profile == UserProfile.MANAGER:
+            # Managers approve subordinates' reports
+            subordinate_ids = db.query(User.id).filter(User.supervisor_id == current_user.id).subquery()
+            report_conditions.append(
+                and_(
+                    TravelExpenseReport.requesting_user_id.in_(subordinate_ids),
+                    TravelExpenseReport.status == RequestStatus.SUPERVISOR_PENDING
+                )
+            )
+        elif current_user.profile == UserProfile.ACCOUNTING:
+            report_conditions.append(TravelExpenseReport.status.in_([
+                RequestStatus.ACCOUNTING_PENDING,
+                RequestStatus.APPROVED_FOR_REIMBURSEMENT,
+                RequestStatus.FUNDS_RETURN_PENDING,
+                RequestStatus.REVIEW_RETURN
+            ]))
+        elif current_user.profile == UserProfile.TREASURY:
+            report_conditions.append(TravelExpenseReport.status.in_([
+                RequestStatus.TREASURY_PENDING,
+                RequestStatus.APPROVED_FOR_REIMBURSEMENT,
+                RequestStatus.REVIEW_RETURN
+            ]))
+        
+        if report_conditions:
+            report_query = report_query.filter(or_(*report_conditions))
+        else:
+            report_query = report_query.filter(False)  # No results
+    
+    reports = report_query.all()
+    
+    # Extract distinct values from prepayments
+    prepayment_statuses = set(p.status.value for p in prepayments if p.status)
+    prepayment_countries = set((p.destination_country.id, p.destination_country.name) for p in prepayments if p.destination_country)
+    prepayment_types = {"PREPAYMENT"}
+    
+    # Extract distinct values from reports  
+    report_statuses = set(r.status.value for r in reports if r.status)
+    report_countries = set((r.country.id, r.country.name) for r in reports if r.country)
+    # Add prepayment destination countries for prepayment-linked reports
+    report_countries.update((r.prepayment.destination_country.id, r.prepayment.destination_country.name) 
+                           for r in reports if r.prepayment and r.prepayment.destination_country)
+    report_types = set(r.report_type.value for r in reports if r.report_type)
+    
+    # Combine all distinct values
+    all_statuses = prepayment_statuses | report_statuses
+    all_countries = prepayment_countries | report_countries  
+    all_types = prepayment_types | report_types
+    
+    # Convert to lists and sort
+    distinct_statuses = sorted(list(all_statuses))
+    distinct_countries = [{'id': country_id, 'name': country_name} for country_id, country_name in all_countries]
+    distinct_countries = sorted(distinct_countries, key=lambda x: x['name'])
+    distinct_types = sorted(list(all_types))
+    
+    return {
+        "statuses": distinct_statuses,
+        "countries": distinct_countries,
+        "types": distinct_types
+    }
 
 
 @router.get("/{approval_id}", response_model=ApprovalResponse)

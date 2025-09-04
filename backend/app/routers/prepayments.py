@@ -58,7 +58,7 @@ async def get_prepayments(
     # Apply status filter
     if status_filter:
         try:
-            status_enum = RequestStatus(status_filter)
+            status_enum = RequestStatus(status_filter.upper())
             query = query.filter(Prepayment.status == status_enum)
         except ValueError:
             raise HTTPException(
@@ -81,6 +81,62 @@ async def get_prepayments(
         skip=skip,
         limit=limit
     )
+
+
+@router.get("/filter-options")
+async def get_prepayment_filter_options(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get distinct filter options for prepayments based on user's visible data
+    """
+    query = db.query(Prepayment).options(
+        joinedload(Prepayment.destination_country),
+        joinedload(Prepayment.currency)
+    )
+    
+    # Non-superusers can only see their own prepayments + those they can approve
+    if not current_user.is_superuser:
+        # User's own prepayments OR prepayments they can approve
+        user_filter = Prepayment.requesting_user_id == current_user.id
+        
+        # Add approval permissions if user is an approver
+        if current_user.is_approver:
+            if current_user.profile == UserProfile.MANAGER:
+                # Managers can approve their subordinates' prepayments
+                subordinate_ids = db.query(User.id).filter(User.supervisor_id == current_user.id).subquery()
+                user_filter = user_filter | Prepayment.requesting_user_id.in_(subordinate_ids)
+            elif current_user.profile == UserProfile.ACCOUNTING:
+                # Accounting can see prepayments in accounting approval stage
+                user_filter = user_filter | (Prepayment.status == RequestStatus.ACCOUNTING_PENDING)
+            elif current_user.profile == UserProfile.TREASURY:
+                # Treasury can see prepayments in treasury approval stage
+                user_filter = user_filter | (Prepayment.status == RequestStatus.TREASURY_PENDING)
+        
+        query = query.filter(user_filter)
+    
+    prepayments = query.all()
+    
+    # Extract distinct values
+    distinct_statuses = list(set(p.status.value for p in prepayments if p.status))
+    
+    # Use tuples for hashable sets, then convert back to dicts
+    country_tuples = set((p.destination_country.id, p.destination_country.name) for p in prepayments if p.destination_country)
+    distinct_countries = [{'id': country_id, 'name': country_name} for country_id, country_name in country_tuples]
+    
+    currency_tuples = set((p.currency.id, p.currency.code, p.currency.name) for p in prepayments if p.currency)
+    distinct_currencies = [{'id': curr_id, 'code': curr_code, 'name': curr_name} for curr_id, curr_code, curr_name in currency_tuples]
+    
+    # Sort lists
+    distinct_countries = sorted(distinct_countries, key=lambda x: x['name'])
+    distinct_currencies = sorted(distinct_currencies, key=lambda x: x['code'])
+    
+    return {
+        "statuses": sorted(distinct_statuses),
+        "countries": distinct_countries,
+        "currencies": distinct_currencies
+    }
 
 
 @router.get("/{prepayment_id}", response_model=PrepaymentResponse)
@@ -286,7 +342,7 @@ async def update_prepayment_status(
         )
     
     try:
-        status_enum = RequestStatus(status_data.status)
+        status_enum = RequestStatus(status_data.status.upper())
         prepayment.status = status_enum
         prepayment.updated_at = datetime.utcnow()
         
@@ -484,60 +540,3 @@ async def upload_prepayment_file(
             detail=f"Failed to upload file: {str(e)}"
         )
 
-
-@router.get("/filter-options")
-async def get_prepayment_filter_options(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Get distinct filter options for prepayments based on user's visible data
-    """
-    query = db.query(Prepayment).options(
-        joinedload(Prepayment.destination_country),
-        joinedload(Prepayment.currency)
-    )
-    
-    # Non-superusers can only see their own prepayments + those they can approve
-    if not current_user.is_superuser:
-        # User's own prepayments OR prepayments they can approve
-        user_filter = Prepayment.requesting_user_id == current_user.id
-        
-        # Add approval permissions if user is an approver
-        if current_user.is_approver:
-            if current_user.profile == UserProfile.MANAGER:
-                # Managers can approve their subordinates' prepayments
-                subordinate_ids = db.query(User.id).filter(User.supervisor_id == current_user.id).subquery()
-                user_filter = user_filter | Prepayment.requesting_user_id.in_(subordinate_ids)
-            elif current_user.profile == UserProfile.ACCOUNTING:
-                # Accounting can see prepayments in accounting approval stage
-                user_filter = user_filter | (Prepayment.status == RequestStatus.ACCOUNTING_PENDING)
-            elif current_user.profile == UserProfile.TREASURY:
-                # Treasury can see prepayments in treasury approval stage
-                user_filter = user_filter | (Prepayment.status == RequestStatus.TREASURY_PENDING)
-        
-        query = query.filter(user_filter)
-    
-    prepayments = query.all()
-    
-    # Extract distinct values
-    distinct_statuses = list(set(p.status.value for p in prepayments if p.status))
-    distinct_countries = list(set({
-        'id': p.destination_country.id, 
-        'name': p.destination_country.name
-    } for p in prepayments if p.destination_country))
-    distinct_currencies = list(set({
-        'id': p.currency.id,
-        'code': p.currency.code,
-        'name': p.currency.name
-    } for p in prepayments if p.currency))
-    
-    # Convert sets back to lists and sort
-    distinct_countries = sorted([dict(t) for t in {tuple(d.items()) for d in distinct_countries}], key=lambda x: x['name'])
-    distinct_currencies = sorted([dict(t) for t in {tuple(d.items()) for d in distinct_currencies}], key=lambda x: x['code'])
-    
-    return {
-        "statuses": sorted(distinct_statuses),
-        "countries": distinct_countries,
-        "currencies": distinct_currencies
-    }

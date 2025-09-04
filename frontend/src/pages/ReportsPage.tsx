@@ -81,6 +81,17 @@ const ReportsPage: React.FC = () => {
   const [summary, setSummary] = useState<ExpenseReportSummary | null>(null);
   const [countries, setCountries] = useState<{ id: number; name: string }[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const [filterOptions, setFilterOptions] = useState<{
+    statuses: string[];
+    countries: Array<{id: number; name: string}>;
+    budget_statuses: string[];
+    types: string[];
+  }>({
+    statuses: [],
+    countries: [],
+    budget_statuses: [],
+    types: []
+  });
 
   // Search state
   const [searchFilters, setSearchFilters] = useState({
@@ -88,6 +99,7 @@ const ReportsPage: React.FC = () => {
     country: '',
     budgetStatus: '',
     type: '',
+    status: '',
   });
 
   // Load data on component mount
@@ -96,6 +108,7 @@ const ReportsPage: React.FC = () => {
     loadSummary();
     loadCountries();
     loadCurrencies();
+    loadFilterOptions();
   }, []);
 
   // Filter reports based on search criteria
@@ -129,6 +142,12 @@ const ReportsPage: React.FC = () => {
     if (searchFilters.type) {
       filtered = filtered.filter(report => 
         (report.report_type || 'PREPAYMENT').toLowerCase().includes(searchFilters.type.toLowerCase())
+      );
+    }
+
+    if (searchFilters.status) {
+      filtered = filtered.filter(report => 
+        report.status.toLowerCase().includes(searchFilters.status.toLowerCase())
       );
     }
 
@@ -195,6 +214,17 @@ const ReportsPage: React.FC = () => {
       setCurrencies(data);
     } catch (e) {
       // ignore optional load errors
+    }
+  };
+
+  // Load filter options from API
+  const loadFilterOptions = async () => {
+    try {
+      const options = await reportService.getFilterOptions();
+      setFilterOptions(options);
+    } catch (error) {
+      console.error('Failed to load filter options:', error);
+      // Don't show error for filter options, fallback to empty arrays
     }
   };
 
@@ -337,7 +367,7 @@ const ReportsPage: React.FC = () => {
       });
       
       // Reload reports to show updated status
-      await Promise.all([loadReports(), loadSummary()]);
+      await Promise.all([loadReports(), loadSummary(), loadFilterOptions()]);
       
     } catch (error: any) {
       setSnackbar({
@@ -412,7 +442,7 @@ const ReportsPage: React.FC = () => {
       await reportService.createManualReport(payload);
       setCreateDialog(prev => ({ ...prev, open: false }));
       setSnackbar({ open: true, message: 'Reimbursement report created successfully', severity: 'success' });
-      await Promise.all([loadReports(), loadSummary()]);
+      await Promise.all([loadReports(), loadSummary(), loadFilterOptions()]);
     } catch (error: any) {
       setSnackbar({ open: true, message: error?.response?.data?.detail || 'Failed to create reimbursement', severity: 'error' });
     } finally {
@@ -522,6 +552,21 @@ const ReportsPage: React.FC = () => {
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <FormControl fullWidth size="small">
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={searchFilters.status}
+                label="Status"
+                onChange={(e) => setSearchFilters(prev => ({ ...prev, status: e.target.value }))}
+              >
+                <MenuItem value=""><em>All</em></MenuItem>
+                {filterOptions.statuses.map(status => (
+                  <MenuItem key={status} value={status}>{getStatusLabel(status)}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <FormControl fullWidth size="small">
               <InputLabel>Country</InputLabel>
               <Select
                 value={searchFilters.country}
@@ -529,7 +574,7 @@ const ReportsPage: React.FC = () => {
                 onChange={(e) => setSearchFilters(prev => ({ ...prev, country: e.target.value }))}
               >
                 <MenuItem value=""><em>All</em></MenuItem>
-                {countries.map(country => (
+                {filterOptions.countries.map(country => (
                   <MenuItem key={country.id} value={country.name}>{country.name}</MenuItem>
                 ))}
               </Select>
@@ -544,8 +589,9 @@ const ReportsPage: React.FC = () => {
                 onChange={(e) => setSearchFilters(prev => ({ ...prev, budgetStatus: e.target.value }))}
               >
                 <MenuItem value=""><em>All</em></MenuItem>
-                <MenuItem value="Under-Budget">Under Budget</MenuItem>
-                <MenuItem value="Over-Budget">Over Budget</MenuItem>
+                {filterOptions.budget_statuses.map(status => (
+                  <MenuItem key={status} value={status}>{status.replace('_', ' ')}</MenuItem>
+                ))}
               </Select>
             </FormControl>
           </Grid>
@@ -558,8 +604,9 @@ const ReportsPage: React.FC = () => {
                 onChange={(e) => setSearchFilters(prev => ({ ...prev, type: e.target.value }))}
               >
                 <MenuItem value=""><em>All</em></MenuItem>
-                <MenuItem value="PREPAYMENT">Prepayment</MenuItem>
-                <MenuItem value="REIMBURSEMENT">Reimbursement</MenuItem>
+                {filterOptions.types.map(type => (
+                  <MenuItem key={type} value={type}>{type}</MenuItem>
+                ))}
               </Select>
             </FormControl>
           </Grid>

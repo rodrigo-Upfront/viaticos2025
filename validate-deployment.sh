@@ -167,6 +167,22 @@ else
 fi
 echo ""
 
+echo "9. 🧱 VERIFYING FUND-RETURN COLUMNS (idempotent)"
+echo "-----------------------------------------------"
+fund_cols=$(run_on_droplet "cd $APP_DIR && docker-compose exec -T database psql -U postgres -d viaticos_db -At -c \"SELECT column_name FROM information_schema.columns WHERE table_name='travel_expense_reports' AND column_name IN ('return_document_number','return_document_files') ORDER BY column_name;\"")
+echo "Columns found: $fund_cols"
+missing=0
+echo "$fund_cols" | grep -q "return_document_number" || missing=1
+echo "$fund_cols" | grep -q "return_document_files" || missing=1
+if [ $missing -eq 1 ]; then
+  echo "⚠️ Missing fund-return columns. Applying..."
+  run_on_droplet "cd $APP_DIR && docker-compose exec -T database psql -U postgres -d viaticos_db -c \"ALTER TABLE travel_expense_reports ADD COLUMN IF NOT EXISTS return_document_number VARCHAR(100); ALTER TABLE travel_expense_reports ADD COLUMN IF NOT EXISTS return_document_files JSON;\""
+  echo "✅ Fund-return columns ensured"
+else
+  echo "✅ Fund-return columns already present"
+fi
+echo ""
+
 echo "🎉 VALIDATION COMPLETE!"
 echo "======================="
 echo "✅ All systems are operational"

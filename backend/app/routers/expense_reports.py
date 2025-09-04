@@ -48,7 +48,7 @@ async def get_expense_reports(
     # Apply status filter
     if status_filter:
         try:
-            status_enum = RequestStatus(status_filter)
+            status_enum = RequestStatus(status_filter.upper())
             query = query.filter(TravelExpenseReport.status == status_enum)
         except ValueError:
             raise HTTPException(
@@ -111,6 +111,87 @@ async def get_expense_reports_summary(
         total_expenses=total_expenses,
         average_report_amount=average_report_amount
     )
+
+
+@router.get("/filter-options")
+async def get_expense_report_filter_options(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get distinct filter options for expense reports based on user's visible data
+    """
+    query = db.query(TravelExpenseReport).options(
+        joinedload(TravelExpenseReport.prepayment),
+        joinedload(TravelExpenseReport.country),
+        joinedload(TravelExpenseReport.currency)
+    )
+    
+    # Permission filtering for non-superusers (same logic as get_expense_reports)
+    if not current_user.is_superuser:
+        # Users can see their own reports + reports they can approve
+        user_filter = TravelExpenseReport.requesting_user_id == current_user.id
+        
+        # Add approval permissions if user is an approver
+        if current_user.is_approver:
+            if current_user.profile == UserProfile.MANAGER:
+                # Managers can approve their subordinates' reports
+                subordinate_ids = db.query(User.id).filter(User.supervisor_id == current_user.id).subquery()
+                user_filter = user_filter | TravelExpenseReport.requesting_user_id.in_(subordinate_ids)
+            elif current_user.profile == UserProfile.ACCOUNTING:
+                # Accounting can see reports in accounting approval stage
+                user_filter = user_filter | (TravelExpenseReport.status == RequestStatus.ACCOUNTING_PENDING)
+            elif current_user.profile == UserProfile.TREASURY:
+                # Treasury can see reports in treasury approval stages
+                user_filter = user_filter | TravelExpenseReport.status.in_([
+                    RequestStatus.TREASURY_PENDING,
+                    RequestStatus.APPROVED_FOR_REIMBURSEMENT,
+                    RequestStatus.REVIEW_RETURN
+                ])
+        
+        query = query.filter(user_filter)
+    
+    reports = query.all()
+    
+    # Extract distinct values
+    distinct_statuses = list(set(r.status.value for r in reports if r.status))
+    
+    # Use tuples for hashable sets, then convert back to dicts
+    country_tuples = set((r.country.id, r.country.name) for r in reports if r.country)
+    
+    # Add prepayment destinations for prepayment-linked reports
+    prepayment_country_tuples = set((r.prepayment.destination_country.id, r.prepayment.destination_country.name) 
+                                   for r in reports if r.prepayment and r.prepayment.destination_country)
+    
+    # Combine and deduplicate countries
+    all_country_tuples = country_tuples | prepayment_country_tuples
+    distinct_countries = [{'id': country_id, 'name': country_name} for country_id, country_name in all_country_tuples]
+    distinct_countries = sorted(distinct_countries, key=lambda x: x['name'])
+    
+    # Extract budget statuses (calculated values)
+    distinct_budget_statuses = []
+    for report in reports:
+        # Calculate budget status based on expenses vs prepaid amount
+        if hasattr(report, 'expenses') and report.expenses:
+            total_expenses = sum(e.amount for e in report.expenses)
+            prepaid_amount = report.prepayment.amount if report.prepayment else 0
+            
+            if total_expenses > prepaid_amount:
+                distinct_budget_statuses.append("OVER_BUDGET")
+            else:
+                distinct_budget_statuses.append("UNDER_BUDGET")
+    
+    distinct_budget_statuses = list(set(distinct_budget_statuses))
+    
+    # Report types
+    distinct_types = list(set(r.report_type.value for r in reports if r.report_type))
+    
+    return {
+        "statuses": sorted(distinct_statuses),
+        "countries": distinct_countries,
+        "budget_statuses": sorted(distinct_budget_statuses),
+        "types": sorted(distinct_types)
+    }
 
 
 @router.get("/{report_id}", response_model=ExpenseReportResponse)
@@ -317,7 +398,7 @@ async def update_expense_report_status(
         )
     
     try:
-        status_enum = RequestStatus(status_data.status)
+        status_enum = RequestStatus(status_data.status.upper())
         report.status = status_enum
         report.updated_at = datetime.utcnow()
         
@@ -378,86 +459,4 @@ async def delete_expense_report(
             detail=f"Failed to delete expense report: {str(e)}"
         )
 
-
-@router.get("/filter-options")
-async def get_expense_report_filter_options(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Get distinct filter options for expense reports based on user's visible data
-    """
-    query = db.query(TravelExpenseReport).options(
-        joinedload(TravelExpenseReport.prepayment),
-        joinedload(TravelExpenseReport.country),
-        joinedload(TravelExpenseReport.currency)
-    )
-    
-    # Permission filtering for non-superusers (same logic as get_expense_reports)
-    if not current_user.is_superuser:
-        # Users can see their own reports + reports they can approve
-        user_filter = TravelExpenseReport.requesting_user_id == current_user.id
-        
-        # Add approval permissions if user is an approver
-        if current_user.is_approver:
-            if current_user.profile == UserProfile.MANAGER:
-                # Managers can approve their subordinates' reports
-                subordinate_ids = db.query(User.id).filter(User.supervisor_id == current_user.id).subquery()
-                user_filter = user_filter | TravelExpenseReport.requesting_user_id.in_(subordinate_ids)
-            elif current_user.profile == UserProfile.ACCOUNTING:
-                # Accounting can see reports in accounting approval stage
-                user_filter = user_filter | (TravelExpenseReport.status == RequestStatus.ACCOUNTING_PENDING)
-            elif current_user.profile == UserProfile.TREASURY:
-                # Treasury can see reports in treasury approval stages
-                user_filter = user_filter | TravelExpenseReport.status.in_([
-                    RequestStatus.TREASURY_PENDING,
-                    RequestStatus.APPROVED_FOR_REIMBURSEMENT,
-                    RequestStatus.REVIEW_RETURN
-                ])
-        
-        query = query.filter(user_filter)
-    
-    reports = query.all()
-    
-    # Extract distinct values
-    distinct_statuses = list(set(r.status.value for r in reports if r.status))
-    distinct_countries = list(set({
-        'id': r.country.id,
-        'name': r.country.name
-    } for r in reports if r.country))
-    
-    # Add prepayment destinations for prepayment-linked reports
-    prepayment_countries = list(set({
-        'id': r.prepayment.destination_country.id,
-        'name': r.prepayment.destination_country.name
-    } for r in reports if r.prepayment and r.prepayment.destination_country))
-    
-    # Combine and deduplicate countries
-    all_countries = distinct_countries + prepayment_countries
-    distinct_countries = sorted([dict(t) for t in {tuple(d.items()) for d in all_countries}], key=lambda x: x['name'])
-    
-    # Extract budget statuses (calculated values)
-    distinct_budget_statuses = []
-    for report in reports:
-        # Calculate budget status based on expenses vs prepaid amount
-        if hasattr(report, 'expenses') and report.expenses:
-            total_expenses = sum(e.amount for e in report.expenses)
-            prepaid_amount = report.prepayment.amount if report.prepayment else 0
-            
-            if total_expenses > prepaid_amount:
-                distinct_budget_statuses.append("OVER_BUDGET")
-            else:
-                distinct_budget_statuses.append("UNDER_BUDGET")
-    
-    distinct_budget_statuses = list(set(distinct_budget_statuses))
-    
-    # Report types
-    distinct_types = list(set(r.report_type.value for r in reports if r.report_type))
-    
-    return {
-        "statuses": sorted(distinct_statuses),
-        "countries": distinct_countries,
-        "budget_statuses": sorted(distinct_budget_statuses),
-        "types": sorted(distinct_types)
-    }
 
