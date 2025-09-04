@@ -196,13 +196,13 @@ async def get_category_breakdown(
     print(f"🔍 Raw category data from DB: {[(name, float(amount)) for name, amount in category_data]}")
     
     # Calculate total for percentages
-    total_amount = sum(item.total_amount for item in category_data)
+    total_amount = sum(float(amount) for _, amount in category_data)
     print(f"🔍 Total amount: {total_amount}")
-    
+
     # Format data for pie chart
     categories = []
     colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1', '#d084d0']
-    
+
     for i, (name, amount) in enumerate(category_data):
         percentage = (float(amount) / float(total_amount) * 100) if total_amount > 0 else 0
         categories.append({

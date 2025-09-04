@@ -16,10 +16,10 @@ from app.database.connection import Base
 
 # Enums
 class UserProfile(str, enum.Enum):
-    EMPLOYEE = "employee"
-    MANAGER = "manager"
-    ACCOUNTING = "accounting"
-    TREASURY = "treasury"
+    EMPLOYEE = "EMPLOYEE"
+    MANAGER = "MANAGER"
+    ACCOUNTING = "ACCOUNTING"
+    TREASURY = "TREASURY"
 
 
 class RequestStatus(str, enum.Enum):
@@ -38,13 +38,13 @@ class RequestStatus(str, enum.Enum):
 
 
 class DocumentType(str, enum.Enum):
-    BOLETA = "Boleta"
-    FACTURA = "Factura"
+    BOLETA = "BOLETA"
+    FACTURA = "FACTURA"
 
 
 class TaxableOption(str, enum.Enum):
-    SI = "Si"
-    NO = "No"
+    SI = "SI"
+    NO = "NO"
 
 
 class ExpenseStatus(str, enum.Enum):
@@ -55,26 +55,26 @@ class ExpenseStatus(str, enum.Enum):
 
 
 class ApprovalStatus(str, enum.Enum):
-    PENDING = "pending"
-    APPROVED = "approved"
-    REJECTED = "rejected"
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
 
 
 class EntityType(str, enum.Enum):
-    PREPAYMENT = "prepayment"
-    TRAVEL_EXPENSE_REPORT = "travel_expense_report"
+    PREPAYMENT = "PREPAYMENT"
+    TRAVEL_EXPENSE_REPORT = "TRAVEL_EXPENSE_REPORT"
 
 
 class ApprovalAction(str, enum.Enum):
-    SUBMITTED = "submitted"
-    APPROVED = "approved"
-    REJECTED = "rejected"
-    RETURNED = "returned"
+    SUBMITTED = "SUBMITTED"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+    RETURNED = "RETURNED"
 
 
 class BudgetStatus(str, enum.Enum):
-    UNDER_BUDGET = "Under-Budget"
-    OVER_BUDGET = "Over-Budget"
+    UNDER_BUDGET = "UNDER_BUDGET"
+    OVER_BUDGET = "OVER_BUDGET"
 
 
 # New enum for report type

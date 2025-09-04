@@ -69,9 +69,9 @@ async def get_pending_approvals(
         # Fetch and filter in Python for clarity of role logic
         all_stage_prepayments = prepayment_query.filter(
             Prepayment.status.in_([
-                RequestStatus.SUPERVISOR_PENDING.value,
-                RequestStatus.ACCOUNTING_PENDING.value,
-                RequestStatus.TREASURY_PENDING.value
+                RequestStatus.SUPERVISOR_PENDING,
+                RequestStatus.ACCOUNTING_PENDING,
+                RequestStatus.TREASURY_PENDING
             ])
         ).all()
 
@@ -105,7 +105,7 @@ async def get_pending_approvals(
         
         # Get expense reports that are in approval stages with role-based filtering
         report_query = db.query(TravelExpenseReport).options(
-            joinedload(TravelExpenseReport.prepayment).joinedload(Prepayment.destination_country),
+            joinedload(TravelExpenseReport.prepayment),
             joinedload(TravelExpenseReport.requesting_user),
             joinedload(TravelExpenseReport.expenses),
             joinedload(TravelExpenseReport.country),  # For reimbursement reports
@@ -155,7 +155,13 @@ async def get_pending_approvals(
             if report.prepayment_id and report.prepayment:
                 # Prepayment report - get data from the prepayment
                 reason = report.prepayment.reason
-                destination = report.prepayment.destination_country.name if report.prepayment.destination_country else None
+                # Load destination_country separately if not already loaded
+                if hasattr(report.prepayment, 'destination_country') and report.prepayment.destination_country:
+                    destination = report.prepayment.destination_country.name
+                elif report.prepayment.destination_country_id:
+                    # Fallback: query the country separately
+                    country = db.query(Country).filter(Country.id == report.prepayment.destination_country_id).first()
+                    destination = country.name if country else None
             else:
                 # Reimbursement report - get data from the report itself
                 reason = report.reason
