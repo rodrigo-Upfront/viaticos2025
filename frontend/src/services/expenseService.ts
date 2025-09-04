@@ -29,6 +29,8 @@ export interface Expense {
   currency_name?: string;
   currency_code?: string;
   factura_supplier_name?: string;
+  travel_expense_report_name?: string;
+  travel_expense_report_status?: string;
 }
 
 export interface ExpenseCreate {
