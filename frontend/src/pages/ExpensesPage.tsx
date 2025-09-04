@@ -196,7 +196,7 @@ const ExpensesPage: React.FC = () => {
       taxable: apiExpense.taxable as 'Si' | 'No',
       document_file: apiExpense.document_file,
       comments: apiExpense.comments,
-      status: apiExpense.status as 'pending' | 'in_process' | 'approved',
+      status: apiExpense.status.toLowerCase() as 'pending' | 'in_process' | 'approved',
     };
   };
 
@@ -331,9 +331,12 @@ const ExpensesPage: React.FC = () => {
 
   const handleEdit = async (expense: Expense) => {
     if (!canModifyExpense(expense)) {
+      const message = expense.status === 'approved' 
+        ? 'Cannot edit approved expenses'
+        : 'Cannot edit expenses that are being reviewed';
       setSnackbar({
         open: true,
-        message: 'Cannot edit approved expenses',
+        message,
         severity: 'warning'
       });
       return;
@@ -375,15 +378,18 @@ const ExpensesPage: React.FC = () => {
 
   // Helper function to check if expense can be modified
   const canModifyExpense = (expense: Expense): boolean => {
-    // Approved expenses cannot be modified or deleted
-    return expense.status !== 'approved';
+    // Approved expenses and expenses in process (being reviewed) cannot be modified or deleted
+    return expense.status !== 'approved' && expense.status !== 'in_process';
   };
 
   const handleDelete = (expense: Expense) => {
     if (!canModifyExpense(expense)) {
+      const message = expense.status === 'approved' 
+        ? 'Cannot delete approved expenses'
+        : 'Cannot delete expenses that are being reviewed';
       setSnackbar({
         open: true,
-        message: 'Cannot delete approved expenses',
+        message,
         severity: 'warning'
       });
       return;
@@ -643,7 +649,9 @@ const ExpensesPage: React.FC = () => {
                       onClick={() => handleEdit(expense)}
                       color="primary"
                       disabled={loading.action || !canModifyExpense(expense)}
-                      title={!canModifyExpense(expense) ? "Cannot edit approved expenses" : "Edit expense"}
+                      title={!canModifyExpense(expense) 
+                        ? (expense.status === 'approved' ? "Cannot edit approved expenses" : "Cannot edit expenses being reviewed")
+                        : "Edit expense"}
                     >
                       <EditIcon />
                     </IconButton>
@@ -652,7 +660,9 @@ const ExpensesPage: React.FC = () => {
                       onClick={() => handleDelete(expense)}
                       color="error"
                       disabled={loading.action || !canModifyExpense(expense)}
-                      title={!canModifyExpense(expense) ? "Cannot delete approved expenses" : "Delete expense"}
+                      title={!canModifyExpense(expense) 
+                        ? (expense.status === 'approved' ? "Cannot delete approved expenses" : "Cannot delete expenses being reviewed")
+                        : "Delete expense"}
                     >
                       <DeleteIcon />
                     </IconButton>

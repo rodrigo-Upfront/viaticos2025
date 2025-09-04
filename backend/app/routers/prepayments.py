@@ -160,8 +160,30 @@ async def get_prepayment(
             detail="Prepayment not found"
         )
     
-    # Non-superusers can only access their own prepayments
-    if not current_user.is_superuser and prepayment.requesting_user_id != current_user.id:
+    # Check permissions - allow access to:
+    # 1. Superusers
+    # 2. The prepayment requester
+    # 3. Managers who can approve (their subordinates' prepayments)
+    # 4. Accounting/Treasury users (for approval workflow)
+    has_permission = (
+        current_user.is_superuser or 
+        prepayment.requesting_user_id == current_user.id
+    )
+    
+    # If not owner/superuser, check if user has approval permissions
+    if not has_permission and current_user.is_approver:
+        if current_user.profile == UserProfile.MANAGER:
+            # Managers can view their subordinates' prepayments
+            subordinate = db.query(User).filter(
+                User.id == prepayment.requesting_user_id,
+                User.supervisor_id == current_user.id
+            ).first()
+            has_permission = subordinate is not None
+        elif current_user.profile in [UserProfile.ACCOUNTING, UserProfile.TREASURY]:
+            # Accounting and treasury can view prepayments in their approval stages
+            has_permission = True
+    
+    if not has_permission:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions"

@@ -499,6 +499,9 @@ async def create_expense(
         
     except Exception as e:
         db.rollback()
+        import traceback
+        print(f"Error creating expense: {str(e)}")
+        print(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create expense: {str(e)}"
