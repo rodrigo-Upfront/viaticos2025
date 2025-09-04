@@ -332,14 +332,10 @@ const ApprovalsPage: React.FC = () => {
   const getUserRole = (item: PendingApprovalItem) => {
     if (item.type !== 'report') return 'other';
     
-    // Get the current status from the item data
-    const reportData = item as any;
-    const status = reportData.status || 'unknown';
+    // Accounting users should never see quick approve/reject actions
+    if (user?.profile === 'accounting') return 'accounting';
     
-    // Check if the current user should see accounting actions for this report
-    if (status === 'ACCOUNTING_PENDING' && user?.profile === 'accounting') return 'accounting';
-    
-    // For all other cases (supervisor/treasury), use the traditional quick actions
+    // For supervisor/treasury users, show quick actions
     return 'quick_actions';
   };
 

@@ -426,8 +426,8 @@ const ReportsPage: React.FC = () => {
       setSnackbar({ open: true, message: 'All fields are required', severity: 'warning' });
       return;
     }
-    if (new Date(createDialog.start_date) >= new Date(createDialog.end_date)) {
-      setSnackbar({ open: true, message: 'End date must be after start date', severity: 'warning' });
+    if (new Date(createDialog.start_date) > new Date(createDialog.end_date)) {
+      setSnackbar({ open: true, message: 'End date must be on or after start date', severity: 'warning' });
       return;
     }
     try {

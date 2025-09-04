@@ -264,7 +264,7 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
     }
 
     if (formData.startDate && formData.endDate && formData.startDate > formData.endDate) {
-      newErrors.endDate = 'End date must be after start date';
+      newErrors.endDate = 'End date must be on or after start date';
     }
 
     if (formData.amount <= 0) {
