@@ -196,10 +196,10 @@ async def create_prepayment(
         )
     
     # Validate date range
-    if prepayment_data.start_date >= prepayment_data.end_date:
+    if prepayment_data.start_date > prepayment_data.end_date:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="End date must be after start date"
+            detail="End date must be on or after start date"
         )
     
     try:
@@ -282,10 +282,10 @@ async def update_prepayment(
     # Validate date range if dates are being updated
     start_date = prepayment_data.start_date or prepayment.start_date
     end_date = prepayment_data.end_date or prepayment.end_date
-    if start_date >= end_date:
+    if start_date > end_date:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="End date must be after start date"
+            detail="End date must be on or after start date"
         )
     
     try:

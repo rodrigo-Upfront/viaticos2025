@@ -340,10 +340,10 @@ async def create_manual_reimbursement_report(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Currency not found")
 
     # Validate date range
-    if body.start_date >= body.end_date:
+    if body.start_date > body.end_date:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="End date must be after start date"
+            detail="End date must be on or after start date"
         )
 
     try:
