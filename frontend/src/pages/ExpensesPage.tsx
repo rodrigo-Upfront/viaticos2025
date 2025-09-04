@@ -41,6 +41,7 @@ interface Expense {
   category: string;
   travel_expense_report_id: number;
   travel_expense_report?: string;
+  travel_expense_report_status?: string;
   purpose: string;
   document_type: 'Boleta' | 'Factura';
   boleta_supplier?: string;
@@ -182,6 +183,7 @@ const ExpensesPage: React.FC = () => {
       category: category?.name || apiExpense.category_name || 'Unknown',
       travel_expense_report_id: apiExpense.travel_expense_report_id,
       travel_expense_report: (apiExpense as any).travel_expense_report_name || `Report ${apiExpense.travel_expense_report_id}`,
+      travel_expense_report_status: (apiExpense as any).travel_expense_report_status,
       purpose: apiExpense.purpose,
       document_type: apiExpense.document_type as 'Boleta' | 'Factura',
       boleta_supplier: apiExpense.boleta_supplier,
@@ -331,9 +333,17 @@ const ExpensesPage: React.FC = () => {
 
   const handleEdit = async (expense: Expense) => {
     if (!canModifyExpense(expense)) {
-      const message = expense.status === 'approved' 
-        ? 'Cannot edit approved expenses'
-        : 'Cannot edit expenses that are being reviewed';
+      let message = 'Cannot edit this expense';
+      if (expense.status === 'approved') {
+        message = 'Cannot edit approved expenses';
+      } else if (expense.status === 'in_process') {
+        message = 'Cannot edit expenses that are being reviewed';
+      } else if (expense.travel_expense_report_status) {
+        const reportStatus = expense.travel_expense_report_status.toLowerCase();
+        if (['supervisor_pending', 'accounting_pending', 'treasury_pending', 'funds_return_pending', 'review_return'].includes(reportStatus)) {
+          message = 'Cannot edit expenses when their report is under approval';
+        }
+      }
       setSnackbar({
         open: true,
         message,
@@ -379,14 +389,39 @@ const ExpensesPage: React.FC = () => {
   // Helper function to check if expense can be modified
   const canModifyExpense = (expense: Expense): boolean => {
     // Approved expenses and expenses in process (being reviewed) cannot be modified or deleted
-    return expense.status !== 'approved' && expense.status !== 'in_process';
+    if (expense.status === 'approved' || expense.status === 'in_process') {
+      return false;
+    }
+    
+    // Also check if the associated travel expense report is in an approval process
+    if (expense.travel_expense_report_status) {
+      const reportStatus = expense.travel_expense_report_status.toLowerCase();
+      // Block modification if report is in any approval stage
+      const approvalStatuses = [
+        'supervisor_pending', 'accounting_pending', 'treasury_pending',
+        'funds_return_pending', 'review_return'
+      ];
+      if (approvalStatuses.includes(reportStatus)) {
+        return false;
+      }
+    }
+    
+    return true;
   };
 
   const handleDelete = (expense: Expense) => {
     if (!canModifyExpense(expense)) {
-      const message = expense.status === 'approved' 
-        ? 'Cannot delete approved expenses'
-        : 'Cannot delete expenses that are being reviewed';
+      let message = 'Cannot delete this expense';
+      if (expense.status === 'approved') {
+        message = 'Cannot delete approved expenses';
+      } else if (expense.status === 'in_process') {
+        message = 'Cannot delete expenses that are being reviewed';
+      } else if (expense.travel_expense_report_status) {
+        const reportStatus = expense.travel_expense_report_status.toLowerCase();
+        if (['supervisor_pending', 'accounting_pending', 'treasury_pending', 'funds_return_pending', 'review_return'].includes(reportStatus)) {
+          message = 'Cannot delete expenses when their report is under approval';
+        }
+      }
       setSnackbar({
         open: true,
         message,
@@ -644,28 +679,28 @@ const ExpensesPage: React.FC = () => {
                     >
                       <ViewIcon />
                     </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleEdit(expense)}
-                      color="primary"
-                      disabled={loading.action || !canModifyExpense(expense)}
-                      title={!canModifyExpense(expense) 
-                        ? (expense.status === 'approved' ? "Cannot edit approved expenses" : "Cannot edit expenses being reviewed")
-                        : "Edit expense"}
-                    >
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleDelete(expense)}
-                      color="error"
-                      disabled={loading.action || !canModifyExpense(expense)}
-                      title={!canModifyExpense(expense) 
-                        ? (expense.status === 'approved' ? "Cannot delete approved expenses" : "Cannot delete expenses being reviewed")
-                        : "Delete expense"}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
+                    {canModifyExpense(expense) && (
+                      <IconButton
+                        size="small"
+                        onClick={() => handleEdit(expense)}
+                        color="primary"
+                        disabled={loading.action}
+                        title="Edit expense"
+                      >
+                        <EditIcon />
+                      </IconButton>
+                    )}
+                    {canModifyExpense(expense) && (
+                      <IconButton
+                        size="small"
+                        onClick={() => handleDelete(expense)}
+                        color="error"
+                        disabled={loading.action}
+                        title="Delete expense"
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    )}
                   </TableCell>
                 </TableRow>
               ))

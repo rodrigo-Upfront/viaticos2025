@@ -334,7 +334,8 @@ const ApprovalsPage: React.FC = () => {
     
     // Accounting users should never see quick approve/reject actions for REPORTS
     // (but they can still see quick actions for prepayments)
-    if (user?.profile === 'accounting') return 'accounting';
+    // Check for both uppercase and lowercase profile values
+    if (user?.profile?.toLowerCase() === 'accounting') return 'accounting';
     
     // For supervisor/treasury users, show quick actions
     return 'quick_actions';

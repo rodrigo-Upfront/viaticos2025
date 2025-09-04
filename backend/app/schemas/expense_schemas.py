@@ -69,6 +69,7 @@ class ExpenseResponse(ExpenseBase):
     currency_code: Optional[str] = None
     factura_supplier_name: Optional[str] = None
     travel_expense_report_name: Optional[str] = None
+    travel_expense_report_status: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -103,6 +104,10 @@ class ExpenseResponse(ExpenseBase):
             travel_expense_report_name=(
                 obj.travel_expense_report.prepayment.reason if obj.travel_expense_report and obj.travel_expense_report.prepayment 
                 else obj.travel_expense_report.reason if obj.travel_expense_report and hasattr(obj.travel_expense_report, 'reason') and obj.travel_expense_report.reason
+                else None
+            ),
+            travel_expense_report_status=(
+                obj.travel_expense_report.status.value if obj.travel_expense_report and obj.travel_expense_report.status 
                 else None
             )
         )
