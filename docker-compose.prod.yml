@@ -35,9 +35,9 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        REACT_APP_API_BASE_URL: http://161.35.39.205:8000/api
+        REACT_APP_API_BASE_URL: http://161.35.39.205/api
     environment:
-      REACT_APP_API_BASE_URL: http://161.35.39.205:8000/api
+      REACT_APP_API_BASE_URL: http://161.35.39.205/api
     depends_on:
       - backend
     ports:
