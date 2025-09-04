@@ -332,7 +332,8 @@ const ApprovalsPage: React.FC = () => {
   const getUserRole = (item: PendingApprovalItem) => {
     if (item.type !== 'report') return 'other';
     
-    // Accounting users should never see quick approve/reject actions
+    // Accounting users should never see quick approve/reject actions for REPORTS
+    // (but they can still see quick actions for prepayments)
     if (user?.profile === 'accounting') return 'accounting';
     
     // For supervisor/treasury users, show quick actions

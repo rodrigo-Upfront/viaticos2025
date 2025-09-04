@@ -82,14 +82,14 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileUploading, setFileUploading] = useState(false);
+  const [hasNewFile, setHasNewFile] = useState(false); // Track if user selected a new file
 
   useEffect(() => {
     if (prepayment && mode === 'edit') {
       setFormData(prepayment);
-      // If there's an existing file, show it
-      if (prepayment.justification_file) {
-        setSelectedFile({ name: prepayment.justification_file } as File);
-      }
+      // Don't set selectedFile for existing files - only for newly selected ones
+      setSelectedFile(null);
+      setHasNewFile(false);
     } else {
       setFormData({
         reason: '',
@@ -106,6 +106,7 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
         status: 'pending'
       });
       setSelectedFile(null);
+      setHasNewFile(false);
     }
     setErrors({});
   }, [prepayment, mode, open]);
@@ -177,6 +178,7 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
     const file = event.target.files?.[0];
     if (file) {
       setSelectedFile(file);
+      setHasNewFile(true); // Mark that user selected a new file
       // Don't update justification_file in formData yet - will be set after upload
     }
   };
@@ -282,8 +284,9 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
   const handleSubmit = async () => {
     if (validateForm()) {
       try {
-        // Pass the selected file to the parent component
-        await onSave(formData, selectedFile || undefined);
+        // Only pass the file if it's a new file (not when editing existing prepayment without new file)
+        const fileToUpload = hasNewFile && selectedFile ? selectedFile : undefined;
+        await onSave(formData, fileToUpload);
         onClose();
       } catch (error) {
         console.error('Failed to save prepayment:', error);
@@ -480,7 +483,7 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
               )}
               
               {/* Show newly selected file */}
-              {selectedFile && selectedFile.name !== prepayment?.justification_file && (
+              {selectedFile && hasNewFile && (
                 <Box display="flex" alignItems="center" sx={{ mt: 1 }}>
                   <DocumentIcon sx={{ mr: 1, color: 'success.main' }} />
                   <Typography variant="body2" color="success.main" sx={{ fontWeight: 'medium' }}>
