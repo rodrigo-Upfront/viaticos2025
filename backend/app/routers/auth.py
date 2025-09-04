@@ -65,6 +65,9 @@ async def login(
             )
         )
         
+    except HTTPException:
+        # Re-raise HTTPExceptions (like invalid credentials) without modification
+        raise
     except Exception as e:
         import traceback
         print(f"Login error: {str(e)}")
