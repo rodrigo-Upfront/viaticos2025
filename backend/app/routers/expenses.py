@@ -184,7 +184,17 @@ async def get_expense_filter_options(
     country_tuples = set((e.country.id, e.country.name) for e in expenses if e.country)
     distinct_countries = [{'id': country_id, 'name': country_name} for country_id, country_name in country_tuples]
     
-    report_tuples = set((e.travel_expense_report.id, f"Report #{e.travel_expense_report.id}") for e in expenses if e.travel_expense_report)
+    report_tuples = set()
+    for e in expenses:
+        if e.travel_expense_report:
+            report = e.travel_expense_report
+            # Get meaningful name based on report type
+            if report.report_type and report.report_type.value == 'REIMBURSEMENT':
+                name = getattr(report, 'reason', None) or f"Reimbursement Report #{report.id}"
+            else:  # PREPAYMENT type
+                name = (report.prepayment.reason if report.prepayment else None) or f"Prepayment Report #{report.id}"
+            report_tuples.add((report.id, name))
+    
     distinct_reports = [{'id': report_id, 'name': report_name} for report_id, report_name in report_tuples]
     
     # Sort lists
