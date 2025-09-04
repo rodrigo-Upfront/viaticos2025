@@ -3,10 +3,12 @@ Expenses Router
 Handles expense management operations
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, File, UploadFile
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from datetime import datetime
+import os
 
 from app.database.connection import get_db
 from app.models.models import (
@@ -242,6 +244,66 @@ async def get_expense(
             )
     
     return ExpenseResponse.from_orm(expense)
+
+
+@router.get("/{expense_id}/download/{file_name}")
+async def download_expense_file(
+    expense_id: int,
+    file_name: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Download an expense document file"""
+    
+    # Get the expense
+    expense = db.query(Expense).filter(Expense.id == expense_id).first()
+    
+    if not expense:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Expense not found"
+        )
+    
+    # Check permissions - users can download their own files, or supervisors/admin can download any
+    if not current_user.is_superuser:
+        # Check if it's their own expense or if they have approval permissions
+        can_access = False
+        
+        # If expense is linked to a travel expense report, check report permissions
+        if expense.travel_expense_report:
+            can_access = (expense.travel_expense_report.requesting_user_id == current_user.id or
+                         current_user.is_approver)
+        else:
+            # For reimbursement expenses, check if user created it
+            can_access = expense.created_by_user_id == current_user.id
+        
+        if not can_access:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not enough permissions to download this file"
+            )
+    
+    # Verify the file matches the expense's document file
+    if expense.document_file != file_name:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="File not found for this expense"
+        )
+    
+    # Construct file path (assuming files are stored in storage/uploads/expenses/)
+    file_path = os.path.join("storage", "uploads", "expenses", file_name)
+    
+    if not os.path.exists(file_path):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="File not found on disk"
+        )
+    
+    return FileResponse(
+        path=file_path,
+        filename=file_name,
+        media_type='application/octet-stream'
+    )
 
 
 @router.post("/", response_model=ExpenseResponse)

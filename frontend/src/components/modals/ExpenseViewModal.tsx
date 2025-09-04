@@ -53,22 +53,43 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
     return null;
   }
 
-  const handleFileDownload = (filename: string) => {
+  const handleFileDownload = async (filename: string) => {
     try {
-      // Create a download URL for the file
-      const fileUrl = `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api'}/files/download/${encodeURIComponent(filename)}`;
+      if (!expense?.id) {
+        alert('Cannot download file: Expense ID not available');
+        return;
+      }
+
+      // Import apiClient
+      const { default: apiClient } = await import('../../services/apiClient');
       
-      // Create a temporary download link
+      // Use authenticated API call to download the file (same pattern as prepayments)
+      const response = await apiClient.get(`/expenses/${expense.id}/download/${filename}`, {
+        responseType: 'blob'
+      });
+      
+      // Create a temporary URL for the blob and trigger download
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = fileUrl;
+      link.href = url;
       link.download = filename;
-      link.target = '_blank';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-    } catch (error) {
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
       console.error('Error downloading file:', error);
-      alert('Error downloading file. Please try again.');
+      
+      // Show user-friendly error message
+      let errorMessage = 'Failed to download file';
+      if (error.response?.status === 404) {
+        errorMessage = 'File not found. The file may have been moved or deleted.';
+      } else if (error.response?.status === 403) {
+        errorMessage = 'You do not have permission to download this file.';
+      }
+      
+      alert(errorMessage);
     }
   };
 
