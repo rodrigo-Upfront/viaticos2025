@@ -27,10 +27,13 @@ interface Expense {
   boleta_supplier?: string;
   factura_supplier_id?: number;
   factura_supplier?: string;
+  factura_supplier_name?: string;
   expense_date: string;
   country_id: number;
   country: string;
+  country_name?: string;
   currency: string;
+  currency_code?: string;
   amount: number;
   document_number: string;
   taxable: 'Si' | 'No';
@@ -113,7 +116,7 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
               Travel Expense Report
             </Typography>
             <Typography variant="body1" sx={{ mb: 1.5 }}>
-              {expense.travel_expense_report_id ? (expense.travel_expense_report || `Report`) : 'Reimbursement'}
+              {expense.travel_expense_report_id ? (expense.travel_expense_report || `Report ${expense.travel_expense_report_id}`) : 'Reimbursement'}
             </Typography>
           </Grid>
 
@@ -122,7 +125,7 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
               Country
             </Typography>
             <Typography variant="body1" sx={{ mb: 1.5 }}>
-              {expense.country}
+              {expense.country_name || expense.country || 'Unknown'}
             </Typography>
           </Grid>
 
@@ -157,7 +160,7 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
               Amount
             </Typography>
             <Typography variant="body1" sx={{ mb: 1.5, fontWeight: 'bold' }}>
-              {expense.currency} {expense.amount.toLocaleString()}
+              {expense.currency_code || expense.currency} {expense.amount.toLocaleString()}
             </Typography>
           </Grid>
 
@@ -189,7 +192,7 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
               Document Number
             </Typography>
             <Typography variant="body1" sx={{ mb: 1.5 }}>
-              {expense.document_number}
+              {expense.document_number || 'N/A'}
             </Typography>
           </Grid>
 
@@ -205,13 +208,13 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
             </Grid>
           )}
 
-          {expense.document_type === 'Factura' && expense.factura_supplier && (
+          {expense.document_type === 'Factura' && (expense.factura_supplier_name || expense.factura_supplier) && (
             <Grid item xs={12}>
               <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
                 Factura Supplier
               </Typography>
               <Typography variant="body1" sx={{ mb: 1.5 }}>
-                {expense.factura_supplier}
+                {expense.factura_supplier_name || expense.factura_supplier}
               </Typography>
             </Grid>
           )}
