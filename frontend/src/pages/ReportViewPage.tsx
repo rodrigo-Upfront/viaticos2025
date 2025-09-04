@@ -246,24 +246,27 @@ const ReportViewPage: React.FC = () => {
   const handleViewExpense = (expense: Expense) => {
     const convertedExpense = {
       id: expense.id,
-      category_id: 1, // Default value since we don't have this
-      category: expense.category_name,
+      category_id: (expense as any).category_id || 1,
+      category: expense.category_name || 'Unknown',
       travel_expense_report_id: parseInt(reportId || '0'),
-      travel_expense_report: `Report ${reportId}`,
+      travel_expense_report: (expense as any).travel_expense_report_name || report?.prepayment_reason || report?.reimbursement_reason || `Report ${reportId}`,
       purpose: expense.purpose,
-      document_type: 'Factura' as const, // Default value
-      boleta_supplier: undefined,
-      factura_supplier_id: 1, // Default value
-      factura_supplier: 'Unknown Supplier',
+      document_type: (expense as any).document_type || 'Factura',
+      boleta_supplier: (expense as any).boleta_supplier,
+      factura_supplier_id: (expense as any).factura_supplier_id,
+      factura_supplier: (expense as any).factura_supplier_name || (expense as any).factura_supplier,
+      factura_supplier_name: (expense as any).factura_supplier_name,
       expense_date: expense.expense_date,
-      country_id: 1, // Default value since we don't have this
-      country: 'Unknown',
+      country_id: (expense as any).country_id || 1,
+      country: (expense as any).country_name || 'Unknown',
+      country_name: (expense as any).country_name,
       currency: expense.currency_code,
+      currency_code: expense.currency_code,
       amount: parseFloat(expense.amount),
-      document_number: 'N/A',
-      taxable: 'No' as const, // Default value
-      document_file: undefined,
-      comments: expense.rejection_reason || undefined,
+      document_number: (expense as any).document_number || 'N/A',
+      taxable: (expense as any).taxable || 'No',
+      document_file: (expense as any).document_file,
+      comments: (expense as any).comments || expense.rejection_reason || undefined,
       status: (expense.status.toLowerCase() === 'rejected' ? 'pending' : expense.status.toLowerCase()) as 'pending' | 'in_process' | 'approved'
     };
     setSelectedExpense(convertedExpense);

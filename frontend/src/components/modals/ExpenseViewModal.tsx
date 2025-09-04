@@ -23,7 +23,7 @@ interface Expense {
   travel_expense_report_id: number;
   travel_expense_report?: string;
   purpose: string;
-  document_type: 'Boleta' | 'Factura';
+  document_type: 'Boleta' | 'Factura' | 'BOLETA' | 'FACTURA';
   boleta_supplier?: string;
   factura_supplier_id?: number;
   factura_supplier?: string;
@@ -36,10 +36,10 @@ interface Expense {
   currency_code?: string;
   amount: number;
   document_number: string;
-  taxable: 'Si' | 'No';
+  taxable: 'Si' | 'No' | 'SI' | 'NO';
   document_file?: string;
   comments?: string;
-  status: 'pending' | 'in_process' | 'approved';
+  status: 'pending' | 'in_process' | 'approved' | 'PENDING' | 'IN_PROCESS' | 'APPROVED' | 'REJECTED';
 }
 
 interface ExpenseViewModalProps {
@@ -54,21 +54,26 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
   }
 
   const handleFileDownload = (filename: string) => {
-    // Placeholder for file download functionality
-    console.log('Download file:', filename);
-    
-    // Create a temporary download link for demonstration
-    // In a real application, this would call the backend API
-    const link = document.createElement('a');
-    link.href = '#'; // This would be the actual file URL from backend
-    link.download = filename;
-    link.click();
-    
-    alert(`Download functionality not yet implemented for: ${filename}\n\nIn a real application, this would download the file from the server.`);
+    try {
+      // Create a download URL for the file
+      const fileUrl = `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api'}/files/download/${encodeURIComponent(filename)}`;
+      
+      // Create a temporary download link
+      const link = document.createElement('a');
+      link.href = fileUrl;
+      link.download = filename;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      alert('Error downloading file. Please try again.');
+    }
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case 'pending':
         return 'warning';
       case 'in_process':
@@ -80,13 +85,28 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
     }
   };
 
+  const getStatusLabel = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return 'Pending';
+      case 'in_process':
+        return 'In Process';
+      case 'approved':
+        return 'Approved';
+      case 'rejected':
+        return 'Rejected';
+      default:
+        return status;
+    }
+  };
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
         <Box display="flex" alignItems="center" justifyContent="space-between">
           <Typography variant="h6">Expense Details (ID: {expense.id})</Typography>
           <Chip
-            label={expense.status}
+            label={getStatusLabel(expense.status)}
             color={getStatusColor(expense.status) as any}
             variant="outlined"
           />
@@ -170,8 +190,8 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
             </Typography>
             <Box sx={{ mb: 1.5 }}>
               <Chip
-                label={expense.taxable}
-                color={expense.taxable === 'Si' ? 'success' : 'default'}
+                label={expense.taxable === 'SI' || expense.taxable === 'Si' ? 'Yes' : 'No'}
+                color={expense.taxable === 'SI' || expense.taxable === 'Si' ? 'success' : 'default'}
                 size="small"
               />
             </Box>
@@ -183,7 +203,11 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
             </Typography>
             <Box display="flex" alignItems="center" sx={{ mb: 1.5 }}>
               <ReceiptIcon fontSize="small" sx={{ mr: 1 }} />
-              <Typography variant="body1">{expense.document_type}</Typography>
+              <Typography variant="body1">
+                {expense.document_type === 'BOLETA' ? 'Boleta' : 
+                 expense.document_type === 'FACTURA' ? 'Factura' : 
+                 expense.document_type}
+              </Typography>
             </Box>
           </Grid>
 
@@ -197,7 +221,7 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
           </Grid>
 
           {/* Supplier Information */}
-          {expense.document_type === 'Boleta' && expense.boleta_supplier && (
+          {(expense.document_type === 'Boleta' || expense.document_type === 'BOLETA') && expense.boleta_supplier && (
             <Grid item xs={12}>
               <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
                 Boleta Supplier
@@ -208,7 +232,7 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
             </Grid>
           )}
 
-          {expense.document_type === 'Factura' && (expense.factura_supplier_name || expense.factura_supplier) && (
+          {(expense.document_type === 'Factura' || expense.document_type === 'FACTURA') && (expense.factura_supplier_name || expense.factura_supplier) && (
             <Grid item xs={12}>
               <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
                 Factura Supplier
