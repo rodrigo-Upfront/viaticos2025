@@ -109,6 +109,18 @@ export class ApprovalService {
     const response = await apiClient.get(`${this.basePath}/${id}`);
     return response.data;
   }
+
+  /**
+   * Get distinct filter options for approvals based on user's visible data
+   */
+  async getFilterOptions(): Promise<{
+    statuses: string[];
+    countries: Array<{id: number; name: string}>;
+    types: string[];
+  }> {
+    const response = await apiClient.get(`${this.basePath}/filter-options`);
+    return response.data;
+  }
 }
 
 // Export singleton instance
