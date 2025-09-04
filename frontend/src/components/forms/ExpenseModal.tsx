@@ -70,7 +70,7 @@ interface Supplier {
 interface ExpenseModalProps {
   open: boolean;
   onClose: () => void;
-  onSave: (expense: Expense) => void;
+  onSave: (expense: Expense, file?: File) => void;
   expense?: Expense;
   mode: 'create' | 'edit';
   categories: Category[];
@@ -118,6 +118,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [travelDates, setTravelDates] = useState<{ start_date?: string; end_date?: string }>({});
+  const [fileUploading, setFileUploading] = useState(false);
 
   const fetchTravelDatesForReport = async (reportId: number) => {
     console.log('Fetching travel dates for report:', reportId);
@@ -327,18 +328,62 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
     }
   };
 
-  const handleFileDownload = (filename: string) => {
-    // Placeholder for file download functionality
-    console.log('Download file:', filename);
-    
-    // Create a temporary download link for demonstration
-    // In a real application, this would call the backend API
-    const link = document.createElement('a');
-    link.href = '#'; // This would be the actual file URL from backend
-    link.download = filename;
-    link.click();
-    
-    alert(`Download functionality not yet implemented for: ${filename}\n\nIn a real application, this would download the file from the server.`);
+  const uploadFile = async (expenseId: number, file: File): Promise<string> => {
+    setFileUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await apiClient.post(`/expenses/${expenseId}/upload-file`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      return response.data.filename;
+    } catch (error) {
+      console.error('File upload failed:', error);
+      throw error;
+    } finally {
+      setFileUploading(false);
+    }
+  };
+
+  const handleFileDownload = async (filename: string) => {
+    try {
+      if (!expense?.id) {
+        alert('Cannot download file: Expense ID not available');
+        return;
+      }
+
+      // Use authenticated API call to download the file
+      const response = await apiClient.get(`/expenses/${expense.id}/download/${filename}`, {
+        responseType: 'blob'
+      });
+      
+      // Create a temporary URL for the blob and trigger download
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      console.error('Error downloading file:', error);
+      
+      // Show user-friendly error message
+      let errorMessage = 'Failed to download file';
+      if (error.response?.status === 404) {
+        errorMessage = 'File not found. The file may have been moved or deleted.';
+      } else if (error.response?.status === 403) {
+        errorMessage = 'You do not have permission to download this file.';
+      }
+      
+      alert(errorMessage);
+    }
   };
 
   const validateExpenseDateWithDates = (date: string, dates: { start_date?: string; end_date?: string }): string | null => {
@@ -459,7 +504,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
     // Only proceed if no errors
     if (Object.keys(newErrors).length === 0) {
       console.log('Validation passed, calling onSave');
-      onSave(formData);
+      onSave(formData, selectedFile || undefined);
       onClose();
     } else {
       console.log('Validation BLOCKED save. Errors:', newErrors);

@@ -152,6 +152,22 @@ export class ExpenseService {
     const response = await apiClient.get(`${this.basePath}/filter-options`);
     return response.data;
   }
+
+  /**
+   * Upload file for an expense
+   */
+  async uploadFile(expenseId: number, formData: FormData): Promise<{
+    message: string;
+    filename: string;
+    original_filename: string;
+  }> {
+    const response = await apiClient.post(`${this.basePath}/${expenseId}/upload-file`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  }
 }
 
 // Export singleton instance

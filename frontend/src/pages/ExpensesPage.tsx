@@ -395,14 +395,31 @@ const ExpensesPage: React.FC = () => {
     });
   };
 
-  const handleSave = async (expenseData: Expense) => {
+  const uploadFile = async (expenseId: number, file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await expenseService.uploadFile(expenseId, formData);
+    return response.filename;
+  };
+
+  const handleSave = async (expenseData: Expense, file?: File) => {
     try {
       setLoading(prev => ({ ...prev, action: true }));
+      let savedExpense: any;
       
       if (modal.mode === 'create') {
         const apiData = mapFrontendToApi(expenseData);
-        const newExpense = await expenseService.createExpense(apiData);
-        const mappedExpense = mapApiToFrontend(newExpense);
+        savedExpense = await expenseService.createExpense(apiData);
+        
+        // Upload file if provided
+        if (file) {
+          await uploadFile(savedExpense.id, file);
+          // Refetch the expense to get updated file info
+          savedExpense = await expenseService.getExpense(savedExpense.id);
+        }
+        
+        const mappedExpense = mapApiToFrontend(savedExpense);
         setExpenses(prev => [...prev, mappedExpense]);
         setSnackbar({
           open: true,
@@ -411,8 +428,16 @@ const ExpensesPage: React.FC = () => {
         });
       } else if (expenseData.id) {
         const apiData = mapFrontendToApi(expenseData);
-        const updatedExpense = await expenseService.updateExpense(expenseData.id, apiData);
-        const mappedExpense = mapApiToFrontend(updatedExpense);
+        savedExpense = await expenseService.updateExpense(expenseData.id, apiData);
+        
+        // Upload file if provided
+        if (file) {
+          await uploadFile(expenseData.id, file);
+          // Refetch the expense to get updated file info
+          savedExpense = await expenseService.getExpense(expenseData.id);
+        }
+        
+        const mappedExpense = mapApiToFrontend(savedExpense);
         setExpenses(prev => prev.map(e => e.id === expenseData.id ? mappedExpense : e));
         setSnackbar({
           open: true,
