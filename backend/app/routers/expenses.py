@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from datetime import datetime
 import os
+import uuid
 
 from app.database.connection import get_db
 from app.models.models import (
@@ -304,6 +305,96 @@ async def download_expense_file(
         filename=file_name,
         media_type='application/octet-stream'
     )
+
+
+@router.post("/{expense_id}/upload-file")
+async def upload_expense_file(
+    expense_id: int,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Upload a document file for an expense"""
+    
+    # Get the expense
+    expense = db.query(Expense).filter(Expense.id == expense_id).first()
+    
+    if not expense:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Expense not found"
+        )
+    
+    # Check permissions - users can upload files for their own expenses, or admin can upload any
+    if not current_user.is_superuser:
+        # Check if it's their own expense or if they have approval permissions
+        can_access = False
+        
+        # If expense is linked to a travel expense report, check report permissions
+        if expense.travel_expense_report:
+            can_access = expense.travel_expense_report.requesting_user_id == current_user.id
+        else:
+            # For reimbursement expenses, check if user created it
+            can_access = expense.created_by_user_id == current_user.id
+        
+        if not can_access:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not enough permissions to upload file for this expense"
+            )
+    
+    # Validate file type
+    allowed_extensions = {'.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png', '.xlsx', '.xls'}
+    file_extension = os.path.splitext(file.filename or '')[1].lower()
+    if file_extension not in allowed_extensions:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"File type not allowed. Allowed types: {', '.join(allowed_extensions)}"
+        )
+    
+    # Validate file size (10MB limit)
+    max_size = 10 * 1024 * 1024  # 10MB
+    file_content = await file.read()
+    if len(file_content) > max_size:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="File size too large. Maximum size is 10MB"
+        )
+    
+    try:
+        # Create upload directory if it doesn't exist
+        upload_dir = "storage/uploads/expenses"
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        # Generate unique filename to avoid conflicts
+        unique_filename = f"{uuid.uuid4()}_{file.filename}"
+        file_path = os.path.join(upload_dir, unique_filename)
+        
+        # Save file to disk
+        with open(file_path, "wb") as buffer:
+            buffer.write(file_content)
+        
+        # Update expense with new file
+        expense.document_file = unique_filename
+        expense.updated_at = datetime.utcnow()
+        db.commit()
+        
+        return {
+            "message": "File uploaded successfully",
+            "filename": unique_filename,
+            "original_filename": file.filename
+        }
+        
+    except Exception as e:
+        # Clean up file if database update fails
+        if 'file_path' in locals() and os.path.exists(file_path):
+            os.remove(file_path)
+        
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to upload file: {str(e)}"
+        )
 
 
 @router.post("/", response_model=ExpenseResponse)
