@@ -330,6 +330,15 @@ const ExpensesPage: React.FC = () => {
   };
 
   const handleEdit = async (expense: Expense) => {
+    if (!canModifyExpense(expense)) {
+      setSnackbar({
+        open: true,
+        message: 'Cannot edit approved expenses',
+        severity: 'warning'
+      });
+      return;
+    }
+    
     // Ensure the latest data is available when opening the modal
     await Promise.all([loadCountries(), loadCategories(), loadSuppliers(), loadReports(), loadCurrencies()]);
     setModal({ open: true, mode: 'edit', expense });
@@ -364,7 +373,22 @@ const ExpensesPage: React.FC = () => {
     }
   };
 
+  // Helper function to check if expense can be modified
+  const canModifyExpense = (expense: Expense): boolean => {
+    // Approved expenses cannot be modified or deleted
+    return expense.status !== 'approved';
+  };
+
   const handleDelete = (expense: Expense) => {
+    if (!canModifyExpense(expense)) {
+      setSnackbar({
+        open: true,
+        message: 'Cannot delete approved expenses',
+        severity: 'warning'
+      });
+      return;
+    }
+
     setConfirmDialog({
       open: true,
       title: 'Delete Expense',
@@ -618,7 +642,8 @@ const ExpensesPage: React.FC = () => {
                       size="small"
                       onClick={() => handleEdit(expense)}
                       color="primary"
-                      disabled={loading.action}
+                      disabled={loading.action || !canModifyExpense(expense)}
+                      title={!canModifyExpense(expense) ? "Cannot edit approved expenses" : "Edit expense"}
                     >
                       <EditIcon />
                     </IconButton>
@@ -626,7 +651,8 @@ const ExpensesPage: React.FC = () => {
                       size="small"
                       onClick={() => handleDelete(expense)}
                       color="error"
-                      disabled={loading.action}
+                      disabled={loading.action || !canModifyExpense(expense)}
+                      title={!canModifyExpense(expense) ? "Cannot delete approved expenses" : "Delete expense"}
                     >
                       <DeleteIcon />
                     </IconButton>
