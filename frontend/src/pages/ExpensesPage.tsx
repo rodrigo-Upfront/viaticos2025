@@ -100,6 +100,19 @@ const ExpensesPage: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
 
+  // Dynamic filter options based on user's data
+  const [filterOptions, setFilterOptions] = useState<{
+    statuses: string[];
+    categories: Array<{id: number; name: string}>;
+    countries: Array<{id: number; name: string}>;
+    reports: Array<{id: number; name: string}>;
+  }>({
+    statuses: [],
+    categories: [],
+    countries: [],
+    reports: []
+  });
+
   // Filters/search state
   const [searchPurpose, setSearchPurpose] = useState('');
   const [filterCategoryId, setFilterCategoryId] = useState<number | ''>('');
@@ -116,6 +129,7 @@ const ExpensesPage: React.FC = () => {
     loadReports();
     loadCountries();
     loadCurrencies();
+    loadFilterOptions();
   }, []);
 
   const [modal, setModal] = useState({
@@ -333,6 +347,22 @@ const ExpensesPage: React.FC = () => {
     }
   };
 
+  const loadFilterOptions = async () => {
+    try {
+      const options = await expenseService.getFilterOptions();
+      setFilterOptions(options);
+    } catch (error) {
+      console.error('Failed to load filter options:', error);
+      // Fallback to current data if dynamic loading fails
+      setFilterOptions(prev => ({
+        ...prev,
+        categories: categories.map(c => ({id: c.id, name: c.name})),
+        countries: countries.map(c => ({id: c.id, name: c.name})),
+        reports: travelExpenseReports.map(r => ({id: r.id, name: `Report #${r.id}`}))
+      }));
+    }
+  };
+
   const handleDelete = (expense: Expense) => {
     setConfirmDialog({
       open: true,
@@ -436,7 +466,7 @@ const ExpensesPage: React.FC = () => {
           SelectProps={{ native: true }}
         >
           <option value=""></option>
-          {categories.map(c => (
+          {filterOptions.categories.map(c => (
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
         </TextField>
@@ -450,7 +480,7 @@ const ExpensesPage: React.FC = () => {
           SelectProps={{ native: true }}
         >
           <option value=""></option>
-          {countries.map(c => (
+          {filterOptions.countries.map(c => (
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
         </TextField>
@@ -464,8 +494,8 @@ const ExpensesPage: React.FC = () => {
           SelectProps={{ native: true }}
         >
           <option value=""></option>
-          {travelExpenseReports.map(r => (
-            <option key={r.id} value={r.id}>Report #{r.id} - {r.reason || 'No reason'}</option>
+          {filterOptions.reports.map(r => (
+            <option key={r.id} value={r.id}>{r.name}</option>
           ))}
         </TextField>
         <TextField

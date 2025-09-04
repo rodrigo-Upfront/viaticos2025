@@ -404,3 +404,73 @@ async def delete_expense(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete expense: {str(e)}"
         )
+
+
+@router.get("/filter-options")
+async def get_expense_filter_options(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get distinct filter options for expenses based on user's visible data
+    """
+    query = db.query(Expense).options(
+        joinedload(Expense.category),
+        joinedload(Expense.country),
+        joinedload(Expense.currency),
+        joinedload(Expense.travel_expense_report)
+    )
+    
+    # Permission filtering for non-superusers (same logic as get_expenses)
+    if not current_user.is_superuser:
+        query = query.outerjoin(TravelExpenseReport)
+        
+        base_conditions = [
+            TravelExpenseReport.requesting_user_id == current_user.id,
+            Expense.created_by_user_id == current_user.id
+        ]
+        
+        # Approvers can see expenses from reports in approval stages
+        if current_user.is_approver:
+            from app.models.models import RequestStatus
+            approval_conditions = TravelExpenseReport.status.in_([
+                RequestStatus.SUPERVISOR_PENDING,
+                RequestStatus.ACCOUNTING_PENDING, 
+                RequestStatus.TREASURY_PENDING,
+                RequestStatus.APPROVED_FOR_REIMBURSEMENT,
+                RequestStatus.FUNDS_RETURN_PENDING,
+                RequestStatus.REVIEW_RETURN
+            ])
+            base_conditions.append(approval_conditions)
+        
+        from sqlalchemy import or_
+        query = query.filter(or_(*base_conditions))
+    
+    expenses = query.all()
+    
+    # Extract distinct values
+    distinct_statuses = list(set(e.status.value for e in expenses if e.status))
+    distinct_categories = list(set({
+        'id': e.category.id, 
+        'name': e.category.name
+    } for e in expenses if e.category))
+    distinct_countries = list(set({
+        'id': e.country.id,
+        'name': e.country.name
+    } for e in expenses if e.country))
+    distinct_reports = list(set({
+        'id': e.travel_expense_report.id,
+        'name': f"Report #{e.travel_expense_report.id}"
+    } for e in expenses if e.travel_expense_report))
+    
+    # Convert sets back to lists and sort
+    distinct_categories = sorted([dict(t) for t in {tuple(d.items()) for d in distinct_categories}], key=lambda x: x['name'])
+    distinct_countries = sorted([dict(t) for t in {tuple(d.items()) for d in distinct_countries}], key=lambda x: x['name'])
+    distinct_reports = sorted([dict(t) for t in {tuple(d.items()) for d in distinct_reports}], key=lambda x: x['id'])
+    
+    return {
+        "statuses": sorted(distinct_statuses),
+        "categories": distinct_categories,
+        "countries": distinct_countries,
+        "reports": distinct_reports
+    }

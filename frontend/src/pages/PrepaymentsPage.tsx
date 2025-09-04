@@ -71,6 +71,17 @@ const PrepaymentsPage: React.FC = () => {
   const [countries, setCountries] = useState<Country[]>([]);
   const [prepayments, setPrepayments] = useState<Prepayment[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
+  
+  // Dynamic filter options based on user's data
+  const [filterOptions, setFilterOptions] = useState<{
+    statuses: string[];
+    countries: Array<{id: number; name: string}>;
+    currencies: Array<{id: number; code: string; name: string}>;
+  }>({
+    statuses: [],
+    countries: [],
+    currencies: []
+  });
 
   const [modal, setModal] = useState({
     open: false,
@@ -109,6 +120,7 @@ const PrepaymentsPage: React.FC = () => {
     loadPrepayments();
     loadCountries();
     loadCurrencies();
+    loadFilterOptions();
   }, []);
 
   // Helper function to convert API prepayment to frontend format
@@ -247,6 +259,20 @@ const PrepaymentsPage: React.FC = () => {
       setCurrencies(data);
     } catch (error) {
       console.error('Failed to load currencies:', error);
+    }
+  };
+
+  const loadFilterOptions = async () => {
+    try {
+      const options = await prepaymentService.getFilterOptions();
+      setFilterOptions(options);
+    } catch (error) {
+      console.error('Failed to load filter options:', error);
+      // Fallback to all countries if dynamic loading fails
+      setFilterOptions(prev => ({
+        ...prev,
+        countries: countries.map(c => ({id: c.id, name: c.name}))
+      }));
     }
   };
 
@@ -427,7 +453,7 @@ const PrepaymentsPage: React.FC = () => {
           SelectProps={{ native: true }}
         >
           <option value=""></option>
-          {countries.map(c => (
+          {filterOptions.countries.map(c => (
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
         </TextField>
@@ -441,12 +467,12 @@ const PrepaymentsPage: React.FC = () => {
           SelectProps={{ native: true }}
         >
           <option value=""></option>
-          {Object.keys(PREPAYMENT_STATUS_LABELS).map(code => (
-            <option key={code} value={code}>{getStatusLabel(code)}</option>
+          {filterOptions.statuses.map(status => (
+            <option key={status} value={status}>{getStatusLabel(status)}</option>
           ))}
         </TextField>
-        <Button variant="outlined" onClick={loadPrepayments}>Apply</Button>
-        <Button variant="text" onClick={() => { setSearchText(''); setFilterCountryId(''); setFilterStatus(''); loadPrepayments(); }}>Reset</Button>
+        <Button variant="outlined" onClick={() => { loadPrepayments(); loadFilterOptions(); }}>Apply</Button>
+        <Button variant="text" onClick={() => { setSearchText(''); setFilterCountryId(''); setFilterStatus(''); loadPrepayments(); loadFilterOptions(); }}>Reset</Button>
       </Box>
 
       <TableContainer component={Paper}>

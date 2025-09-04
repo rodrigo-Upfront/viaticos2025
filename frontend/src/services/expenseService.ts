@@ -139,6 +139,19 @@ export class ExpenseService {
   async deleteExpense(id: number): Promise<void> {
     await apiClient.delete(`${this.basePath}/${id}`);
   }
+
+  /**
+   * Get filter options based on user's visible data
+   */
+  async getFilterOptions(): Promise<{
+    statuses: string[];
+    categories: Array<{id: number; name: string}>;
+    countries: Array<{id: number; name: string}>;
+    reports: Array<{id: number; name: string}>;
+  }> {
+    const response = await apiClient.get(`${this.basePath}/filter-options`);
+    return response.data;
+  }
 }
 
 // Export singleton instance

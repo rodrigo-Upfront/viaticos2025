@@ -118,6 +118,18 @@ export class PrepaymentService {
   }
 
   /**
+   * Get filter options based on user's visible data
+   */
+  async getFilterOptions(): Promise<{
+    statuses: string[];
+    countries: Array<{id: number; name: string}>;
+    currencies: Array<{id: number; code: string; name: string}>;
+  }> {
+    const response = await apiClient.get(`${this.basePath}/filter-options`);
+    return response.data;
+  }
+
+  /**
    * Delete prepayment
    */
   async deletePrepayment(id: number): Promise<void> {
