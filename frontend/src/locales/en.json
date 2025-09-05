@@ -66,7 +66,9 @@
     "report": "Report",
     "date": "Date",
     "comments": "Comments",
-    "saving": "Saving..."
+    "saving": "Saving...",
+    "select": "Select",
+    "back": "Back"
   },
   "approvals": {
     "pendingApprovals": "Pending Approvals",
@@ -254,11 +256,37 @@
     "chooseFile": "CHOOSE FILE",
     "cancel": "CANCEL",
     "create": "CREATE",
+    "createMultiple": "CREATE MULTIPLE",
     "expenseDetails": "Expense Details",
     "basicInformation": "Basic Information",
     "financialInformation": "Financial Information",
     "taxable": "Taxable",
-    "boletaSupplier": "Boleta Supplier"
+    "boletaSupplier": "Boleta Supplier",
+    "createMultipleExpenses": "Create Multiple Expenses",
+    "selectReport": "Select Report",
+    "enterExpenses": "Enter Expenses",
+    "selectReportFirst": "Select an Expense Report",
+    "selectReportHelp": "First select the report to which you want to add multiple expenses",
+    "noAvailableReports": "No available reports to add expenses",
+    "addingExpensesTo": "Adding expenses to",
+    "addRow": "Add Row",
+    "enterPurpose": "Enter purpose",
+    "enterSupplier": "Enter supplier",
+    "enterDocNumber": "Document number",
+    "enterComments": "Additional comments",
+    "bulkExpenseHelp": "Add as many rows as expenses you need. All expenses will be created at once.",
+    "createAllExpenses": "Create All Expenses",
+    "categoryRequired": "Category is required",
+    "purposeRequired": "Purpose is required",
+    "amountRequired": "Amount must be greater than 0",
+    "dateRequired": "Date is required",
+    "countryRequired": "Country is required",
+    "currencyRequired": "Currency is required",
+    "supplierRequired": "Supplier is required",
+    "selectCategory": "Select a category",
+    "selectSupplier": "Select a supplier",
+    "selectCountry": "Select a country",
+    "selectCurrency": "Select a currency"
   }
 }
 

@@ -66,7 +66,9 @@
     "report": "Reporte",
     "date": "Fecha",
     "comments": "Comentarios",
-    "saving": "Guardando..."
+    "saving": "Guardando...",
+    "select": "Seleccionar",
+    "back": "Atrás"
   },
   "approvals": {
     "pendingApprovals": "Aprobaciones Pendientes",
@@ -255,11 +257,37 @@
     "chooseFile": "ELEGIR ARCHIVO",
     "cancel": "CANCELAR",
     "create": "CREAR",
+    "createMultiple": "CREAR MÚLTIPLES",
     "expenseDetails": "Detalles del Gasto",
     "basicInformation": "Información Básica",
     "financialInformation": "Información Financiera",
     "taxable": "Gravable",
-    "boletaSupplier": "Proveedor Boleta"
+    "boletaSupplier": "Proveedor Boleta",
+    "createMultipleExpenses": "Crear Múltiples Gastos",
+    "selectReport": "Seleccionar Reporte",
+    "enterExpenses": "Ingresar Gastos",
+    "selectReportFirst": "Selecciona un Reporte de Gastos",
+    "selectReportHelp": "Primero selecciona el reporte al cual deseas agregar múltiples gastos",
+    "noAvailableReports": "No hay reportes disponibles para agregar gastos",
+    "addingExpensesTo": "Agregando gastos a",
+    "addRow": "Agregar Fila",
+    "enterPurpose": "Ingresa el propósito",
+    "enterSupplier": "Ingresa el proveedor",
+    "enterDocNumber": "Número de documento",
+    "enterComments": "Comentarios adicionales",
+    "bulkExpenseHelp": "Agrega tantas filas como gastos necesites. Todos los gastos se crearán al mismo tiempo.",
+    "createAllExpenses": "Crear Todos los Gastos",
+    "categoryRequired": "La categoría es requerida",
+    "purposeRequired": "El propósito es requerido",
+    "amountRequired": "El monto debe ser mayor a 0",
+    "dateRequired": "La fecha es requerida",
+    "countryRequired": "El país es requerido",
+    "currencyRequired": "La moneda es requerida",
+    "supplierRequired": "El proveedor es requerido",
+    "selectCategory": "Selecciona una categoría",
+    "selectSupplier": "Selecciona un proveedor",
+    "selectCountry": "Selecciona un país",
+    "selectCurrency": "Selecciona una moneda"
   }
 }
 

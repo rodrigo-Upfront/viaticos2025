@@ -25,6 +25,7 @@ import {
   Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import ExpenseModal from '../components/forms/ExpenseModal';
 import { currencyService, Currency } from '../services/currencyService';
 import ExpenseViewModal from '../components/modals/ExpenseViewModal';
@@ -82,6 +83,7 @@ interface Supplier {
 
 const ExpensesPage: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
 
   // Loading states
   const [loading, setLoading] = useState({
@@ -156,6 +158,7 @@ const ExpensesPage: React.FC = () => {
     open: false,
     expense: undefined as Expense | undefined
   });
+
 
   // Expense status labels
   const EXPENSE_STATUS_LABELS: Record<string, { en: string; es: string }> = {
@@ -329,6 +332,10 @@ const ExpensesPage: React.FC = () => {
   const handleCreate = async () => {
     await Promise.all([loadCategories(), loadSuppliers(), loadReports(), loadCountries(), loadCurrencies()]);
     setModal({ open: true, mode: 'create', expense: undefined });
+  };
+
+  const handleCreateMultiple = () => {
+    navigate('/expenses/bulk-create');
   };
 
   const handleEdit = async (expense: Expense) => {
@@ -523,19 +530,30 @@ const ExpensesPage: React.FC = () => {
     }
   };
 
+
   return (
     <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4" gutterBottom>
           {t('navigation.expenses')}
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleCreate}
-        >
-          {t('expenses.createExpense')}
-        </Button>
+        <Box display="flex" gap={2}>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleCreate}
+          >
+            {t('expenses.createExpense')}
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<AddIcon />}
+            onClick={handleCreateMultiple}
+            color="primary"
+          >
+            {t('expenses.createMultiple')}
+          </Button>
+        </Box>
       </Box>
 
       {/* Search and filters */}
