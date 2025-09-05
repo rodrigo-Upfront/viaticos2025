@@ -41,7 +41,7 @@ interface PrepaymentViewModalProps {
 }
 
 const PrepaymentViewModal: React.FC<PrepaymentViewModalProps> = ({ open, onClose, prepayment }) => {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   if (!prepayment) {
     return null;
@@ -160,14 +160,14 @@ const PrepaymentViewModal: React.FC<PrepaymentViewModalProps> = ({ open, onClose
           <Grid item xs={12}>
             <Typography variant="h6" gutterBottom color="primary">
               <TravelIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-              Trip Information
+              {t('prepayments.tripInformation')}
             </Typography>
             <Divider sx={{ mb: 2 }} />
           </Grid>
 
           <Grid item xs={12}>
             <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-              Reason
+              {t('prepayments.reason')}
             </Typography>
             <Typography variant="body1" paragraph>
               {prepayment.reason}
@@ -176,7 +176,7 @@ const PrepaymentViewModal: React.FC<PrepaymentViewModalProps> = ({ open, onClose
 
           <Grid item xs={12} sm={6}>
             <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-              Destination
+              {t('prepayments.destination')}
             </Typography>
             <Typography variant="body1" paragraph>
               {prepayment.destination}
@@ -185,16 +185,16 @@ const PrepaymentViewModal: React.FC<PrepaymentViewModalProps> = ({ open, onClose
 
           <Grid item xs={12} sm={6}>
             <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-              Duration
+              {t('prepayments.duration')}
             </Typography>
             <Typography variant="body1" paragraph>
-              {calculateDays(prepayment.startDate, prepayment.endDate)} days
+              {calculateDays(prepayment.startDate, prepayment.endDate)} {t('prepayments.days')}
             </Typography>
           </Grid>
 
           <Grid item xs={12} sm={6}>
             <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-              Start Date
+              {t('prepayments.startDate')}
             </Typography>
             <Typography variant="body1" paragraph>
               {prepayment.startDate}
@@ -203,7 +203,7 @@ const PrepaymentViewModal: React.FC<PrepaymentViewModalProps> = ({ open, onClose
 
           <Grid item xs={12} sm={6}>
             <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-              End Date
+              {t('prepayments.endDate')}
             </Typography>
             <Typography variant="body1" paragraph>
               {prepayment.endDate}
@@ -214,14 +214,14 @@ const PrepaymentViewModal: React.FC<PrepaymentViewModalProps> = ({ open, onClose
           <Grid item xs={12}>
             <Typography variant="h6" gutterBottom color="primary" sx={{ mt: 2 }}>
               <MoneyIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-              Financial Information
+              {t('prepayments.financialInformation')}
             </Typography>
             <Divider sx={{ mb: 2 }} />
           </Grid>
 
           <Grid item xs={12} sm={6}>
             <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-              Amount Requested
+              {t('prepayments.amountRequested')}
             </Typography>
             <Typography variant="h5" color="primary" paragraph>
               {prepayment.currency} {(prepayment.amount || 0).toLocaleString()}
@@ -230,7 +230,7 @@ const PrepaymentViewModal: React.FC<PrepaymentViewModalProps> = ({ open, onClose
 
           <Grid item xs={12} sm={6}>
             <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-              Currency
+              {t('prepayments.currency')}
             </Typography>
             <Typography variant="body1" paragraph>
               {prepayment.currency}
@@ -240,7 +240,7 @@ const PrepaymentViewModal: React.FC<PrepaymentViewModalProps> = ({ open, onClose
           {/* Additional Information */}
           <Grid item xs={12}>
             <Typography variant="h6" gutterBottom color="primary" sx={{ mt: 2 }}>
-              Additional Information
+              {t('prepayments.additionalInformation')}
             </Typography>
             <Divider sx={{ mb: 2 }} />
           </Grid>
@@ -248,7 +248,7 @@ const PrepaymentViewModal: React.FC<PrepaymentViewModalProps> = ({ open, onClose
           {prepayment.comment && (
             <Grid item xs={12}>
               <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-                Comments
+                {t('prepayments.comments')}
               </Typography>
               <Typography variant="body1" paragraph>
                 {prepayment.comment}
@@ -260,7 +260,7 @@ const PrepaymentViewModal: React.FC<PrepaymentViewModalProps> = ({ open, onClose
           {prepayment.justification_file && (
             <Grid item xs={12}>
               <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
-                Justification File
+                {t('prepayments.justificationFile')}
               </Typography>
               <Box 
                 display="flex" 
@@ -307,7 +307,7 @@ const PrepaymentViewModal: React.FC<PrepaymentViewModalProps> = ({ open, onClose
           {/* Status Information */}
           <Grid item xs={12}>
             <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-              Current Status
+              {t('prepayments.currentStatus')}
             </Typography>
             <Box display="flex" alignItems="center">
               <Chip
@@ -324,10 +324,10 @@ const PrepaymentViewModal: React.FC<PrepaymentViewModalProps> = ({ open, onClose
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} color="primary">
-          Close
+          {t('common.close')}
         </Button>
         <Button variant="outlined" color="primary">
-          Print
+          {t('common.print')}
         </Button>
         {prepayment.justification_file && (
           <Button 
@@ -335,7 +335,7 @@ const PrepaymentViewModal: React.FC<PrepaymentViewModalProps> = ({ open, onClose
             color="primary"
             onClick={() => handleFileDownload(prepayment.justification_file!)}
           >
-            Download File
+            {t('common.downloadFile')}
           </Button>
         )}
       </DialogActions>

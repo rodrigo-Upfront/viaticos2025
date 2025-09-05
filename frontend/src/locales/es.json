@@ -103,6 +103,22 @@
     "approvedRepaid": "Viaje Reembolsado",
     "approvedReturnedFunds": "Devolución realizada",
     "pendingApproval": "Pendiente de Aprobación"
+  },
+  "prepayments": {
+    "tripInformation": "Información del Viaje",
+    "reason": "Motivo",
+    "destination": "Destino",
+    "duration": "Duración",
+    "startDate": "Fecha de Inicio",
+    "endDate": "Fecha de Fin",
+    "financialInformation": "Información Financiera",
+    "amountRequested": "Monto Solicitado",
+    "currency": "Moneda",
+    "additionalInformation": "Información Adicional",
+    "comments": "Comentarios",
+    "justificationFile": "Archivo de Justificación",
+    "currentStatus": "Estado Actual",
+    "days": "días"
   }
 }
 

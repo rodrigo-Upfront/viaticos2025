@@ -103,6 +103,22 @@
     "approvedRepaid": "Trip Reimbursed",
     "approvedReturnedFunds": "Refund completed",
     "pendingApproval": "Pending Approval"
+  },
+  "prepayments": {
+    "tripInformation": "Trip Information",
+    "reason": "Reason",
+    "destination": "Destination",
+    "duration": "Duration",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "financialInformation": "Financial Information",
+    "amountRequested": "Amount Requested",
+    "currency": "Currency",
+    "additionalInformation": "Additional Information",
+    "comments": "Comments",
+    "justificationFile": "Justification File",
+    "currentStatus": "Current Status",
+    "days": "days"
   }
 }
 
