@@ -184,7 +184,12 @@
     "documentFile": "Document File (Optional)",
     "chooseFile": "CHOOSE FILE",
     "cancel": "CANCEL",
-    "create": "CREATE"
+    "create": "CREATE",
+    "expenseDetails": "Expense Details",
+    "basicInformation": "Basic Information",
+    "financialInformation": "Financial Information",
+    "taxable": "Taxable",
+    "boletaSupplier": "Boleta Supplier"
   }
 }
 

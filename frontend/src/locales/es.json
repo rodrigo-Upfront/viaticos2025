@@ -185,7 +185,12 @@
     "documentFile": "Archivo de Documento (Opcional)",
     "chooseFile": "ELEGIR ARCHIVO",
     "cancel": "CANCELAR",
-    "create": "CREAR"
+    "create": "CREAR",
+    "expenseDetails": "Detalles del Gasto",
+    "basicInformation": "Información Básica",
+    "financialInformation": "Información Financiera",
+    "taxable": "Gravable",
+    "boletaSupplier": "Proveedor Boleta"
   }
 }
 

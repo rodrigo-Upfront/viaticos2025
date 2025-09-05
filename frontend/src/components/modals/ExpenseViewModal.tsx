@@ -15,6 +15,7 @@ import {
   Receipt as ReceiptIcon,
   Description as DocumentIcon,
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 
 interface Expense {
   id?: number;
@@ -49,6 +50,8 @@ interface ExpenseViewModalProps {
 }
 
 const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expense }) => {
+  const { t } = useTranslation();
+  
   if (!expense) {
     return null;
   }
@@ -125,7 +128,7 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
         <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Typography variant="h6">Expense Details (ID: {expense.id})</Typography>
+          <Typography variant="h6">{t('expenses.expenseDetails')} (ID: {expense.id})</Typography>
           <Chip
             label={getStatusLabel(expense.status)}
             color={getStatusColor(expense.status) as any}
@@ -138,14 +141,14 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
           {/* Basic Information */}
           <Grid item xs={12}>
             <Typography variant="h6" gutterBottom color="primary">
-              Basic Information
+              {t('expenses.basicInformation')}
             </Typography>
             <Divider sx={{ mb: 1.5 }} />
           </Grid>
 
           <Grid item xs={12} sm={6}>
             <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
-              Category
+              {t('common.category')}
             </Typography>
             <Typography variant="body1" sx={{ mb: 1.5 }}>
               {expense.category}
@@ -154,7 +157,7 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
 
           <Grid item xs={12} sm={6}>
             <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
-              Travel Expense Report
+              {t('expenses.travelExpenseReport')}
             </Typography>
             <Typography variant="body1" sx={{ mb: 1.5 }}>
               {expense.travel_expense_report_id ? (expense.travel_expense_report || `Report ${expense.travel_expense_report_id}`) : 'Reimbursement'}
@@ -163,7 +166,7 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
 
           <Grid item xs={12} sm={6}>
             <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
-              Country
+              {t('common.country')}
             </Typography>
             <Typography variant="body1" sx={{ mb: 1.5 }}>
               {expense.country_name || expense.country || 'Unknown'}
@@ -172,7 +175,7 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
 
           <Grid item xs={12} sm={6}>
             <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
-              Expense Date
+              {t('expenses.expenseDate')}
             </Typography>
             <Typography variant="body1" sx={{ mb: 1.5 }}>
               {expense.expense_date}
@@ -181,7 +184,7 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
 
           <Grid item xs={12}>
             <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
-              Purpose
+              {t('expenses.purpose')}
             </Typography>
             <Typography variant="body1" sx={{ mb: 1.5 }}>
               {expense.purpose}
@@ -191,14 +194,14 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
           {/* Financial Information */}
           <Grid item xs={12}>
             <Typography variant="h6" gutterBottom color="primary" sx={{ mt: 2 }}>
-              Financial Information
+              {t('expenses.financialInformation')}
             </Typography>
             <Divider sx={{ mb: 1.5 }} />
           </Grid>
 
           <Grid item xs={12} sm={6}>
             <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
-              Amount
+              {t('common.amount')}
             </Typography>
             <Typography variant="body1" sx={{ mb: 1.5, fontWeight: 'bold' }}>
               {expense.currency_code || expense.currency} {expense.amount.toLocaleString()}
@@ -207,7 +210,7 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
 
           <Grid item xs={12} sm={6}>
             <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
-              Taxable
+              {t('expenses.taxable')}
             </Typography>
             <Box sx={{ mb: 1.5 }}>
               <Chip
@@ -220,7 +223,7 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
 
           <Grid item xs={12} sm={6}>
             <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
-              Document Type
+              {t('expenses.documentType')}
             </Typography>
             <Box display="flex" alignItems="center" sx={{ mb: 1.5 }}>
               <ReceiptIcon fontSize="small" sx={{ mr: 1 }} />
@@ -234,7 +237,7 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
 
           <Grid item xs={12} sm={6}>
             <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
-              Document Number
+              {t('expenses.documentNumber')}
             </Typography>
             <Typography variant="body1" sx={{ mb: 1.5 }}>
               {expense.document_number || 'N/A'}
@@ -245,7 +248,7 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
           {(expense.document_type === 'Boleta' || expense.document_type === 'BOLETA') && expense.boleta_supplier && (
             <Grid item xs={12}>
               <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
-                Boleta Supplier
+                {t('expenses.boletaSupplier')}
               </Typography>
               <Typography variant="body1" sx={{ mb: 1.5 }}>
                 {expense.boleta_supplier}
@@ -325,10 +328,10 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} color="primary">
-          Close
+{t('common.close')}
         </Button>
         <Button variant="outlined" color="primary">
-          Print
+{t('common.print')}
         </Button>
         {expense.document_file && (
           <Button 
@@ -336,7 +339,7 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
             color="primary"
             onClick={() => handleFileDownload(expense.document_file!)}
           >
-            Download File
+{t('common.downloadFile')}
           </Button>
         )}
       </DialogActions>
