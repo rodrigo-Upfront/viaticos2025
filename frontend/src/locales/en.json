@@ -62,7 +62,10 @@
     "downloadFile": "Download File",
     "country": "Country",
     "currency": "Currency",
-    "status": "Status"
+    "status": "Status",
+    "report": "Report",
+    "date": "Date",
+    "comments": "Comments"
   },
   "approvals": {
     "pendingApprovals": "Pending Approvals",
@@ -160,6 +163,28 @@
     "allPending": "ALL PENDING",
     "prepayments": "PREPAYMENTS",
     "expenseReports": "EXPENSE REPORTS"
+  },
+  "expenses": {
+    "title": "Expenses",
+    "createExpense": "CREATE EXPENSE",
+    "searchPurpose": "Search purpose...",
+    "from": "From",
+    "to": "To",
+    "apply": "APPLY",
+    "reset": "RESET",
+    "documentType": "Document Type",
+    "createNewExpense": "Create New Expense",
+    "travelExpenseReport": "Travel Expense Report",
+    "expenseCategory": "Expense Category",
+    "selectCategory": "Select a category",
+    "purpose": "Purpose",
+    "supplierName": "Supplier Name",
+    "expenseDate": "Expense Date",
+    "documentNumber": "Document Number",
+    "documentFile": "Document File (Optional)",
+    "chooseFile": "CHOOSE FILE",
+    "cancel": "CANCEL",
+    "create": "CREATE"
   }
 }
 

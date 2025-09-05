@@ -534,7 +534,7 @@ const ExpensesPage: React.FC = () => {
           startIcon={<AddIcon />}
           onClick={handleCreate}
         >
-          {t('common.create')} Expense
+          {t('expenses.createExpense')}
         </Button>
       </Box>
 
@@ -542,7 +542,7 @@ const ExpensesPage: React.FC = () => {
       <Box display="flex" gap={2} alignItems="center" mb={2}>
         <TextField
           size="small"
-          placeholder="Search purpose..."
+          placeholder={t('expenses.searchPurpose')}
           value={searchPurpose}
           onChange={(e) => setSearchPurpose(e.target.value)}
           sx={{ minWidth: 240 }}
@@ -550,7 +550,7 @@ const ExpensesPage: React.FC = () => {
         <TextField
           select
           size="small"
-          label="Category"
+          label={t('common.category')}
           value={filterCategoryId}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFilterCategoryId(e.target.value === '' ? '' : Number(e.target.value))}
           sx={{ minWidth: 200 }}
@@ -564,7 +564,7 @@ const ExpensesPage: React.FC = () => {
         <TextField
           select
           size="small"
-          label="Country"
+          label={t('common.country')}
           value={filterCountryId}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFilterCountryId(e.target.value === '' ? '' : Number(e.target.value))}
           sx={{ minWidth: 200 }}
@@ -578,7 +578,7 @@ const ExpensesPage: React.FC = () => {
         <TextField
           select
           size="small"
-          label="Report"
+          label={t('common.report')}
           value={filterReportId}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFilterReportId(e.target.value === '' ? '' : Number(e.target.value))}
           sx={{ minWidth: 200 }}
@@ -590,7 +590,7 @@ const ExpensesPage: React.FC = () => {
           ))}
         </TextField>
         <TextField
-          label="From"
+          label={t('expenses.from')}
           type="date"
           size="small"
           value={filterStartDate}
@@ -598,30 +598,30 @@ const ExpensesPage: React.FC = () => {
           InputLabelProps={{ shrink: true }}
         />
         <TextField
-          label="To"
+          label={t('expenses.to')}
           type="date"
           size="small"
           value={filterEndDate}
           onChange={(e) => setFilterEndDate(e.target.value)}
           InputLabelProps={{ shrink: true }}
         />
-        <Button variant="outlined" onClick={loadExpenses}>Apply</Button>
-        <Button variant="text" onClick={() => { setSearchPurpose(''); setFilterCategoryId(''); setFilterCountryId(''); setFilterReportId(''); setFilterStartDate(''); setFilterEndDate(''); loadExpenses(); }}>Reset</Button>
+        <Button variant="outlined" onClick={loadExpenses}>{t('expenses.apply')}</Button>
+        <Button variant="text" onClick={() => { setSearchPurpose(''); setFilterCategoryId(''); setFilterCountryId(''); setFilterReportId(''); setFilterStartDate(''); setFilterEndDate(''); loadExpenses(); }}>{t('expenses.reset')}</Button>
       </Box>
 
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>ID</TableCell>
-              <TableCell>Category</TableCell>
-              <TableCell>Purpose</TableCell>
-              <TableCell>Report</TableCell>
-              <TableCell>Amount</TableCell>
-              <TableCell>Date</TableCell>
-              <TableCell>Document Type</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Actions</TableCell>
+              <TableCell>{t('tables.id')}</TableCell>
+              <TableCell>{t('common.category')}</TableCell>
+              <TableCell>{t('expenses.purpose')}</TableCell>
+              <TableCell>{t('common.report')}</TableCell>
+              <TableCell>{t('common.amount')}</TableCell>
+              <TableCell>{t('common.date')}</TableCell>
+              <TableCell>{t('expenses.documentType')}</TableCell>
+              <TableCell>{t('common.status')}</TableCell>
+              <TableCell>{t('common.actions')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>

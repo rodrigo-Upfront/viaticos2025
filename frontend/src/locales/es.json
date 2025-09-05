@@ -62,7 +62,10 @@
     "downloadFile": "Descargar Archivo",
     "country": "País",
     "currency": "Moneda",
-    "status": "Estado"
+    "status": "Estado",
+    "report": "Reporte",
+    "date": "Fecha",
+    "comments": "Comentarios"
   },
   "approvals": {
     "pendingApprovals": "Aprobaciones Pendientes",
@@ -161,6 +164,28 @@
     "allPending": "TODOS PENDIENTES",
     "prepayments": "ANTICIPOS",
     "expenseReports": "REPORTES DE GASTOS"
+  },
+  "expenses": {
+    "title": "Gastos",
+    "createExpense": "CREAR GASTO",
+    "searchPurpose": "Buscar propósito...",
+    "from": "Desde",
+    "to": "Hasta",
+    "apply": "APLICAR",
+    "reset": "REINICIAR",
+    "documentType": "Tipo de Documento",
+    "createNewExpense": "Crear Nuevo Gasto",
+    "travelExpenseReport": "Reporte de Gastos de Viaje",
+    "expenseCategory": "Categoría de Gasto",
+    "selectCategory": "Seleccionar una categoría",
+    "purpose": "Propósito",
+    "supplierName": "Nombre del Proveedor",
+    "expenseDate": "Fecha del Gasto",
+    "documentNumber": "Número de Documento",
+    "documentFile": "Archivo de Documento (Opcional)",
+    "chooseFile": "ELEGIR ARCHIVO",
+    "cancel": "CANCELAR",
+    "create": "CREAR"
   }
 }
 

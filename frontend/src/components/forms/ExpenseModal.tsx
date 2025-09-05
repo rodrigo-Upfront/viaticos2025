@@ -21,6 +21,7 @@ import {
   Download as DownloadIcon,
   Description as DocumentIcon,
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import apiClient from '../../services/apiClient';
 import { Currency } from '../../services/currencyService';
 
@@ -94,6 +95,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
   currencies = [],
   loading = false
 }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<Expense>({
     category_id: 0,
     category: '',
@@ -542,19 +544,19 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
       <DialogTitle>
-        {mode === 'create' ? 'Create New Expense' : 'Edit Expense'}
+        {mode === 'create' ? t('expenses.createNewExpense') : 'Edit Expense'}
       </DialogTitle>
       <DialogContent>
         <Box sx={{ pt: 2 }}>
           <FormControl fullWidth margin="normal" error={!!errors.travel_expense_report_id} required>
-            <InputLabel>Travel Expense Report</InputLabel>
+            <InputLabel>{t('expenses.travelExpenseReport')}</InputLabel>
             <Select
               value={formData.travel_expense_report_id}
               onChange={handleTravelReportChange}
-              label="Travel Expense Report"
+              label={t('expenses.travelExpenseReport')}
             >
               <MenuItem value={-1} disabled>
-                <em>Select a travel expense report</em>
+                <em>{t('expenses.travelExpenseReport')}</em>
               </MenuItem>
               {travelExpenseReports.map((report) => (
                 <MenuItem key={report.id} value={report.id}>
@@ -570,14 +572,14 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
           </FormControl>
 
           <FormControl fullWidth margin="normal" error={!!errors.category_id} required>
-            <InputLabel>Expense Category</InputLabel>
+            <InputLabel>{t('expenses.expenseCategory')}</InputLabel>
             <Select
               value={formData.category_id}
               onChange={handleCategoryChange}
-              label="Expense Category"
+              label={t('expenses.expenseCategory')}
             >
               <MenuItem value={0}>
-                <em>Select a category</em>
+                <em>{t('expenses.selectCategory')}</em>
               </MenuItem>
               {categories.map((category) => (
                 <MenuItem key={category.id} value={category.id}>
@@ -594,7 +596,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
           <TextField
             fullWidth
-            label="Purpose"
+            label={t('expenses.purpose')}
             value={formData.purpose}
             onChange={handleChange('purpose')}
             error={!!errors.purpose}
@@ -604,11 +606,11 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
           />
 
           <FormControl fullWidth margin="normal" required>
-            <InputLabel>Document Type</InputLabel>
+            <InputLabel>{t('expenses.documentType')}</InputLabel>
             <Select
               value={formData.document_type}
               onChange={handleSelectChange('document_type')}
-              label="Document Type"
+              label={t('expenses.documentType')}
             >
               <MenuItem value="Boleta">Boleta</MenuItem>
               <MenuItem value="Factura">Factura</MenuItem>
@@ -618,7 +620,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
           {formData.document_type === 'Boleta' && (
             <TextField
               fullWidth
-              label="Supplier Name"
+              label={t('expenses.supplierName')}
               value={formData.boleta_supplier}
               onChange={handleChange('boleta_supplier')}
               error={!!errors.boleta_supplier}
@@ -669,7 +671,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
           <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
             <TextField
               fullWidth
-              label="Expense Date"
+              label={t('expenses.expenseDate')}
               type="date"
               value={formData.expense_date}
               onChange={handleChange('expense_date')}
@@ -683,7 +685,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
             <TextField
               fullWidth
-              label="Document Number"
+              label={t('expenses.documentNumber')}
               value={formData.document_number}
               onChange={handleChange('document_number')}
               error={!!errors.document_number}
@@ -695,11 +697,11 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
           {/* Country display/edit */}
           <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
             <FormControl fullWidth>
-              <InputLabel>Country</InputLabel>
+              <InputLabel>{t('common.country')}</InputLabel>
               <Select
                 value={formData.country_id}
                 onChange={handleCountryChange}
-                label="Country"
+                label={t('common.country')}
                 disabled={formData.travel_expense_report_id > 0}
               >
                 <MenuItem value={0}><em>Select a country</em></MenuItem>
@@ -712,7 +714,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
           <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
             <TextField
-              label="Amount"
+              label={t('common.amount')}
               type="number"
               value={formData.amount}
               onChange={handleChange('amount')}
@@ -727,11 +729,11 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
             {/* Currency selection */}
             <FormControl fullWidth sx={{ flex: 1 }}>
-              <InputLabel>Currency</InputLabel>
+              <InputLabel>{t('common.currency')}</InputLabel>
               <Select
                 value={formData.currency || ''}
                 onChange={handleSelectChange('currency')}
-                label="Currency"
+                label={t('common.currency')}
                 disabled={formData.travel_expense_report_id > 0}
               >
                 <MenuItem value=""><em>Select currency</em></MenuItem>
@@ -744,7 +746,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
           <TextField
             fullWidth
-            label="Comments"
+            label={t('common.comments')}
             value={formData.comments}
             onChange={handleChange('comments')}
             margin="normal"
@@ -754,14 +756,14 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
           />
 
           <Box sx={{ mt: 2 }}>
-            <InputLabel sx={{ mb: 1 }}>Document File (Optional)</InputLabel>
+            <InputLabel sx={{ mb: 1 }}>{t('expenses.documentFile')}</InputLabel>
             <Box sx={{ display: 'flex', gap: 2, flexDirection: 'column', alignItems: 'flex-start' }}>
               <Button
                 variant="outlined"
                 component="label"
                 startIcon={<InputAdornment position="start">📎</InputAdornment>}
               >
-                Choose File
+{t('expenses.chooseFile')}
                 <input
                   type="file"
                   hidden
@@ -828,10 +830,10 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose} color="inherit" disabled={loading}>
-          Cancel
+{t('expenses.cancel')}
         </Button>
         <Button onClick={handleSubmit} variant="contained" disabled={loading}>
-          {loading ? 'Saving...' : mode === 'create' ? 'Create' : 'Update'}
+{loading ? 'Saving...' : mode === 'create' ? t('expenses.create') : 'Update'}
         </Button>
       </DialogActions>
     </Dialog>
