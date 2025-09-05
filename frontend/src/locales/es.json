@@ -118,7 +118,24 @@
     "comments": "Comentarios",
     "justificationFile": "Archivo de Justificación",
     "currentStatus": "Estado Actual",
-    "days": "días"
+    "days": "días",
+    "detailsTitle": "Detalles del Anticipo",
+    "pendingPrepayments": "Anticipos Pendientes",
+    "pendingExpenseReports": "Reportes de Gastos Pendientes"
+  },
+  "tables": {
+    "type": "Tipo",
+    "id": "ID", 
+    "requester": "Solicitante",
+    "description": "Descripción",
+    "requestDate": "Fecha de Solicitud",
+    "reportId": "ID Reporte",
+    "totalExpenses": "Total Gastos",
+    "prepaidAmount": "Monto Anticipado",
+    "budgetStatus": "Estado Presupuesto",
+    "allPending": "TODOS PENDIENTES",
+    "prepayments": "ANTICIPOS",
+    "expenseReports": "REPORTES DE GASTOS"
   }
 }
 

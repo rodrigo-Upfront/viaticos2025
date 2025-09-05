@@ -496,9 +496,9 @@ const ApprovalsPage: React.FC = () => {
       <Paper>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs value={tabValue} onChange={handleTabChange}>
-            <Tab label="All Pending" />
-            <Tab label="Prepayments" />
-            <Tab label="Expense Reports" />
+            <Tab label={t('tables.allPending')} />
+            <Tab label={t('tables.prepayments')} />
+            <Tab label={t('tables.expenseReports')} />
           </Tabs>
         </Box>
 
@@ -507,13 +507,13 @@ const ApprovalsPage: React.FC = () => {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>Type</TableCell>
-                  <TableCell>ID</TableCell>
-                  <TableCell>Requester</TableCell>
-                  <TableCell>Description</TableCell>
-                  <TableCell>Amount</TableCell>
-                  <TableCell>Request Date</TableCell>
-                  <TableCell>Actions</TableCell>
+                  <TableCell>{t('tables.type')}</TableCell>
+                  <TableCell>{t('tables.id')}</TableCell>
+                  <TableCell>{t('tables.requester')}</TableCell>
+                  <TableCell>{t('tables.description')}</TableCell>
+                  <TableCell>{t('common.amount')}</TableCell>
+                  <TableCell>{t('tables.requestDate')}</TableCell>
+                  <TableCell>{t('common.actions')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -645,18 +645,18 @@ const ApprovalsPage: React.FC = () => {
         </TabPanel>
 
         <TabPanel value={tabValue} index={1}>
-          <Typography variant="h6" gutterBottom>Pending Prepayments</Typography>
+          <Typography variant="h6" gutterBottom>{t('prepayments.pendingPrepayments')}</Typography>
           <TableContainer>
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>ID</TableCell>
-                  <TableCell>Requester</TableCell>
-                  <TableCell>Reason</TableCell>
-                  <TableCell>Destination</TableCell>
-                  <TableCell>Amount</TableCell>
-                  <TableCell>Request Date</TableCell>
-                  <TableCell>Actions</TableCell>
+                  <TableCell>{t('tables.id')}</TableCell>
+                  <TableCell>{t('tables.requester')}</TableCell>
+                  <TableCell>{t('prepayments.reason')}</TableCell>
+                  <TableCell>{t('prepayments.destination')}</TableCell>
+                  <TableCell>{t('common.amount')}</TableCell>
+                  <TableCell>{t('tables.requestDate')}</TableCell>
+                  <TableCell>{t('common.actions')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -723,20 +723,20 @@ const ApprovalsPage: React.FC = () => {
         </TabPanel>
 
         <TabPanel value={tabValue} index={2}>
-          <Typography variant="h6" gutterBottom>Pending Expense Reports</Typography>
+          <Typography variant="h6" gutterBottom>{t('prepayments.pendingExpenseReports')}</Typography>
           <TableContainer>
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>Report ID</TableCell>
-                  <TableCell>Requester</TableCell>
-                  <TableCell>Type</TableCell>
-                  <TableCell>Reason</TableCell>
-                  <TableCell>Total Expenses</TableCell>
-                  <TableCell>Prepaid Amount</TableCell>
-                  <TableCell>Budget Status</TableCell>
-                  <TableCell>Date</TableCell>
-                  <TableCell>Actions</TableCell>
+                  <TableCell>{t('tables.reportId')}</TableCell>
+                  <TableCell>{t('tables.requester')}</TableCell>
+                  <TableCell>{t('tables.type')}</TableCell>
+                  <TableCell>{t('prepayments.reason')}</TableCell>
+                  <TableCell>{t('tables.totalExpenses')}</TableCell>
+                  <TableCell>{t('tables.prepaidAmount')}</TableCell>
+                  <TableCell>{t('tables.budgetStatus')}</TableCell>
+                  <TableCell>{t('common.date')}</TableCell>
+                  <TableCell>{t('common.actions')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>

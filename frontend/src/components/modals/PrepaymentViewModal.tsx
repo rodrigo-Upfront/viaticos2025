@@ -146,7 +146,7 @@ const PrepaymentViewModal: React.FC<PrepaymentViewModalProps> = ({ open, onClose
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
         <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Typography variant="h6">Prepayment Details (ID: {prepayment.id})</Typography>
+          <Typography variant="h6">{t('prepayments.detailsTitle')} (ID: {prepayment.id})</Typography>
           <Chip
             label={getStatusLabel(prepayment.status)}
             color={getStatusColor(prepayment.status) as any}

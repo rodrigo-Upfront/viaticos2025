@@ -118,7 +118,24 @@
     "comments": "Comments",
     "justificationFile": "Justification File",
     "currentStatus": "Current Status",
-    "days": "days"
+    "days": "days",
+    "detailsTitle": "Prepayment Details",
+    "pendingPrepayments": "Pending Prepayments",
+    "pendingExpenseReports": "Pending Expense Reports"
+  },
+  "tables": {
+    "type": "Type",
+    "id": "ID",
+    "requester": "Requester", 
+    "description": "Description",
+    "requestDate": "Request Date",
+    "reportId": "Report ID",
+    "totalExpenses": "Total Expenses",
+    "prepaidAmount": "Prepaid Amount",
+    "budgetStatus": "Budget Status",
+    "allPending": "ALL PENDING",
+    "prepayments": "PREPAYMENTS",
+    "expenseReports": "EXPENSE REPORTS"
   }
 }
 
