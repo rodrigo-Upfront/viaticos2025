@@ -443,7 +443,7 @@ const ApprovalsPage: React.FC = () => {
                 <PendingIcon color="warning" sx={{ mr: 1 }} />
                 <Box>
                   <Typography color="textSecondary" gutterBottom>
-                    Pending Approvals
+                    {t('approvals.pendingApprovals')}
                   </Typography>
                   <Typography variant="h4">
                     {loading.pendingItems ? '-' : allPendingItems.length}
@@ -457,7 +457,7 @@ const ApprovalsPage: React.FC = () => {
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
-                Prepayments Pending
+                {t('approvals.prepaymentsPending')}
               </Typography>
               <Typography variant="h4">
                 {loading.pendingItems ? '-' : pendingPrepayments.length}
@@ -469,7 +469,7 @@ const ApprovalsPage: React.FC = () => {
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
-                Reports Pending
+                {t('approvals.reportsPending')}
               </Typography>
               <Typography variant="h4">
                 {loading.pendingItems ? '-' : pendingExpenseReports.length}
@@ -481,7 +481,7 @@ const ApprovalsPage: React.FC = () => {
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
-                Total Value
+                {t('approvals.totalValue')}
               </Typography>
               <Typography variant="h4">
                 {loading.pendingItems ? '-' : `$${allPendingItems.reduce((sum, item) => 

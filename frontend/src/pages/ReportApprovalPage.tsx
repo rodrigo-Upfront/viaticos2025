@@ -627,7 +627,7 @@ const ReportApprovalPage: React.FC = () => {
                   disabled={submitting || loading}
                   size="medium"
                 >
-                  REJECT
+                  {t('common.reject')}
                 </Button>
                 <Button
                   onClick={handleApprove}
@@ -637,7 +637,7 @@ const ReportApprovalPage: React.FC = () => {
                   disabled={submitting || loading}
                   size="medium"
                 >
-                  APPROVE
+                  {t('common.approve')}
                 </Button>
               </Box>
             )}
@@ -707,13 +707,13 @@ const ReportApprovalPage: React.FC = () => {
                 <Table size="small">
                   <TableHead>
                     <TableRow>
-                      <TableCell><strong>Information</strong></TableCell>
-                      <TableCell align="right"><strong>Value</strong></TableCell>
+                      <TableCell><strong>{t('common.information')}</strong></TableCell>
+                      <TableCell align="right"><strong>{t('common.value')}</strong></TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     <TableRow>
-                      <TableCell>Status</TableCell>
+                      <TableCell>{t('common.status')}</TableCell>
                       <TableCell align="right">
                         <Chip
                           label={getStatusLabel(report.status)}
@@ -723,7 +723,7 @@ const ReportApprovalPage: React.FC = () => {
                       </TableCell>
                     </TableRow>
                     <TableRow>
-                      <TableCell>Assigned Amount</TableCell>
+                      <TableCell>{t('reports.assignedAmount')}</TableCell>
                       <TableCell align="right">
                         <Typography color="primary" fontWeight="bold">
                           {currencySymbol} {prepaidAmount.toLocaleString()}
@@ -731,28 +731,28 @@ const ReportApprovalPage: React.FC = () => {
                       </TableCell>
                     </TableRow>
                     <TableRow>
-                      <TableCell>Spent Amount</TableCell>
+                      <TableCell>{t('reports.spentAmount')}</TableCell>
                       <TableCell align="right">
                         {currencySymbol} {total.toLocaleString()}
                       </TableCell>
                     </TableRow>
                     <TableRow>
-                      <TableCell>Budget Status</TableCell>
+                      <TableCell>{t('reports.budgetStatus')}</TableCell>
                       <TableCell align="right">
                         <Typography 
                           fontWeight="bold" 
                           color={total <= prepaidAmount ? "success.main" : "error.main"}
                         >
-                          {total <= prepaidAmount ? "Within Budget" : "Over Budget"}
+                          {total <= prepaidAmount ? t('reports.withinBudget') : t('reports.overBudget')}
                         </Typography>
                       </TableCell>
                     </TableRow>
                     <TableRow>
-                      <TableCell>Creation Date</TableCell>
+                      <TableCell>{t('reports.creationDate')}</TableCell>
                       <TableCell align="right">{formatDate(report.reportDate)}</TableCell>
                     </TableRow>
                     <TableRow>
-                      <TableCell>Send Date</TableCell>
+                      <TableCell>{t('reports.sendDate')}</TableCell>
                       <TableCell align="right">{formatDate(report.reportDate)}</TableCell>
                     </TableRow>
                   </TableBody>
@@ -765,7 +765,7 @@ const ReportApprovalPage: React.FC = () => {
         {/* Expense Details - matching reference */}
         <Paper sx={{ p: 3, borderRadius: 2 }}>
           <Typography variant="h6" gutterBottom fontWeight="bold">
-            Expense Details
+            {t('reports.expenseDetails')}
           </Typography>
           
           <TableContainer>
@@ -774,17 +774,17 @@ const ReportApprovalPage: React.FC = () => {
                 <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
                   <TableCell width="50px">
                     <Typography variant="caption" color="textSecondary">
-                      Expand
+                      {t('common.expand')}
                     </Typography>
                   </TableCell>
                   <TableCell><strong>#</strong></TableCell>
-                  <TableCell><strong>Expense Type</strong></TableCell>
-                  <TableCell><strong>Description</strong></TableCell>
-                  <TableCell><strong>Expense Date</strong></TableCell>
-                  <TableCell align="right"><strong>Amount</strong></TableCell>
-                  <TableCell><strong>Status</strong></TableCell>
-                  <TableCell><strong>Actions</strong></TableCell>
-                  {isAccountingUser && <TableCell><strong>Approval</strong></TableCell>}
+                  <TableCell><strong>{t('reports.expenseType')}</strong></TableCell>
+                  <TableCell><strong>{t('common.description')}</strong></TableCell>
+                  <TableCell><strong>{t('reports.expenseDate')}</strong></TableCell>
+                  <TableCell align="right"><strong>{t('common.amount')}</strong></TableCell>
+                  <TableCell><strong>{t('common.status')}</strong></TableCell>
+                  <TableCell><strong>{t('common.actions')}</strong></TableCell>
+                  {isAccountingUser && <TableCell><strong>{t('reports.approval')}</strong></TableCell>}
                 </TableRow>
               </TableHead>
               <TableBody>
