@@ -463,7 +463,7 @@ const ReportsPage: React.FC = () => {
             onClick={openCreateReimbursement}
             sx={{ mr: 2 }}
           >
-            Create Reimbursement
+{t('reports.createReimbursement')}
           </Button>
           <Button
             variant="outlined"
@@ -471,14 +471,14 @@ const ReportsPage: React.FC = () => {
             onClick={handleExportAll}
             sx={{ mr: 2 }}
           >
-            Export All
+{t('reports.exportAll')}
           </Button>
           <Button
             variant="contained"
             startIcon={<FileDownloadIcon />}
             onClick={handleGenerateReport}
           >
-            Generate Report
+{t('reports.generateReport')}
           </Button>
         </Box>
       </Box>
@@ -489,7 +489,7 @@ const ReportsPage: React.FC = () => {
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
-                Total Reports
+                {t('reports.totalReports')}
               </Typography>
               <Typography variant="h4">
                 {loading.summary ? '-' : (summary?.total_reports || expenseReports.length)}
@@ -501,7 +501,7 @@ const ReportsPage: React.FC = () => {
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
-                Pending Approval
+                {t('reports.pendingApproval')}
               </Typography>
               <Typography variant="h4">
                 {loading.summary ? '-' : (summary?.pending_reports || expenseReports.filter(r => r.status.toLowerCase() === 'pending').length)}
@@ -513,7 +513,7 @@ const ReportsPage: React.FC = () => {
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
-                Total Expenses
+                {t('reports.totalExpenses')}
               </Typography>
               <Typography variant="h4">
                 {loading.summary ? '-' : `$${summary?.total_expenses || expenseReports.reduce((sum, r) => sum + r.totalExpenses, 0).toLocaleString()}`}
@@ -525,7 +525,7 @@ const ReportsPage: React.FC = () => {
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
-                Over Budget
+                {t('reports.overBudget')}
               </Typography>
               <Typography variant="h4">
                 {loading.reports ? '-' : expenseReports.filter(r => r.budgetStatus === 'Over-Budget').length}
@@ -538,13 +538,13 @@ const ReportsPage: React.FC = () => {
       {/* Search Filters */}
       <Paper sx={{ p: 2, mb: 3 }}>
         <Typography variant="h6" gutterBottom>
-          Search & Filter
+          {t('reports.searchAndFilter')}
         </Typography>
         <Grid container spacing={2}>
           <Grid item xs={12} sm={6} md={3}>
             <TextField
               fullWidth
-              label="Reason"
+              label={t('reports.reason')}
               value={searchFilters.reason}
               onChange={(e) => setSearchFilters(prev => ({ ...prev, reason: e.target.value }))}
               size="small"
@@ -552,10 +552,10 @@ const ReportsPage: React.FC = () => {
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <FormControl fullWidth size="small">
-              <InputLabel>Status</InputLabel>
+              <InputLabel>{t('common.status')}</InputLabel>
               <Select
                 value={searchFilters.status}
-                label="Status"
+                label={t('common.status')}
                 onChange={(e) => setSearchFilters(prev => ({ ...prev, status: e.target.value }))}
               >
                 <MenuItem value=""><em>All</em></MenuItem>
@@ -567,10 +567,10 @@ const ReportsPage: React.FC = () => {
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <FormControl fullWidth size="small">
-              <InputLabel>Country</InputLabel>
+              <InputLabel>{t('common.country')}</InputLabel>
               <Select
                 value={searchFilters.country}
-                label="Country"
+                label={t('common.country')}
                 onChange={(e) => setSearchFilters(prev => ({ ...prev, country: e.target.value }))}
               >
                 <MenuItem value=""><em>All</em></MenuItem>
@@ -582,10 +582,10 @@ const ReportsPage: React.FC = () => {
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <FormControl fullWidth size="small">
-              <InputLabel>Budget Status</InputLabel>
+              <InputLabel>{t('reports.budgetStatus')}</InputLabel>
               <Select
                 value={searchFilters.budgetStatus}
-                label="Budget Status"
+                label={t('reports.budgetStatus')}
                 onChange={(e) => setSearchFilters(prev => ({ ...prev, budgetStatus: e.target.value }))}
               >
                 <MenuItem value=""><em>All</em></MenuItem>
@@ -617,14 +617,14 @@ const ReportsPage: React.FC = () => {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Type</TableCell>
-              <TableCell>Reason</TableCell>
-              <TableCell>Report Date</TableCell>
-              <TableCell>Total Expenses</TableCell>
-              <TableCell>Prepaid Amount</TableCell>
-              <TableCell>Budget Status</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Actions</TableCell>
+              <TableCell>{t('tables.type')}</TableCell>
+              <TableCell>{t('reports.reason')}</TableCell>
+              <TableCell>{t('reports.reportDate')}</TableCell>
+              <TableCell>{t('reports.totalExpenses')}</TableCell>
+              <TableCell>{t('reports.prepaidAmount')}</TableCell>
+              <TableCell>{t('reports.budgetStatus')}</TableCell>
+              <TableCell>{t('common.status')}</TableCell>
+              <TableCell>{t('common.actions')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -744,37 +744,37 @@ const ReportsPage: React.FC = () => {
 
       {/* Create Reimbursement Dialog */}
       <Dialog open={createDialog.open} onClose={() => setCreateDialog(prev => ({ ...prev, open: false }))} maxWidth="sm" fullWidth>
-        <DialogTitle>Create Reimbursement Report</DialogTitle>
+        <DialogTitle>{t('reports.createReimbursementReport')}</DialogTitle>
         <DialogContent>
           <TextField
             fullWidth
-            label="Reason"
+            label={t('reports.reason')}
             value={createDialog.reason}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCreateDialog(prev => ({ ...prev, reason: e.target.value }))}
             margin="normal"
             required
           />
           <FormControl fullWidth margin="normal" required>
-            <InputLabel>Country</InputLabel>
+            <InputLabel>{t('common.country')}</InputLabel>
             <Select
               value={createDialog.country_id}
-              label="Country"
+              label={t('common.country')}
               onChange={(e: any) => setCreateDialog(prev => ({ ...prev, country_id: e.target.value }))}
             >
-              <MenuItem value={0}><em>Select a country</em></MenuItem>
+              <MenuItem value={0}><em>{t('reports.selectCountry')}</em></MenuItem>
               {countries.map(c => (
                 <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
               ))}
             </Select>
           </FormControl>
           <FormControl fullWidth margin="normal" required>
-            <InputLabel>Currency</InputLabel>
+            <InputLabel>{t('common.currency')}</InputLabel>
             <Select
               value={createDialog.currency_id}
-              label="Currency"
+              label={t('common.currency')}
               onChange={(e: any) => setCreateDialog(prev => ({ ...prev, currency_id: e.target.value }))}
             >
-              <MenuItem value={0}><em>Select currency</em></MenuItem>
+              <MenuItem value={0}><em>{t('reports.selectCurrency')}</em></MenuItem>
               {currencies.map(c => (
                 <MenuItem key={c.id} value={c.id}>{c.code} - {c.name}</MenuItem>
               ))}
@@ -782,7 +782,7 @@ const ReportsPage: React.FC = () => {
           </FormControl>
           <TextField
             fullWidth
-            label="Start Date"
+            label={t('reports.startDate')}
             type="date"
             value={createDialog.start_date}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCreateDialog(prev => ({ ...prev, start_date: e.target.value }))}
@@ -794,7 +794,7 @@ const ReportsPage: React.FC = () => {
           />
           <TextField
             fullWidth
-            label="End Date"
+            label={t('reports.endDate')}
             type="date"
             value={createDialog.end_date}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCreateDialog(prev => ({ ...prev, end_date: e.target.value }))}
@@ -807,10 +807,10 @@ const ReportsPage: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setCreateDialog(prev => ({ ...prev, open: false }))} color="inherit" disabled={loading.action}>
-            Cancel
+{t('reports.cancel')}
           </Button>
           <Button onClick={handleCreateReimbursement} variant="contained" disabled={loading.action}>
-            {loading.action ? 'Creating...' : 'Create'}
+{loading.action ? 'Creating...' : t('reports.create')}
           </Button>
         </DialogActions>
       </Dialog>

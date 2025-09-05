@@ -59,7 +59,10 @@
     "reject": "Rechazar",
     "print": "Imprimir",
     "close": "Cerrar",
-    "downloadFile": "Descargar Archivo"
+    "downloadFile": "Descargar Archivo",
+    "country": "País",
+    "currency": "Moneda",
+    "status": "Estado"
   },
   "approvals": {
     "pendingApprovals": "Aprobaciones Pendientes",
@@ -68,6 +71,25 @@
     "totalValue": "Valor Total"
   },
   "reports": {
+    "title": "Reportes",
+    "totalReports": "Total Reportes",
+    "pendingApproval": "Pendientes Aprobación",
+    "totalExpenses": "Total Gastos",
+    "overBudget": "Exceden Presupuesto",
+    "searchAndFilter": "Buscar y Filtrar",
+    "reason": "Motivo",
+    "reportDate": "Fecha Reporte",
+    "prepaidAmount": "Monto Anticipado",
+    "createReimbursement": "CREAR REEMBOLSO",
+    "exportAll": "EXPORTAR TODO",
+    "generateReport": "GENERAR REPORTE",
+    "createReimbursementReport": "Crear Reporte de Reembolso",
+    "selectCountry": "Seleccionar país",
+    "selectCurrency": "Seleccionar moneda",
+    "startDate": "Fecha de Inicio",
+    "endDate": "Fecha de Fin",
+    "cancel": "CANCELAR",
+    "create": "CREAR",
     "expenseSummary": "Resumen de Gastos",
     "reportStatus": "Estado del Reporte",
     "expenseDetails": "Detalles de Gastos",
