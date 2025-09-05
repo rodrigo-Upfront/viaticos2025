@@ -68,7 +68,8 @@
     "comments": "Comentarios",
     "saving": "Guardando...",
     "select": "Seleccionar",
-    "back": "Atrás"
+    "back": "Atrás",
+    "remove": "Quitar"
   },
   "approvals": {
     "pendingApprovals": "Aprobaciones Pendientes",
@@ -287,7 +288,18 @@
     "selectCategory": "Selecciona una categoría",
     "selectSupplier": "Selecciona un proveedor",
     "selectCountry": "Selecciona un país",
-    "selectCurrency": "Selecciona una moneda"
+    "selectCurrency": "Selecciona una moneda",
+    "attachment": "Adjunto",
+    "attachDocument": "Adjuntar Documento",
+    "row": "Fila",
+    "attachDocumentHelp": "Selecciona un archivo para adjuntar a este gasto",
+    "dropFileHere": "Suelta el archivo aquí",
+    "clickOrDragFile": "Haz clic o arrastra un archivo aquí",
+    "acceptedFormats": "Formatos aceptados",
+    "fileSizeWarning": "El archivo es grande. Se recomienda usar archivos menores a 5MB",
+    "attachFile": "Adjuntar Archivo",
+    "removeFile": "Quitar Archivo",
+    "applyDefaults": "Aplicar Valores por Defecto"
   }
 }
 

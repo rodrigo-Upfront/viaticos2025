@@ -32,10 +32,12 @@ import {
   Delete as DeleteIcon,
   ArrowBack as ArrowBackIcon,
   Save as SaveIcon,
+  AttachFile as AttachFileIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
+import FileAttachmentModal from '../components/modals/FileAttachmentModal';
 
 interface TravelExpenseReport {
   id: number;
@@ -112,6 +114,11 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
   const [activeStep, setActiveStep] = useState(0);
   const [selectedReportId, setSelectedReportId] = useState<number>(0);
   const [expenseRows, setExpenseRows] = useState<BulkExpenseRow[]>([]);
+  const [fileModal, setFileModal] = useState({
+    open: false,
+    rowId: '',
+    currentFile: null as File | null
+  });
 
   const steps = [
     t('expenses.selectReport'),
@@ -179,6 +186,68 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
         ? { ...row, [field]: value, errors: { ...row.errors, [field]: '' } }
         : row
     ));
+  };
+
+  const handleFileAttachment = (rowId: string) => {
+    const row = expenseRows.find(r => r.id === rowId);
+    setFileModal({
+      open: true,
+      rowId: rowId,
+      currentFile: row?.document_file || null
+    });
+  };
+
+  const handleFileModalClose = () => {
+    setFileModal({
+      open: false,
+      rowId: '',
+      currentFile: null
+    });
+  };
+
+  const handleFileSelect = (file: File | null) => {
+    if (fileModal.rowId) {
+      updateRow(fileModal.rowId, 'document_file', file);
+    }
+    handleFileModalClose();
+  };
+
+  const applyDefaultsToAll = () => {
+    if (expenseRows.length === 0) return;
+    
+    const firstRow = expenseRows[0];
+    const defaultValues = {
+      category_id: firstRow.category_id,
+      document_type: firstRow.document_type,
+      boleta_supplier: firstRow.boleta_supplier,
+      factura_supplier_id: firstRow.factura_supplier_id,
+      taxable: firstRow.taxable,
+      country_id: firstRow.country_id,
+      currency_id: firstRow.currency_id,
+      expense_date: firstRow.expense_date
+    };
+
+    const updatedRows = expenseRows.map((row, index) => {
+      if (index === 0) return row; // Keep first row as is
+      return {
+        ...row,
+        ...defaultValues,
+        // Clear errors for the fields we're updating
+        errors: {
+          ...row.errors,
+          category_id: '',
+          document_type: '',
+          boleta_supplier: '',
+          factura_supplier_id: '',
+          taxable: '',
+          country_id: '',
+          currency_id: '',
+          expense_date: ''
+        }
+      };
+    });
+
+    setExpenseRows(updatedRows);
   };
 
   const validateRows = (): boolean => {
@@ -372,6 +441,14 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                     {t('expenses.addRow')}
                   </Button>
                   <Button
+                    variant="outlined"
+                    onClick={applyDefaultsToAll}
+                    disabled={expenseRows.length <= 1}
+                    color="secondary"
+                  >
+                    {t('expenses.applyDefaults')}
+                  </Button>
+                  <Button
                     variant="contained"
                     startIcon={<SaveIcon />}
                     onClick={handleSubmit}
@@ -396,6 +473,7 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                       </TableCell>
                       <TableCell sx={{ minWidth: 180 }}>{t('common.category')}</TableCell>
                       <TableCell sx={{ minWidth: 200 }}>{t('expenses.purpose')}</TableCell>
+                      <TableCell sx={{ minWidth: 120 }}>{t('common.currency')}</TableCell>
                       <TableCell sx={{ minWidth: 120 }}>{t('common.amount')}</TableCell>
                       <TableCell sx={{ minWidth: 150 }}>{t('expenses.expenseDate')}</TableCell>
                       <TableCell sx={{ minWidth: 130 }}>{t('expenses.documentType')}</TableCell>
@@ -403,8 +481,8 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                       <TableCell sx={{ minWidth: 150 }}>{t('expenses.documentNumber')}</TableCell>
                       <TableCell sx={{ minWidth: 100 }}>{t('expenses.taxable')}</TableCell>
                       <TableCell sx={{ minWidth: 130 }}>{t('common.country')}</TableCell>
-                      <TableCell sx={{ minWidth: 120 }}>{t('common.currency')}</TableCell>
                       <TableCell sx={{ minWidth: 200 }}>{t('common.comments')}</TableCell>
+                      <TableCell sx={{ minWidth: 120 }}>{t('expenses.attachment')}</TableCell>
                       <TableCell sx={{ minWidth: 80 }}>{t('common.actions')}</TableCell>
                     </TableRow>
                   </TableHead>
@@ -445,6 +523,25 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                             error={!!row.errors.purpose}
                             placeholder={t('expenses.enterPurpose')}
                           />
+                        </TableCell>
+
+                        {/* Currency */}
+                        <TableCell>
+                          <FormControl size="small" fullWidth error={!!row.errors.currency_id}>
+                            <Select
+                              value={row.currency_id}
+                              onChange={(e) => updateRow(row.id, 'currency_id', e.target.value)}
+                            >
+                              <MenuItem value={0}>
+                                <em>{t('expenses.selectCurrency')}</em>
+                              </MenuItem>
+                              {currencies.map((currency) => (
+                                <MenuItem key={currency.id} value={currency.id}>
+                                  {currency.code} - {currency.name}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
                         </TableCell>
 
                         {/* Amount */}
@@ -561,25 +658,6 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                           </FormControl>
                         </TableCell>
 
-                        {/* Currency */}
-                        <TableCell>
-                          <FormControl size="small" fullWidth error={!!row.errors.currency_id}>
-                            <Select
-                              value={row.currency_id}
-                              onChange={(e) => updateRow(row.id, 'currency_id', e.target.value)}
-                            >
-                              <MenuItem value={0}>
-                                <em>{t('expenses.selectCurrency')}</em>
-                              </MenuItem>
-                              {currencies.map((currency) => (
-                                <MenuItem key={currency.id} value={currency.id}>
-                                  {currency.code} - {currency.name}
-                                </MenuItem>
-                              ))}
-                            </Select>
-                          </FormControl>
-                        </TableCell>
-
                         {/* Comments */}
                         <TableCell>
                           <TextField
@@ -591,6 +669,31 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                             onChange={(e) => updateRow(row.id, 'comments', e.target.value)}
                             placeholder={t('expenses.enterComments')}
                           />
+                        </TableCell>
+
+                        {/* File Attachment */}
+                        <TableCell>
+                          <Box display="flex" alignItems="center" gap={1}>
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={() => handleFileAttachment(row.id)}
+                              sx={{ 
+                                bgcolor: row.document_file ? 'success.light' : 'grey.100',
+                                color: row.document_file ? 'success.dark' : 'grey.600',
+                                '&:hover': {
+                                  bgcolor: row.document_file ? 'success.main' : 'grey.200'
+                                }
+                              }}
+                            >
+                              <AttachFileIcon />
+                            </IconButton>
+                            {row.document_file && (
+                              <Typography variant="caption" noWrap sx={{ maxWidth: 80 }}>
+                                {row.document_file.name}
+                              </Typography>
+                            )}
+                          </Box>
                         </TableCell>
 
                         {/* Actions */}
@@ -617,6 +720,15 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
           </Card>
         </Box>
       )}
+
+      {/* File Attachment Modal */}
+      <FileAttachmentModal
+        open={fileModal.open}
+        onClose={handleFileModalClose}
+        onFileSelect={handleFileSelect}
+        currentFile={fileModal.currentFile}
+        rowId={fileModal.rowId}
+      />
     </Box>
   );
 };

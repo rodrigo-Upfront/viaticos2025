@@ -68,7 +68,8 @@
     "comments": "Comments",
     "saving": "Saving...",
     "select": "Select",
-    "back": "Back"
+    "back": "Back",
+    "remove": "Remove"
   },
   "approvals": {
     "pendingApprovals": "Pending Approvals",
@@ -286,7 +287,18 @@
     "selectCategory": "Select a category",
     "selectSupplier": "Select a supplier",
     "selectCountry": "Select a country",
-    "selectCurrency": "Select a currency"
+    "selectCurrency": "Select a currency",
+    "attachment": "Attachment",
+    "attachDocument": "Attach Document",
+    "row": "Row",
+    "attachDocumentHelp": "Select a file to attach to this expense",
+    "dropFileHere": "Drop file here",
+    "clickOrDragFile": "Click or drag a file here",
+    "acceptedFormats": "Accepted formats",
+    "fileSizeWarning": "File is large. Recommended to use files smaller than 5MB",
+    "attachFile": "Attach File",
+    "removeFile": "Remove File",
+    "applyDefaults": "Apply Defaults"
   }
 }
 
