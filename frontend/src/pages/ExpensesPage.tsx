@@ -182,7 +182,7 @@ const ExpensesPage: React.FC = () => {
       category_id: apiExpense.category_id,
       category: category?.name || apiExpense.category_name || 'Unknown',
       travel_expense_report_id: apiExpense.travel_expense_report_id,
-      travel_expense_report: (apiExpense as any).travel_expense_report_name || `Report ${apiExpense.travel_expense_report_id}`,
+      travel_expense_report: (apiExpense as any).travel_expense_report_name || null,
       travel_expense_report_status: (apiExpense as any).travel_expense_report_status,
       purpose: apiExpense.purpose,
       document_type: apiExpense.document_type as 'Boleta' | 'Factura',
