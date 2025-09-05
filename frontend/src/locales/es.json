@@ -215,6 +215,25 @@
     "forcePasswordChange": "Forzar Cambio de Contraseña",
     "update": "ACTUALIZAR"
   },
+  "configuration": {
+    "title": "Configuración",
+    "countries": "PAÍSES",
+    "expenseCategories": "CATEGORÍAS DE GASTOS", 
+    "suppliers": "PROVEEDORES",
+    "currencies": "MONEDAS",
+    "countriesManagement": "Gestión de Países",
+    "expenseCategoriesManagement": "Gestión de Categorías de Gastos",
+    "suppliersManagement": "Gestión de Proveedores de Factura",
+    "currenciesManagement": "Gestión de Monedas",
+    "addCountry": "AGREGAR PAÍS",
+    "addCategory": "AGREGAR CATEGORÍA",
+    "addSupplier": "AGREGAR PROVEEDOR",
+    "addCurrency": "AGREGAR MONEDA",
+    "sapAccount": "Cuenta SAP",
+    "alertAmount": "Monto de Alerta",
+    "code": "Código",
+    "symbol": "Símbolo"
+  },
   "expenses": {
     "title": "Gastos",
     "createExpense": "CREAR GASTO",

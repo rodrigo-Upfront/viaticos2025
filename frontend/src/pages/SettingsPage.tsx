@@ -580,32 +580,31 @@ const SettingsPage: React.FC = () => {
       <Paper>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs value={tabValue} onChange={handleTabChange}>
-            <Tab icon={<CountryIcon />} label="Countries" />
-            <Tab icon={<CategoryIcon />} label="Expense Categories" />
-            <Tab icon={<SupplierIcon />} label="Suppliers" />
-            <Tab icon={<CurrencyIcon />} label="Currencies" />
+            <Tab icon={<CountryIcon />} label={t('configuration.countries')} />
+            <Tab icon={<CategoryIcon />} label={t('configuration.expenseCategories')} />
+            <Tab icon={<SupplierIcon />} label={t('configuration.suppliers')} />
+            <Tab icon={<CurrencyIcon />} label={t('configuration.currencies')} />
           </Tabs>
         </Box>
 
         <TabPanel value={tabValue} index={0}>
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-            <Typography variant="h6">Countries Management</Typography>
+            <Typography variant="h6">{t('configuration.countriesManagement')}</Typography>
             <Button
               variant="contained"
               startIcon={<AddIcon />}
               onClick={handleCreateCountry}
             >
-              Add Country
+{t('configuration.addCountry')}
             </Button>
           </Box>
           <TableContainer>
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>ID</TableCell>
-                  <TableCell>Name</TableCell>
-                  <TableCell>Actions</TableCell>
-                  <TableCell>Actions</TableCell>
+                  <TableCell>{t('tables.id')}</TableCell>
+                  <TableCell>{t('users.name')}</TableCell>
+                  <TableCell>{t('common.actions')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -638,24 +637,24 @@ const SettingsPage: React.FC = () => {
 
         <TabPanel value={tabValue} index={1}>
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-            <Typography variant="h6">Expense Categories Management</Typography>
+            <Typography variant="h6">{t('configuration.expenseCategoriesManagement')}</Typography>
             <Button
               variant="contained"
               startIcon={<AddIcon />}
               onClick={handleCreateCategory}
             >
-              Add Category
+{t('configuration.addCategory')}
             </Button>
           </Box>
           <TableContainer>
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>ID</TableCell>
-                  <TableCell>Name</TableCell>
-                  <TableCell>SAP Account</TableCell>
-                  <TableCell>Alert Amount</TableCell>
-                  <TableCell>Actions</TableCell>
+                  <TableCell>{t('tables.id')}</TableCell>
+                  <TableCell>{t('users.name')}</TableCell>
+                  <TableCell>{t('configuration.sapAccount')}</TableCell>
+                  <TableCell>{t('configuration.alertAmount')}</TableCell>
+                  <TableCell>{t('common.actions')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -690,23 +689,23 @@ const SettingsPage: React.FC = () => {
 
         <TabPanel value={tabValue} index={2}>
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-            <Typography variant="h6">Factura Suppliers Management</Typography>
+            <Typography variant="h6">{t('configuration.suppliersManagement')}</Typography>
             <Button
               variant="contained"
               startIcon={<AddIcon />}
               onClick={handleCreateSupplier}
             >
-              Add Supplier
+{t('configuration.addSupplier')}
             </Button>
           </Box>
           <TableContainer>
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>ID</TableCell>
-                  <TableCell>Name</TableCell>
-                  <TableCell>SAP Code</TableCell>
-                  <TableCell>Actions</TableCell>
+                  <TableCell>{t('tables.id')}</TableCell>
+                  <TableCell>{t('users.name')}</TableCell>
+                  <TableCell>{t('users.sapCode')}</TableCell>
+                  <TableCell>{t('common.actions')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -740,24 +739,24 @@ const SettingsPage: React.FC = () => {
 
         <TabPanel value={tabValue} index={3}>
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-            <Typography variant="h6">Currencies Management</Typography>
+            <Typography variant="h6">{t('configuration.currenciesManagement')}</Typography>
             <Button
               variant="contained"
               startIcon={<AddIcon />}
               onClick={handleCreateCurrency}
             >
-              Add Currency
+{t('configuration.addCurrency')}
             </Button>
           </Box>
           <TableContainer>
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>ID</TableCell>
-                  <TableCell>Name</TableCell>
-                  <TableCell>Code</TableCell>
-                  <TableCell>Symbol</TableCell>
-                  <TableCell>Actions</TableCell>
+                  <TableCell>{t('tables.id')}</TableCell>
+                  <TableCell>{t('users.name')}</TableCell>
+                  <TableCell>{t('configuration.code')}</TableCell>
+                  <TableCell>{t('configuration.symbol')}</TableCell>
+                  <TableCell>{t('common.actions')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>

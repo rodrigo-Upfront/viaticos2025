@@ -214,6 +214,25 @@
     "forcePasswordChange": "Force Password Change",
     "update": "UPDATE"
   },
+  "configuration": {
+    "title": "Configuration",
+    "countries": "COUNTRIES",
+    "expenseCategories": "EXPENSE CATEGORIES", 
+    "suppliers": "SUPPLIERS",
+    "currencies": "CURRENCIES",
+    "countriesManagement": "Countries Management",
+    "expenseCategoriesManagement": "Expense Categories Management",
+    "suppliersManagement": "Factura Suppliers Management",
+    "currenciesManagement": "Currencies Management",
+    "addCountry": "ADD COUNTRY",
+    "addCategory": "ADD CATEGORY",
+    "addSupplier": "ADD SUPPLIER",
+    "addCurrency": "ADD CURRENCY",
+    "sapAccount": "SAP Account",
+    "alertAmount": "Alert Amount",
+    "code": "Code",
+    "symbol": "Symbol"
+  },
   "expenses": {
     "title": "Expenses",
     "createExpense": "CREATE EXPENSE",
