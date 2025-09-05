@@ -65,7 +65,8 @@
     "status": "Estado",
     "report": "Reporte",
     "date": "Fecha",
-    "comments": "Comentarios"
+    "comments": "Comentarios",
+    "saving": "Guardando..."
   },
   "approvals": {
     "pendingApprovals": "Aprobaciones Pendientes",
@@ -164,6 +165,23 @@
     "allPending": "TODOS PENDIENTES",
     "prepayments": "ANTICIPOS",
     "expenseReports": "REPORTES DE GASTOS"
+  },
+  "prepaymentModule": {
+    "title": "Anticipos",
+    "createPrepayment": "CREAR ANTICIPO",
+    "searchReason": "Buscar motivo...",
+    "destination": "Destino",
+    "startDate": "Fecha de Inicio",
+    "endDate": "Fecha de Fin",
+    "createNewPrepayment": "Crear Nuevo Anticipo",
+    "editPrepayment": "Editar Anticipo",
+    "reasonForTravel": "Motivo del Viaje",
+    "destinationCountry": "País de Destino",
+    "selectCountry": "Seleccionar un país",
+    "justificationFile": "Archivo de Justificación (Opcional)",
+    "rejectionReason": "Motivo de Rechazo",
+    "providedByApprover": "Proporcionado por el aprobador al rechazar",
+    "update": "ACTUALIZAR"
   },
   "expenses": {
     "title": "Gastos",

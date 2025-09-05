@@ -429,7 +429,7 @@ const PrepaymentsPage: React.FC = () => {
           startIcon={<AddIcon />}
           onClick={handleCreate}
         >
-          {t('common.create')} Prepayment
+          {t('prepaymentModule.createPrepayment')}
         </Button>
       </Box>
 
@@ -437,7 +437,7 @@ const PrepaymentsPage: React.FC = () => {
       <Box display="flex" gap={2} alignItems="center" mb={2}>
         <TextField
           size="small"
-          placeholder="Search reason..."
+          placeholder={t('prepaymentModule.searchReason')}
           value={searchText}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchText(e.target.value)}
           InputProps={{ startAdornment: <SearchIcon fontSize="small" /> as any }}
@@ -446,7 +446,7 @@ const PrepaymentsPage: React.FC = () => {
         <TextField
           select
           size="small"
-          label="Country"
+          label={t('common.country')}
           value={filterCountryId}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFilterCountryId(e.target.value === '' ? '' : Number(e.target.value))}
           sx={{ minWidth: 200 }}
@@ -460,7 +460,7 @@ const PrepaymentsPage: React.FC = () => {
         <TextField
           select
           size="small"
-          label="Status"
+          label={t('common.status')}
           value={filterStatus}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFilterStatus(e.target.value)}
           sx={{ minWidth: 220 }}
@@ -471,22 +471,22 @@ const PrepaymentsPage: React.FC = () => {
             <option key={status} value={status}>{getStatusLabel(status)}</option>
           ))}
         </TextField>
-        <Button variant="outlined" onClick={() => { loadPrepayments(); loadFilterOptions(); }}>Apply</Button>
-        <Button variant="text" onClick={() => { setSearchText(''); setFilterCountryId(''); setFilterStatus(''); loadPrepayments(); loadFilterOptions(); }}>Reset</Button>
+        <Button variant="outlined" onClick={() => { loadPrepayments(); loadFilterOptions(); }}>{t('expenses.apply')}</Button>
+        <Button variant="text" onClick={() => { setSearchText(''); setFilterCountryId(''); setFilterStatus(''); loadPrepayments(); loadFilterOptions(); }}>{t('expenses.reset')}</Button>
       </Box>
 
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>ID</TableCell>
-              <TableCell>Reason</TableCell>
-              <TableCell>Destination</TableCell>
-              <TableCell>Start Date</TableCell>
-              <TableCell>End Date</TableCell>
-              <TableCell>Amount</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Actions</TableCell>
+              <TableCell>{t('tables.id')}</TableCell>
+              <TableCell>{t('prepayments.reason')}</TableCell>
+              <TableCell>{t('prepaymentModule.destination')}</TableCell>
+              <TableCell>{t('prepaymentModule.startDate')}</TableCell>
+              <TableCell>{t('prepaymentModule.endDate')}</TableCell>
+              <TableCell>{t('common.amount')}</TableCell>
+              <TableCell>{t('common.status')}</TableCell>
+              <TableCell>{t('common.actions')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>

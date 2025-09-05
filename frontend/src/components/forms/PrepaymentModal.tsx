@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 import { currencyService, Currency } from '../../services/currencyService';
 import apiClient from '../../services/apiClient';
+import { useTranslation } from 'react-i18next';
 import {
   Download as DownloadIcon,
   Description as DocumentIcon,
@@ -65,6 +66,7 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
   currencies = [],
   loading = false
 }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<Prepayment>({
     reason: '',
     destination_country_id: 0,
@@ -316,13 +318,13 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
       <DialogTitle>
-        {mode === 'create' ? 'Create New Prepayment' : 'Edit Prepayment'}
+{mode === 'create' ? t('prepaymentModule.createNewPrepayment') : t('prepaymentModule.editPrepayment')}
       </DialogTitle>
       <DialogContent>
         <Box sx={{ pt: 2 }}>
           <TextField
             fullWidth
-            label="Reason for Travel"
+            label={t('prepaymentModule.reasonForTravel')}
             value={formData.reason}
             onChange={handleChange('reason')}
             error={!!errors.reason}
@@ -332,14 +334,14 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
           />
           
           <FormControl fullWidth margin="normal" error={!!errors.destination_country_id} required>
-            <InputLabel>Destination Country</InputLabel>
+            <InputLabel>{t('prepaymentModule.destinationCountry')}</InputLabel>
             <Select
               value={formData.destination_country_id}
               onChange={handleCountryChange}
-              label="Destination Country"
+              label={t('prepaymentModule.destinationCountry')}
             >
               <MenuItem value={0}>
-                <em>Select a country</em>
+                <em>{t('prepaymentModule.selectCountry')}</em>
               </MenuItem>
               {countries.map((country) => (
                 <MenuItem key={country.id} value={country.id}>
@@ -357,7 +359,7 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
           <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
             <TextField
               fullWidth
-              label="Start Date"
+              label={t('prepaymentModule.startDate')}
               type="date"
               value={formData.startDate}
               onChange={handleChange('startDate')}
@@ -371,7 +373,7 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
             
             <TextField
               fullWidth
-              label="End Date" 
+              label={t('prepaymentModule.endDate')} 
               type="date"
               value={formData.endDate}
               onChange={handleChange('endDate')}
@@ -386,7 +388,7 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
 
           <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
             <TextField
-              label="Amount"
+              label={t('common.amount')}
               type="number"
               value={formData.amount}
               onChange={handleChange('amount')}
@@ -400,13 +402,13 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
             />
 
             <FormControl fullWidth sx={{ flex: 1 }}>
-              <InputLabel>Currency</InputLabel>
+              <InputLabel>{t('common.currency')}</InputLabel>
               <Select
                 value={formData.currency || ''}
                 onChange={handleSelectChange('currency')}
-                label="Currency"
+                label={t('common.currency')}
               >
-                <MenuItem value=""><em>Select currency</em></MenuItem>
+                <MenuItem value=""><em>{t('reports.selectCurrency')}</em></MenuItem>
                 {(currencies.length ? currencies : [])?.map((c) => (
                   <MenuItem key={c.code} value={c.code}>{c.code} - {c.name}</MenuItem>
                 ))}
@@ -416,7 +418,7 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
 
           <TextField
             fullWidth
-            label="Comment"
+            label={t('common.comments')}
             value={formData.comment}
             onChange={handleChange('comment')}
             margin="normal"
@@ -426,14 +428,14 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
           />
 
           <Box sx={{ mt: 2 }}>
-            <InputLabel sx={{ mb: 1 }}>Justification File (Optional)</InputLabel>
+            <InputLabel sx={{ mb: 1 }}>{t('prepaymentModule.justificationFile')}</InputLabel>
             <Box sx={{ display: 'flex', gap: 2, flexDirection: 'column', alignItems: 'flex-start' }}>
               <Button
                 variant="outlined"
                 component="label"
                 startIcon={<InputAdornment position="start">📎</InputAdornment>}
               >
-                Choose File
+{t('expenses.chooseFile')}
                 <input
                   type="file"
                   hidden
@@ -501,23 +503,23 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
         {mode === 'edit' && formData.status.toLowerCase() === 'rejected' && (
           <TextField
             fullWidth
-            label="Rejection Reason"
+            label={t('prepaymentModule.rejectionReason')}
             value={formData.rejection_reason || ''}
             onChange={handleChange('rejection_reason')}
             margin="normal"
             multiline
             rows={2}
             InputProps={{ readOnly: true }}
-            helperText="Provided by approver upon rejection"
+            helperText={t('prepaymentModule.providedByApprover')}
           />
         )}
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose} color="inherit" disabled={loading}>
-          Cancel
+{t('reports.cancel')}
         </Button>
         <Button onClick={handleSubmit} variant="contained" disabled={loading}>
-          {loading ? 'Saving...' : mode === 'create' ? 'Create' : 'Update'}
+{loading ? t('common.saving') : mode === 'create' ? t('reports.create') : t('prepaymentModule.update')}
         </Button>
       </DialogActions>
     </Dialog>

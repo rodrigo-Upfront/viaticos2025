@@ -65,7 +65,8 @@
     "status": "Status",
     "report": "Report",
     "date": "Date",
-    "comments": "Comments"
+    "comments": "Comments",
+    "saving": "Saving..."
   },
   "approvals": {
     "pendingApprovals": "Pending Approvals",
@@ -163,6 +164,23 @@
     "allPending": "ALL PENDING",
     "prepayments": "PREPAYMENTS",
     "expenseReports": "EXPENSE REPORTS"
+  },
+  "prepaymentModule": {
+    "title": "Prepayments",
+    "createPrepayment": "CREATE PREPAYMENT",
+    "searchReason": "Search reason...",
+    "destination": "Destination",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "createNewPrepayment": "Create New Prepayment",
+    "editPrepayment": "Edit Prepayment",
+    "reasonForTravel": "Reason for Travel",
+    "destinationCountry": "Destination Country",
+    "selectCountry": "Select a country",
+    "justificationFile": "Justification File (Optional)",
+    "rejectionReason": "Rejection Reason",
+    "providedByApprover": "Provided by approver upon rejection",
+    "update": "UPDATE"
   },
   "expenses": {
     "title": "Expenses",
