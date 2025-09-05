@@ -147,22 +147,28 @@ const ReportApprovalPage: React.FC = () => {
 
   // Function to get user-friendly status labels
   const getStatusLabel = (status: string): string => {
-    const statusMap: { [key: string]: string } = {
-      'pending': 'Pending Submit',
-      'supervisor_pending': 'Supervisor Review',
-      'accounting_pending': 'Accounting Review', 
-      'treasury_pending': 'Treasury Review',
-      'funds_return_pending': 'Funds Return Pending',
-      'review_return': 'Fund return review',
-      'approved_for_reimbursement': 'Approved for Reimbursement',
-      'approved': 'Approved',
-      'approved_expenses': 'Expenses Approved',
-      'approved_repaid': 'Trip Reimbursed',
-      'approved_returned_funds': 'Refund completed',
-      'rejected': 'Rejected',
-      'pending_approval': 'Pending Approval'
+    const statusKey = status.toLowerCase().replace(/_/g, '');
+    const statusTranslations: { [key: string]: string } = {
+      'pending': t('status.pending'),
+      'pendingsubmit': t('status.pendingSubmit'),
+      'supervisorpending': t('status.supervisorPending'),
+      'supervisorreview': t('status.supervisorReview'),
+      'accountingpending': t('status.accountingPending'),
+      'accountingreview': t('status.accountingReview'),
+      'treasurypending': t('status.treasuryPending'),
+      'treasuryreview': t('status.treasuryReview'),
+      'fundsreturnpending': t('status.fundsReturnPending'),
+      'reviewreturn': t('status.reviewReturn'),
+      'approvedforreimbursement': t('status.approvedForReimbursement'),
+      'approved': t('status.approved'),
+      'approvedexpenses': t('status.approvedExpenses'),
+      'approvedrepaid': t('status.approvedRepaid'),
+      'approvedreturnedfunds': t('status.approvedReturnedFunds'),
+      'rejected': t('status.rejected'),
+      'pendingapproval': t('status.pendingApproval'),
+      'inprocess': t('status.inProcess')
     };
-    return statusMap[status.toLowerCase()] || status;
+    return statusTranslations[statusKey] || status;
   };
 
   const getStatusColor = (status: string): "success" | "error" | "warning" | "info" | "default" => {
