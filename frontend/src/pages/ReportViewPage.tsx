@@ -445,7 +445,7 @@ const ReportViewPage: React.FC = () => {
                   {formatDate(report.reportDate)}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Requested by: {report.requester}
+                  {t('reports.requestedBy')}: {report.requester}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   {report.reimbursement_start_date && report.reimbursement_end_date 
@@ -630,7 +630,7 @@ const ReportViewPage: React.FC = () => {
                       <TableCell>{expense.currency_code} {expense.amount}</TableCell>
                       <TableCell>
                         <Chip
-                          label={expense.status.toUpperCase()}
+                          label={getStatusLabel(expense.status)}
                           color={expense.status.toLowerCase() === 'approved' ? 'success' : 
                                 expense.status.toLowerCase() === 'rejected' ? 'error' : 'warning'}
                           variant="filled"
