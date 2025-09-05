@@ -105,7 +105,8 @@
     "expenseDate": "Fecha de Gasto",
     "withinBudget": "Dentro del Presupuesto",
     "overBudget": "Excede Presupuesto",
-    "approval": "Aprobación"
+    "approval": "Aprobación",
+    "submitForApproval": "Enviar para Aprobación"
   },
   "status": {
     "pending": "Pendiente de Aprobación",

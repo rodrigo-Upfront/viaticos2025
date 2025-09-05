@@ -474,7 +474,7 @@ const ReportViewPage: React.FC = () => {
                 disabled={submitting || expenses.length === 0}
                 size="medium"
               >
-                {submitting ? <CircularProgress size={20} /> : 'Submit for Approval'}
+                {submitting ? <CircularProgress size={20} /> : t('reports.submitForApproval')}
               </Button>
             </Box>
           )}
@@ -487,14 +487,14 @@ const ReportViewPage: React.FC = () => {
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 3, borderRadius: 2, boxShadow: 1 }}>
             <Typography variant="h6" fontWeight="bold" gutterBottom>
-              Expense Summary
+              {t('reports.expenseSummary')}
             </Typography>
             <Table size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell><strong>Category</strong></TableCell>
-                  <TableCell align="center"><strong>Quantity</strong></TableCell>
-                  <TableCell align="right"><strong>Amount</strong></TableCell>
+                  <TableCell><strong>{t('common.category')}</strong></TableCell>
+                  <TableCell align="center"><strong>{t('common.quantity')}</strong></TableCell>
+                  <TableCell align="right"><strong>{t('common.amount')}</strong></TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -506,7 +506,7 @@ const ReportViewPage: React.FC = () => {
                   </TableRow>
                 ))}
                 <TableRow sx={{ borderTop: 2, borderColor: 'divider', backgroundColor: '#f5f5f5' }}>
-                  <TableCell><strong>Total Spent</strong></TableCell>
+                  <TableCell><strong>{t('reports.totalSpent')}</strong></TableCell>
                   <TableCell align="center"><strong>{categorySummary.length}</strong></TableCell>
                   <TableCell align="right">
                     <Typography fontWeight="bold" color="primary.main">
@@ -534,12 +534,12 @@ const ReportViewPage: React.FC = () => {
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 3, borderRadius: 2, boxShadow: 1 }}>
             <Typography variant="h6" fontWeight="bold" gutterBottom>
-              Report Status
+              {t('reports.reportStatus')}
             </Typography>
             <Table size="small">
               <TableBody>
                 <TableRow>
-                  <TableCell><strong>Status</strong></TableCell>
+                  <TableCell><strong>{t('common.status')}</strong></TableCell>
                   <TableCell align="right">
                     <Chip
                       label={getStatusLabel(report.status)}
@@ -550,7 +550,7 @@ const ReportViewPage: React.FC = () => {
                   </TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell><strong>Assigned Amount</strong></TableCell>
+                  <TableCell><strong>{t('reports.assignedAmount')}</strong></TableCell>
                   <TableCell align="right">
                     <Typography color="primary.main" fontWeight="bold">
                       {report.currency} {Number(report.prepaidAmount || 0).toFixed(2)}
@@ -558,26 +558,26 @@ const ReportViewPage: React.FC = () => {
                   </TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell><strong>Spent Amount</strong></TableCell>
+                  <TableCell><strong>{t('reports.spentAmount')}</strong></TableCell>
                   <TableCell align="right">{report.currency} {total.toFixed(2)}</TableCell>
                 </TableRow>
                 <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-                  <TableCell><strong>Budget Status</strong></TableCell>
+                  <TableCell><strong>{t('reports.budgetStatus')}</strong></TableCell>
                   <TableCell align="right">
                     <Typography 
                       fontWeight="bold" 
                       color={total > report.prepaidAmount ? 'error.main' : 'success.main'}
                     >
-                      {total > report.prepaidAmount ? 'Over Budget' : 'Within Budget'}
+                      {total > report.prepaidAmount ? t('reports.overBudget') : t('reports.withinBudget')}
                     </Typography>
                   </TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell><strong>Creation Date</strong></TableCell>
+                  <TableCell><strong>{t('reports.creationDate')}</strong></TableCell>
                   <TableCell align="right">{formatDate(report.reportDate)}</TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell><strong>Send Date</strong></TableCell>
+                  <TableCell><strong>{t('reports.sendDate')}</strong></TableCell>
                   <TableCell align="right">{formatDate(report.reportDate)}</TableCell>
                 </TableRow>
               </TableBody>
@@ -590,19 +590,19 @@ const ReportViewPage: React.FC = () => {
       <Paper sx={{ mt: 3, borderRadius: 2, boxShadow: 1 }}>
         <Box sx={{ p: 3 }}>
           <Typography variant="h6" fontWeight="bold" gutterBottom>
-            Expense Details
+            {t('reports.expenseDetails')}
           </Typography>
           <TableContainer>
             <Table>
               <TableHead>
                 <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
                   <TableCell><strong>#</strong></TableCell>
-                  <TableCell><strong>Expense Type</strong></TableCell>
-                  <TableCell><strong>Description</strong></TableCell>
-                  <TableCell><strong>Expense Date</strong></TableCell>
-                  <TableCell><strong>Amount</strong></TableCell>
-                  <TableCell><strong>Status</strong></TableCell>
-                  <TableCell><strong>Actions</strong></TableCell>
+                  <TableCell><strong>{t('reports.expenseType')}</strong></TableCell>
+                  <TableCell><strong>{t('common.description')}</strong></TableCell>
+                  <TableCell><strong>{t('reports.expenseDate')}</strong></TableCell>
+                  <TableCell><strong>{t('common.amount')}</strong></TableCell>
+                  <TableCell><strong>{t('common.status')}</strong></TableCell>
+                  <TableCell><strong>{t('common.actions')}</strong></TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>

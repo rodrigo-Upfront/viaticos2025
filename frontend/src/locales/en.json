@@ -105,7 +105,8 @@
     "expenseDate": "Expense Date",
     "withinBudget": "Within Budget",
     "overBudget": "Over Budget",
-    "approval": "Approval"
+    "approval": "Approval",
+    "submitForApproval": "Submit for Approval"
   },
   "status": {
     "pending": "Pending",
