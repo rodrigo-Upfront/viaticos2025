@@ -48,7 +48,61 @@
     "date": "Date",
     "amount": "Amount",
     "status": "Status",
-    "actions": "Actions"
+    "actions": "Actions",
+    "category": "Category",
+    "quantity": "Quantity",
+    "description": "Description",
+    "information": "Information",
+    "value": "Value",
+    "expand": "Expand",
+    "approve": "Approve",
+    "reject": "Reject",
+    "print": "Print",
+    "close": "Close",
+    "downloadFile": "Download File"
+  },
+  "approvals": {
+    "pendingApprovals": "Pending Approvals",
+    "prepaymentsPending": "Prepayments Pending",
+    "reportsPending": "Reports Pending",
+    "totalValue": "Total Value"
+  },
+  "reports": {
+    "expenseSummary": "Expense Summary",
+    "reportStatus": "Report Status",
+    "expenseDetails": "Expense Details",
+    "totalSpent": "Total Spent",
+    "assignedBudget": "Assigned Budget",
+    "assignedAmount": "Assigned Amount",
+    "spentAmount": "Spent Amount",
+    "budgetStatus": "Budget Status",
+    "creationDate": "Creation Date",
+    "sendDate": "Send Date",
+    "expenseType": "Expense Type",
+    "expenseDate": "Expense Date",
+    "withinBudget": "Within Budget",
+    "overBudget": "Over Budget",
+    "approval": "Approval"
+  },
+  "status": {
+    "pending": "Pending",
+    "pendingSubmit": "Pending Submit",
+    "supervisorReview": "Supervisor Review",
+    "supervisorPending": "Supervisor Review",
+    "accountingReview": "Accounting Review",
+    "accountingPending": "Accounting Review",
+    "treasuryReview": "Treasury Review",
+    "treasuryPending": "Treasury Review",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "inProcess": "In Process",
+    "approvedForReimbursement": "Approved for Reimbursement",
+    "fundsReturnPending": "Funds Return Pending",
+    "reviewReturn": "Fund return review",
+    "approvedExpenses": "Expenses Approved",
+    "approvedRepaid": "Trip Reimbursed",
+    "approvedReturnedFunds": "Refund completed",
+    "pendingApproval": "Pending Approval"
   }
 }
 

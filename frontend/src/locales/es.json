@@ -48,7 +48,61 @@
     "date": "Fecha",
     "amount": "Monto",
     "status": "Estado",
-    "actions": "Acciones"
+    "actions": "Acciones",
+    "category": "Categoría",
+    "quantity": "Cantidad",
+    "description": "Descripción",
+    "information": "Información",
+    "value": "Valor",
+    "expand": "Expandir",
+    "approve": "Aprobar",
+    "reject": "Rechazar",
+    "print": "Imprimir",
+    "close": "Cerrar",
+    "downloadFile": "Descargar Archivo"
+  },
+  "approvals": {
+    "pendingApprovals": "Aprobaciones Pendientes",
+    "prepaymentsPending": "Anticipos Pendientes",
+    "reportsPending": "Reportes Pendientes",
+    "totalValue": "Valor Total"
+  },
+  "reports": {
+    "expenseSummary": "Resumen de Gastos",
+    "reportStatus": "Estado del Reporte",
+    "expenseDetails": "Detalles de Gastos",
+    "totalSpent": "Total Gastado",
+    "assignedBudget": "Presupuesto Asignado",
+    "assignedAmount": "Monto Asignado",
+    "spentAmount": "Monto Gastado",
+    "budgetStatus": "Estado del Presupuesto",
+    "creationDate": "Fecha de Creación",
+    "sendDate": "Fecha de Envío",
+    "expenseType": "Tipo de Gasto",
+    "expenseDate": "Fecha de Gasto",
+    "withinBudget": "Dentro del Presupuesto",
+    "overBudget": "Sobre Presupuesto",
+    "approval": "Aprobación"
+  },
+  "status": {
+    "pending": "Pendiente",
+    "pendingSubmit": "Pendiente Envío",
+    "supervisorReview": "Revisión Supervisor",
+    "supervisorPending": "Revisión Jefatura",
+    "accountingReview": "Revisión Contabilidad",
+    "accountingPending": "Revisión Contabilidad",
+    "treasuryReview": "Revisión Tesorería",
+    "treasuryPending": "Revisión Tesorería",
+    "approved": "Aprobado",
+    "rejected": "Rechazado",
+    "inProcess": "En Proceso",
+    "approvedForReimbursement": "Aprobado para Reembolso",
+    "fundsReturnPending": "Pendiente de Devolución",
+    "reviewReturn": "Revisar Doc. Devolución",
+    "approvedExpenses": "Gastos Aprobados",
+    "approvedRepaid": "Viaje Reembolsado",
+    "approvedReturnedFunds": "Devolución realizada",
+    "pendingApproval": "Pendiente de Aprobación"
   }
 }
 
