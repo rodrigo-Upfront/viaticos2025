@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Container,
   Paper,
@@ -99,6 +100,7 @@ interface CategorySummary {
 }
 
 const ReportApprovalPage: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { reportId } = useParams<{ reportId: string }>();
@@ -654,15 +656,15 @@ const ReportApprovalPage: React.FC = () => {
           <Grid item xs={12} md={6}>
             <Paper sx={{ p: 3, borderRadius: 2, height: 'fit-content' }}>
               <Typography variant="h6" gutterBottom fontWeight="bold">
-                Expense Summary
+                {t('reports.expenseSummary')}
               </Typography>
               <TableContainer>
                 <Table size="small">
                   <TableHead>
                     <TableRow>
-                      <TableCell><strong>Category</strong></TableCell>
-                      <TableCell align="center"><strong>Quantity</strong></TableCell>
-                      <TableCell align="right"><strong>Amount</strong></TableCell>
+                      <TableCell><strong>{t('common.category')}</strong></TableCell>
+                      <TableCell align="center"><strong>{t('common.quantity')}</strong></TableCell>
+                      <TableCell align="right"><strong>{t('common.amount')}</strong></TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -676,14 +678,14 @@ const ReportApprovalPage: React.FC = () => {
                       </TableRow>
                     ))}
                     <TableRow sx={{ backgroundColor: '#f0f0f0' }}>
-                      <TableCell><strong>Total Spent</strong></TableCell>
+                      <TableCell><strong>{t('reports.totalSpent')}</strong></TableCell>
                       <TableCell align="center"><strong>{expenses.length}</strong></TableCell>
                       <TableCell align="right">
                         <strong>{currencySymbol} {total.toLocaleString()}</strong>
                       </TableCell>
                     </TableRow>
                     <TableRow sx={{ backgroundColor: total > prepaidAmount ? '#ffebee' : '#fff3e0' }}>
-                      <TableCell><strong>Assigned Budget</strong></TableCell>
+                      <TableCell><strong>{t('reports.assignedBudget')}</strong></TableCell>
                       <TableCell align="center"><strong>1</strong></TableCell>
                       <TableCell align="right">
                         <strong>{currencySymbol} {prepaidAmount.toLocaleString()}</strong>
@@ -699,7 +701,7 @@ const ReportApprovalPage: React.FC = () => {
           <Grid item xs={12} md={6}>
             <Paper sx={{ p: 3, borderRadius: 2, height: 'fit-content' }}>
               <Typography variant="h6" gutterBottom fontWeight="bold">
-                Report Status
+                {t('reports.reportStatus')}
               </Typography>
               <TableContainer>
                 <Table size="small">
