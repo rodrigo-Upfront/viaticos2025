@@ -19,6 +19,8 @@ export interface ExpenseReport {
   reimbursement_reason?: string;
   reimbursement_country?: string;
   currency?: string;  // Unified currency field
+  start_date?: string;
+  end_date?: string;
   requesting_user_name?: string;
   total_expenses?: string;
   expense_count?: number;

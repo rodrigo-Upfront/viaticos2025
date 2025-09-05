@@ -45,8 +45,8 @@ interface TravelExpenseReport {
   status: string;
   displayName: string;
   reason: string;
-  country_id?: number;
-  currency_id?: number;
+  country_name?: string;
+  currency_code?: string;
   start_date?: string;
   end_date?: string;
 }
@@ -133,14 +133,20 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
     if (selectedReport && expenseRows.length === 0) {
       const defaultRow = createEmptyRow();
       if (selectedReport) {
-        // Set defaults if available
-        if (selectedReport.country_id) defaultRow.country_id = selectedReport.country_id;
-        if (selectedReport.currency_id) defaultRow.currency_id = selectedReport.currency_id;
+        // Set defaults if available - match names to IDs
+        if (selectedReport.country_name) {
+          const country = countries.find(c => c.name === selectedReport.country_name);
+          if (country) defaultRow.country_id = country.id;
+        }
+        if (selectedReport.currency_code) {
+          const currency = currencies.find(c => c.code === selectedReport.currency_code);
+          if (currency) defaultRow.currency_id = currency.id;
+        }
         defaultRow.expense_date = new Date().toISOString().split('T')[0];
       }
       setExpenseRows([defaultRow]);
     }
-  }, [selectedReport]);
+  }, [selectedReport, countries, currencies]);
 
   const createEmptyRow = (): BulkExpenseRow => ({
     id: uuidv4(),
@@ -167,8 +173,15 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
   const addRow = () => {
     const newRow = createEmptyRow();
     if (selectedReport) {
-      if (selectedReport.country_id) newRow.country_id = selectedReport.country_id;
-      if (selectedReport.currency_id) newRow.currency_id = selectedReport.currency_id;
+      // Set defaults if available - match names to IDs
+      if (selectedReport.country_name) {
+        const country = countries.find(c => c.name === selectedReport.country_name);
+        if (country) newRow.country_id = country.id;
+      }
+      if (selectedReport.currency_code) {
+        const currency = currencies.find(c => c.code === selectedReport.currency_code);
+        if (currency) newRow.currency_id = currency.id;
+      }
       newRow.expense_date = new Date().toISOString().split('T')[0];
     }
     setExpenseRows([...expenseRows, newRow]);
@@ -377,10 +390,10 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                         <TableCell>{report.id}</TableCell>
                         <TableCell>{report.reason}</TableCell>
                         <TableCell>
-                          {report.country_id ? countries.find(c => c.id === report.country_id)?.name || '-' : '-'}
+                          {report.country_name || '-'}
                         </TableCell>
                         <TableCell>
-                          {report.currency_id ? currencies.find(c => c.id === report.currency_id)?.code || '-' : '-'}
+                          {report.currency_code || '-'}
                         </TableCell>
                         <TableCell>{report.start_date}</TableCell>
                         <TableCell>{report.end_date}</TableCell>
@@ -423,12 +436,12 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                     {t('expenses.addingExpensesTo')}: {selectedReport.reason}
                   </Typography>
                   <Typography variant="body2" color="textSecondary">
-                    {selectedReport.country_id && (
-                      <>{t('common.country')}: {countries.find(c => c.id === selectedReport.country_id)?.name}</>
+                    {selectedReport.country_name && (
+                      <>{t('common.country')}: {selectedReport.country_name}</>
                     )}
-                    {selectedReport.country_id && selectedReport.currency_id && ' | '}
-                    {selectedReport.currency_id && (
-                      <>{t('common.currency')}: {currencies.find(c => c.id === selectedReport.currency_id)?.code}</>
+                    {selectedReport.country_name && selectedReport.currency_code && ' | '}
+                    {selectedReport.currency_code && (
+                      <>{t('common.currency')}: {selectedReport.currency_code}</>
                     )}
                   </Typography>
                 </Box>

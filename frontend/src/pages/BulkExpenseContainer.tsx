@@ -37,8 +37,8 @@ const BulkExpenseContainer: React.FC = () => {
     status: string;
     displayName: string;
     reason: string;
-    country_id?: number;
-    currency_id?: number;
+    country_name?: string;
+    currency_code?: string;
     start_date?: string;
     end_date?: string;
   }
@@ -83,10 +83,10 @@ const BulkExpenseContainer: React.FC = () => {
         status: report.status,
         displayName: report.prepayment_reason || report.reimbursement_reason || `Report ${report.id}`,
         reason: report.prepayment_reason || report.reimbursement_reason || `Report ${report.id}`,
-        country_id: undefined, // Not available in this interface
-        currency_id: undefined, // Not available in this interface  
-        start_date: undefined,
-        end_date: undefined
+        country_name: report.prepayment_destination || report.reimbursement_country,
+        currency_code: report.currency,
+        start_date: report.start_date,
+        end_date: report.end_date
       }));
 
       setData({
