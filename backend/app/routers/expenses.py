@@ -431,24 +431,41 @@ async def create_expense(
         if not supplier:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Factura supplier not found")
     
-    # Get country and currency from the travel expense report's prepayment
+    # Get country and currency from the travel expense report
     inherited_country_id = None
     inherited_currency_id = None
     if report is not None:
-        report_with_prepayment = db.query(TravelExpenseReport).options(
+        report_with_details = db.query(TravelExpenseReport).options(
             joinedload(TravelExpenseReport.prepayment).joinedload(Prepayment.destination_country),
-            joinedload(TravelExpenseReport.prepayment).joinedload(Prepayment.currency)
+            joinedload(TravelExpenseReport.prepayment).joinedload(Prepayment.currency),
+            joinedload(TravelExpenseReport.country),
+            joinedload(TravelExpenseReport.currency)
         ).filter(TravelExpenseReport.id == expense_data.travel_expense_report_id).first()
-        if not report_with_prepayment:
+        if not report_with_details:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Travel expense report not found")
-        inherited_country_id = report_with_prepayment.prepayment.destination_country_id
-        inherited_currency_id = report_with_prepayment.prepayment.currency_id
-        # Validate expense date within prepayment range
-        if not (report_with_prepayment.prepayment.start_date <= expense_data.expense_date <= report_with_prepayment.prepayment.end_date):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Expense date must be within the report travel dates"
-            )
+        
+        # Check if this is a prepayment-based report or reimbursement report
+        if report_with_details.prepayment:
+            # Prepayment-based report: inherit from prepayment
+            inherited_country_id = report_with_details.prepayment.destination_country_id
+            inherited_currency_id = report_with_details.prepayment.currency_id
+            # Validate expense date within prepayment range
+            if not (report_with_details.prepayment.start_date <= expense_data.expense_date <= report_with_details.prepayment.end_date):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Expense date must be within the report travel dates"
+                )
+        else:
+            # Reimbursement report: use report's own country/currency
+            inherited_country_id = report_with_details.country_id
+            inherited_currency_id = report_with_details.currency_id
+            # Validate expense date within reimbursement date range
+            if report_with_details.start_date and report_with_details.end_date:
+                if not (report_with_details.start_date <= expense_data.expense_date <= report_with_details.end_date):
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Expense date must be within the report travel dates"
+                    )
     
     try:
         # Build fields explicitly to avoid duplicate keyword errors
