@@ -165,6 +165,12 @@
     "prepayments": "PREPAYMENTS",
     "expenseReports": "EXPENSE REPORTS"
   },
+  "dashboard": {
+    "filterByCountry": "Filter by Country",
+    "filterByCurrency": "Filter by Currency",
+    "allCountries": "All Countries",
+    "allCurrencies": "All Currencies"
+  },
   "prepaymentModule": {
     "title": "Prepayments",
     "createPrepayment": "CREATE PREPAYMENT",

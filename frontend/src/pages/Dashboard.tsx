@@ -367,14 +367,14 @@ const Dashboard: React.FC = () => {
             />
           )}
           <FormControl sx={{ minWidth: 200 }}>
-            <InputLabel>Filter by Country</InputLabel>
+            <InputLabel>{t('dashboard.filterByCountry')}</InputLabel>
             <Select
               value={selectedCountry}
               onChange={handleCountryChange}
-              label="Filter by Country"
+              label={t('dashboard.filterByCountry')}
             >
               <MenuItem value="">
-                <em>All Countries</em>
+                <em>{t('dashboard.allCountries')}</em>
               </MenuItem>
               {countries.map((country) => (
                 <MenuItem key={country.id} value={country.id}>
@@ -384,14 +384,14 @@ const Dashboard: React.FC = () => {
             </Select>
           </FormControl>
           <FormControl sx={{ minWidth: 200 }}>
-            <InputLabel>Filter by Currency</InputLabel>
+            <InputLabel>{t('dashboard.filterByCurrency')}</InputLabel>
             <Select
               value={selectedCurrency}
               onChange={(e) => setSelectedCurrency(e.target.value as number | '')}
-              label="Filter by Currency"
+              label={t('dashboard.filterByCurrency')}
             >
               <MenuItem value="">
-                <em>All Currencies</em>
+                <em>{t('dashboard.allCurrencies')}</em>
               </MenuItem>
               {currencies.map((c) => (
                 <MenuItem key={c.id} value={c.id}>

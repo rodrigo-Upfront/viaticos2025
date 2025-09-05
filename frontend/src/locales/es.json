@@ -166,6 +166,12 @@
     "prepayments": "ANTICIPOS",
     "expenseReports": "REPORTES DE GASTOS"
   },
+  "dashboard": {
+    "filterByCountry": "Filtrar por País",
+    "filterByCurrency": "Filtrar por Moneda",
+    "allCountries": "Todos los Países",
+    "allCurrencies": "Todas las Monedas"
+  },
   "prepaymentModule": {
     "title": "Anticipos",
     "createPrepayment": "CREAR ANTICIPO",
