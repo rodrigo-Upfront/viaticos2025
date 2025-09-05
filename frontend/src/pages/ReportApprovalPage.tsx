@@ -166,7 +166,8 @@ const ReportApprovalPage: React.FC = () => {
       'approvedreturnedfunds': t('status.approvedReturnedFunds'),
       'rejected': t('status.rejected'),
       'pendingapproval': t('status.pendingApproval'),
-      'inprocess': t('status.inProcess')
+      'inprocess': t('status.inProcess'),
+      'revisioncontabilidad': t('status.revisionContabilidad')
     };
     return statusTranslations[statusKey] || status;
   };
@@ -604,7 +605,7 @@ const ReportApprovalPage: React.FC = () => {
                     {formatDate(report.reportDate)}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Requested by: {report.requester}
+                    {t('reports.requestedBy')}: {report.requester}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     {report.reimbursement_start_date && report.reimbursement_end_date 
@@ -819,7 +820,7 @@ const ReportApprovalPage: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <Chip 
-                          label={expense.status || 'PENDING'} 
+                          label={getStatusLabel(expense.status || 'PENDING')} 
                           color={
                             expense.status === 'APPROVED' ? 'success' : 
                             expense.status === 'REJECTED' ? 'error' : 
