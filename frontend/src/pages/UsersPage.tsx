@@ -313,7 +313,7 @@ const UsersPage: React.FC = () => {
           startIcon={<AddIcon />}
           onClick={handleCreate}
         >
-          {t('common.create')} User
+          {t('users.createUser')}
         </Button>
       </Box>
 
@@ -321,16 +321,16 @@ const UsersPage: React.FC = () => {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Avatar</TableCell>
-              <TableCell>Name</TableCell>
-              <TableCell>Email</TableCell>
-              <TableCell>SAP Code</TableCell>
-              <TableCell>Profile</TableCell>
-              <TableCell>Country</TableCell>
-              <TableCell>Cost Center</TableCell>
-              <TableCell>Supervisor</TableCell>
-              <TableCell>Permissions</TableCell>
-              <TableCell>Actions</TableCell>
+              <TableCell>{t('users.avatar')}</TableCell>
+              <TableCell>{t('users.name')}</TableCell>
+              <TableCell>{t('users.email')}</TableCell>
+              <TableCell>{t('users.sapCode')}</TableCell>
+              <TableCell>{t('users.profile')}</TableCell>
+              <TableCell>{t('users.country')}</TableCell>
+              <TableCell>{t('users.costCenter')}</TableCell>
+              <TableCell>{t('users.supervisor')}</TableCell>
+              <TableCell>{t('users.permissions')}</TableCell>
+              <TableCell>{t('common.actions')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>

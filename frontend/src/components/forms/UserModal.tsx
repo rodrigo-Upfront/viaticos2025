@@ -15,6 +15,7 @@ import {
   Switch,
   Grid,
 } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 
 interface User {
   id?: number;
@@ -61,6 +62,7 @@ const UserModal: React.FC<UserModalProps> = ({
   users,
   loading = false
 }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<User>({
     email: '',
     name: '',
@@ -248,7 +250,7 @@ const UserModal: React.FC<UserModalProps> = ({
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
       <DialogTitle>
-        {mode === 'create' ? 'Create New User' : 'Edit User'}
+{mode === 'create' ? t('users.createNewUser') : t('users.editUser')}
       </DialogTitle>
       <DialogContent>
         <Box sx={{ pt: 2 }}>
@@ -257,7 +259,7 @@ const UserModal: React.FC<UserModalProps> = ({
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
-                label="Email"
+                label={t('users.email')}
                 type="email"
                 value={formData.email}
                 onChange={handleChange('email')}
