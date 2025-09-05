@@ -142,7 +142,8 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
           const currency = currencies.find(c => c.code === selectedReport.currency_code);
           if (currency) defaultRow.currency_id = currency.id;
         }
-        defaultRow.expense_date = new Date().toISOString().split('T')[0];
+        // Set expense date to start date of the travel period (safer default)
+        defaultRow.expense_date = selectedReport.start_date || new Date().toISOString().split('T')[0];
       }
       setExpenseRows([defaultRow]);
     }
@@ -182,7 +183,8 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
         const currency = currencies.find(c => c.code === selectedReport.currency_code);
         if (currency) newRow.currency_id = currency.id;
       }
-      newRow.expense_date = new Date().toISOString().split('T')[0];
+      // Set expense date to start date of the travel period (safer default)
+      newRow.expense_date = selectedReport.start_date || new Date().toISOString().split('T')[0];
     }
     setExpenseRows([...expenseRows, newRow]);
   };
@@ -237,7 +239,7 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
       taxable: firstRow.taxable,
       country_id: firstRow.country_id,
       currency_id: firstRow.currency_id,
-      expense_date: firstRow.expense_date
+      expense_date: firstRow.expense_date || (selectedReport?.start_date || new Date().toISOString().split('T')[0])
     };
 
     const updatedRows = expenseRows.map((row, index) => {
@@ -271,7 +273,21 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
       if (!row.category_id) errors.category_id = t('expenses.categoryRequired');
       if (!row.purpose.trim()) errors.purpose = t('expenses.purposeRequired');
       if (row.amount <= 0) errors.amount = t('expenses.amountRequired');
-      if (!row.expense_date) errors.expense_date = t('expenses.dateRequired');
+      if (!row.expense_date) {
+        errors.expense_date = t('expenses.dateRequired');
+      } else if (selectedReport && selectedReport.start_date && selectedReport.end_date) {
+        // Validate expense date is within travel date range
+        const expenseDate = new Date(row.expense_date);
+        const startDate = new Date(selectedReport.start_date);
+        const endDate = new Date(selectedReport.end_date);
+        
+        if (expenseDate < startDate || expenseDate > endDate) {
+          errors.expense_date = t('expenses.dateOutOfRange', {
+            startDate: selectedReport.start_date,
+            endDate: selectedReport.end_date
+          });
+        }
+      }
       if (!row.country_id) errors.country_id = t('expenses.countryRequired');
       if (!row.currency_id) errors.currency_id = t('expenses.currencyRequired');
       
@@ -443,6 +459,12 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                     {selectedReport.currency_code && (
                       <>{t('common.currency')}: {selectedReport.currency_code}</>
                     )}
+                    {selectedReport.start_date && selectedReport.end_date && (
+                      <>
+                        {(selectedReport.country_name || selectedReport.currency_code) && ' | '}
+                        {t('expenses.validDates')}: {selectedReport.start_date} - {selectedReport.end_date}
+                      </>
+                    )}
                   </Typography>
                 </Box>
                 <Box display="flex" gap={2}>
@@ -581,6 +603,11 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                             value={row.expense_date}
                             onChange={(e) => updateRow(row.id, 'expense_date', e.target.value)}
                             error={!!row.errors.expense_date}
+                            helperText={row.errors.expense_date}
+                            inputProps={{
+                              min: selectedReport?.start_date,
+                              max: selectedReport?.end_date
+                            }}
                             InputLabelProps={{ shrink: true }}
                           />
                         </TableCell>

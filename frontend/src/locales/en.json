@@ -298,7 +298,9 @@
     "fileSizeWarning": "File is large. Recommended to use files smaller than 5MB",
     "attachFile": "Attach File",
     "removeFile": "Remove File",
-    "applyDefaults": "Apply Defaults"
+    "applyDefaults": "Apply Defaults",
+    "dateOutOfRange": "Date must be between {{startDate}} and {{endDate}}",
+    "validDates": "Valid dates"
   }
 }
 

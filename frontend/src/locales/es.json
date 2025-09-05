@@ -299,7 +299,9 @@
     "fileSizeWarning": "El archivo es grande. Se recomienda usar archivos menores a 5MB",
     "attachFile": "Adjuntar Archivo",
     "removeFile": "Quitar Archivo",
-    "applyDefaults": "Aplicar Valores por Defecto"
+    "applyDefaults": "Aplicar Valores por Defecto",
+    "dateOutOfRange": "La fecha debe estar entre {{startDate}} y {{endDate}}",
+    "validDates": "Fechas válidas"
   }
 }
 
