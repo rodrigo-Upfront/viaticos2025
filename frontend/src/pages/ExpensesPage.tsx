@@ -649,8 +649,8 @@ const ExpensesPage: React.FC = () => {
                   <TableCell>{expense.category}</TableCell>
                   <TableCell>{expense.purpose}</TableCell>
                   <TableCell>
-                    {expense.travel_expense_report_id ? (
-                      `Report #${expense.travel_expense_report_id}`
+                    {expense.travel_expense_report ? (
+                      expense.travel_expense_report
                     ) : (
                       '-'
                     )}
