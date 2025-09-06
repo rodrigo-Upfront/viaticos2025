@@ -124,7 +124,14 @@ const BulkExpenseContainer: React.FC = () => {
           comments: row.comments || ''
         };
         
-        await expenseService.createExpense(apiData);
+        const createdExpense = await expenseService.createExpense(apiData);
+        
+        // Upload file if attached
+        if (row.document_file) {
+          const formData = new FormData();
+          formData.append('file', row.document_file);
+          await expenseService.uploadFile(createdExpense.id, formData);
+        }
       }
       
     } catch (error) {
