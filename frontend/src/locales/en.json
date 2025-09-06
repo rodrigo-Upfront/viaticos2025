@@ -89,6 +89,8 @@
     "title": "Reports",
     "totalReports": "Total Reports",
     "pendingApproval": "Pending Approval",
+    "pendingSubmit": "Pending Submit",
+    "pendingReturn": "Pending Return",
     "totalExpenses": "Total Expenses",
     "overBudget": "Over Budget",
     "searchAndFilter": "Search & Filter",

@@ -516,52 +516,42 @@ const ReportsPage: React.FC = () => {
         </Box>
       </Box>
 
-      {/* Summary Cards */}
+      {/* Status Summary Cards */}
       <Grid container spacing={3} mb={3}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={4} md={4}>
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
-                {t('reports.totalReports')}
+                {t('reports.pendingSubmit')}
               </Typography>
               <Typography variant="h4">
-                {loading.summary ? '-' : (summary?.total_reports || expenseReports.length)}
+                {loading.reports ? '-' : expenseReports.filter(r => r.status.toLowerCase() === 'pending').length}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={4} md={4}>
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
                 {t('reports.pendingApproval')}
               </Typography>
               <Typography variant="h4">
-                {loading.summary ? '-' : (summary?.pending_reports || expenseReports.filter(r => r.status.toLowerCase() === 'pending').length)}
+                {loading.reports ? '-' : expenseReports.filter(r => 
+                  ['supervisor_pending', 'accounting_pending', 'treasury_pending'].includes(r.status.toLowerCase())
+                ).length}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={4} md={4}>
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
-                {t('reports.totalExpenses')}
+                {t('reports.pendingReturn')}
               </Typography>
               <Typography variant="h4">
-                {loading.summary ? '-' : `$${summary?.total_expenses || expenseReports.reduce((sum, r) => sum + r.totalExpenses, 0).toLocaleString()}`}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
-                {t('reports.overBudget')}
-              </Typography>
-              <Typography variant="h4">
-                {loading.reports ? '-' : expenseReports.filter(r => r.budgetStatus === 'Over-Budget').length}
+                {loading.reports ? '-' : expenseReports.filter(r => r.status.toLowerCase() === 'funds_return_pending').length}
               </Typography>
             </CardContent>
           </Card>
@@ -576,7 +566,7 @@ const ReportsPage: React.FC = () => {
         <Grid container spacing={2}>
           {/* User filter - only for accounting/treasury users */}
           {canFilterByUser && (
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={6} sm={4} md={2}>
               <FormControl fullWidth size="small">
                 <InputLabel>{t('common.user')}</InputLabel>
                 <Select
@@ -593,7 +583,7 @@ const ReportsPage: React.FC = () => {
             </Grid>
           )}
           
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={6} sm={4} md={2}>
             <TextField
               fullWidth
               label={t('reports.reason')}
@@ -602,7 +592,7 @@ const ReportsPage: React.FC = () => {
               size="small"
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={6} sm={4} md={2}>
             <FormControl fullWidth size="small">
               <InputLabel>{t('common.status')}</InputLabel>
               <Select
@@ -617,7 +607,7 @@ const ReportsPage: React.FC = () => {
               </Select>
             </FormControl>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={6} sm={4} md={2}>
             <FormControl fullWidth size="small">
               <InputLabel>{t('common.country')}</InputLabel>
               <Select
@@ -632,7 +622,7 @@ const ReportsPage: React.FC = () => {
               </Select>
             </FormControl>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={6} sm={4} md={2}>
             <FormControl fullWidth size="small">
               <InputLabel>{t('reports.budgetStatus')}</InputLabel>
               <Select
@@ -647,7 +637,7 @@ const ReportsPage: React.FC = () => {
               </Select>
             </FormControl>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={6} sm={4} md={2}>
             <FormControl fullWidth size="small">
               <InputLabel>Type</InputLabel>
               <Select
