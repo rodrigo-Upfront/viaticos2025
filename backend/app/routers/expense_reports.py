@@ -221,8 +221,8 @@ async def get_users_for_filter(
             detail="Insufficient permissions to access user list"
         )
     
-    # Get all users (excluding superusers for cleaner list)
-    users = db.query(User).filter(User.is_superuser == False).order_by(User.name, User.surname).all()
+    # Get all users
+    users = db.query(User).order_by(User.name, User.surname).all()
     
     return [
         {
