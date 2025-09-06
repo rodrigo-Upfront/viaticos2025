@@ -37,6 +37,9 @@ import {
   Add as AddIcon,
   Send as SendIcon,
   CheckCircle as CheckCircleIcon,
+  Assignment as AssignmentIcon,
+  PendingActions as PendingActionsIcon,
+  Undo as UndoIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 
@@ -65,6 +68,65 @@ interface ExpenseReport {
   prepayment_destination?: string;
   currency?: string;  // Unified currency field
 }
+
+const StatCard: React.FC<{
+  title: string;
+  value: number | string;
+  icon: React.ReactNode;
+  bgColor: string;
+  barColor: string;
+  onClick?: () => void;
+}> = ({ title, value, icon, bgColor, barColor, onClick }) => (
+  <Card sx={{ 
+    height: '100%', 
+    backgroundColor: bgColor,
+    position: 'relative',
+    overflow: 'visible',
+    border: '1px solid rgba(0,0,0,0.08)',
+    borderRadius: 4,
+    cursor: onClick ? 'pointer' : 'default',
+    transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+    '&:hover': onClick ? {
+      transform: 'translateY(-2px)',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+    } : {}
+  }}
+  onClick={onClick}
+  >
+    <CardContent sx={{ p: 3 }}>
+      {/* Header with Icon */}
+      <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+        <Typography variant="body1" sx={{ color: '#666', fontWeight: 500, fontSize: '0.9rem' }}>
+          {title}
+        </Typography>
+        <Box sx={{ fontSize: 24, color: barColor }}>
+          {icon}
+        </Box>
+      </Box>
+
+      {/* Main Value */}
+      <Typography variant="h4" component="div" fontWeight="bold" sx={{ mb: 1, color: '#333' }}>
+        {typeof value === 'number' ? value.toLocaleString() : value}
+      </Typography>
+
+      {/* Accent Bar */}
+      <Box sx={{
+        width: '100%',
+        height: 4,
+        backgroundColor: 'rgba(0,0,0,0.06)',
+        borderRadius: 2,
+        overflow: 'hidden'
+      }}>
+        <Box sx={{
+          width: '60%',
+          height: '100%',
+          backgroundColor: barColor,
+          borderRadius: 2
+        }} />
+      </Box>
+    </CardContent>
+  </Card>
+);
 
 const ReportsPage: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -519,42 +581,43 @@ const ReportsPage: React.FC = () => {
       {/* Status Summary Cards */}
       <Grid container spacing={3} mb={3}>
         <Grid item xs={12} sm={4} md={4}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
-                {t('reports.pendingSubmit')}
-              </Typography>
-              <Typography variant="h4">
-                {loading.reports ? '-' : expenseReports.filter(r => r.status.toLowerCase() === 'pending').length}
-              </Typography>
-            </CardContent>
-          </Card>
+          <StatCard
+            title={t('reports.pendingSubmit')}
+            value={loading.reports ? '-' : expenseReports.filter(r => r.status.toLowerCase() === 'pending').length}
+            icon={<AssignmentIcon />}
+            bgColor="#fef7f7"
+            barColor="#e74c3c"
+            onClick={() => {
+              setSearchFilters(prev => ({ ...prev, status: 'pending' }));
+            }}
+          />
         </Grid>
         <Grid item xs={12} sm={4} md={4}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
-                {t('reports.pendingApproval')}
-              </Typography>
-              <Typography variant="h4">
-                {loading.reports ? '-' : expenseReports.filter(r => 
-                  ['supervisor_pending', 'accounting_pending', 'treasury_pending'].includes(r.status.toLowerCase())
-                ).length}
-              </Typography>
-            </CardContent>
-          </Card>
+          <StatCard
+            title={t('reports.pendingApproval')}
+            value={loading.reports ? '-' : expenseReports.filter(r => 
+              ['supervisor_pending', 'accounting_pending', 'treasury_pending'].includes(r.status.toLowerCase())
+            ).length}
+            icon={<PendingActionsIcon />}
+            bgColor="#fefbf3"
+            barColor="#f39c12"
+            onClick={() => {
+              // Set multiple statuses - we'll need to update the filter logic for this
+              setSearchFilters(prev => ({ ...prev, status: 'supervisor_pending' }));
+            }}
+          />
         </Grid>
         <Grid item xs={12} sm={4} md={4}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
-                {t('reports.pendingReturn')}
-              </Typography>
-              <Typography variant="h4">
-                {loading.reports ? '-' : expenseReports.filter(r => r.status.toLowerCase() === 'funds_return_pending').length}
-              </Typography>
-            </CardContent>
-          </Card>
+          <StatCard
+            title={t('reports.pendingReturn')}
+            value={loading.reports ? '-' : expenseReports.filter(r => r.status.toLowerCase() === 'funds_return_pending').length}
+            icon={<UndoIcon />}
+            bgColor="#f7fdf9"
+            barColor="#27ae60"
+            onClick={() => {
+              setSearchFilters(prev => ({ ...prev, status: 'funds_return_pending' }));
+            }}
+          />
         </Grid>
       </Grid>
 
