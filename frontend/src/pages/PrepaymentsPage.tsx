@@ -115,15 +115,17 @@ const PrepaymentsPage: React.FC = () => {
     prepayment: undefined as Prepayment | undefined
   });
 
-  // Filters/search state
-  const [searchText, setSearchText] = useState('');
-  const [filterCountryId, setFilterCountryId] = useState<number | ''>('');
-  const [filterStatus, setFilterStatus] = useState<string>('');
-  
-  // User filter state (for accounting/treasury users)
+  // Filters/search state - unified object for real-time filtering
   const { user } = useAuth();
-  const [filterUserId, setFilterUserId] = useState<number | ''>(user?.id || '');
+  const [searchFilters, setSearchFilters] = useState({
+    reason: '',
+    countryId: '' as string | number,
+    status: '',
+    userId: user?.id || '' as number | ''
+  });
+  
   const [availableUsers, setAvailableUsers] = useState<{id: number, name: string, email: string, profile: string}[]>([]);
+  const [filteredPrepayments, setFilteredPrepayments] = useState<Prepayment[]>([]);
   
   // Check if user can filter by other users
   const canFilterByUser = user?.profile === 'ACCOUNTING' || user?.profile === 'TREASURY' || user?.is_superuser;
@@ -138,6 +140,48 @@ const PrepaymentsPage: React.FC = () => {
       loadAvailableUsers();
     }
   }, [canFilterByUser]);
+
+  // Real-time filtering effect
+  useEffect(() => {
+    let filtered = prepayments;
+
+    if (searchFilters.reason) {
+      filtered = filtered.filter(prepayment => 
+        prepayment.reason.toLowerCase().includes(searchFilters.reason.toLowerCase())
+      );
+    }
+
+    if (searchFilters.countryId) {
+      filtered = filtered.filter(prepayment => 
+        prepayment.destination_country_id === Number(searchFilters.countryId)
+      );
+    }
+
+    if (searchFilters.status) {
+      filtered = filtered.filter(prepayment => 
+        prepayment.status.toLowerCase() === searchFilters.status.toLowerCase()
+      );
+    }
+
+    if (searchFilters.userId && canFilterByUser) {
+      // Note: This will be handled by backend API call, but we keep the filter state for UI consistency
+      // The actual filtering by userId happens in loadPrepayments()
+    }
+
+    // Sort by start date descending (newest first)
+    const sortedFiltered = filtered.sort((a, b) => 
+      new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+    );
+    
+    setFilteredPrepayments(sortedFiltered);
+  }, [prepayments, searchFilters, canFilterByUser]);
+
+  // Reload prepayments when userId filter changes (for backend filtering)
+  useEffect(() => {
+    if (canFilterByUser) {
+      loadPrepayments();
+    }
+  }, [searchFilters.userId, canFilterByUser]);
 
   // Helper function to convert API prepayment to frontend format
   const mapApiToFrontend = (apiPrepayment: ApiPrepayment): Prepayment => {
@@ -178,12 +222,8 @@ const PrepaymentsPage: React.FC = () => {
     try {
       setLoading(prev => ({ ...prev, prepayments: true }));
       const response = await prepaymentService.getPrepayments({
-        search: searchText || undefined,
-        status_filter: filterStatus ? filterStatus.toUpperCase() : undefined,
-        // country filter supported in backend using country_id
-        ...(filterCountryId ? { country_id: filterCountryId as number } : {} as any),
-        // user filter for accounting/treasury users
-        ...(filterUserId ? { user_id: filterUserId as number } : {} as any),
+        // Only pass user_id filter to backend, other filters handled client-side
+        ...(searchFilters.userId ? { user_id: searchFilters.userId as number } : {} as any),
       } as any);
       const mappedPrepayments = response.prepayments.map(mapApiToFrontend);
       // Sort by start date descending (newest first)
@@ -470,8 +510,10 @@ const PrepaymentsPage: React.FC = () => {
         <TextField
           size="small"
           placeholder={t('prepaymentModule.searchReason')}
-          value={searchText}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchText(e.target.value)}
+          value={searchFilters.reason}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
+            setSearchFilters(prev => ({ ...prev, reason: e.target.value }))
+          }
           InputProps={{ startAdornment: <SearchIcon fontSize="small" /> as any }}
           sx={{ minWidth: 240 }}
         />
@@ -481,9 +523,11 @@ const PrepaymentsPage: React.FC = () => {
           <FormControl size="small" sx={{ minWidth: 200 }}>
             <InputLabel>{t('common.user')}</InputLabel>
             <Select
-              value={filterUserId}
+              value={searchFilters.userId}
               label={t('common.user')}
-              onChange={(e) => setFilterUserId(e.target.value as number | '')}
+              onChange={(e) => 
+                setSearchFilters(prev => ({ ...prev, userId: e.target.value as number | '' }))
+              }
             >
               <MenuItem value={user?.id}>{t('common.myRecords')}</MenuItem>
               {availableUsers.map(u => (
@@ -497,8 +541,10 @@ const PrepaymentsPage: React.FC = () => {
           select
           size="small"
           label={t('common.country')}
-          value={filterCountryId}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFilterCountryId(e.target.value === '' ? '' : Number(e.target.value))}
+          value={searchFilters.countryId}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
+            setSearchFilters(prev => ({ ...prev, countryId: e.target.value === '' ? '' : Number(e.target.value) }))
+          }
           sx={{ minWidth: 200 }}
           SelectProps={{ native: true }}
         >
@@ -511,8 +557,10 @@ const PrepaymentsPage: React.FC = () => {
           select
           size="small"
           label={t('common.status')}
-          value={filterStatus}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFilterStatus(e.target.value)}
+          value={searchFilters.status}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
+            setSearchFilters(prev => ({ ...prev, status: e.target.value }))
+          }
           sx={{ minWidth: 220 }}
           SelectProps={{ native: true }}
         >
@@ -521,8 +569,19 @@ const PrepaymentsPage: React.FC = () => {
             <option key={status} value={status}>{getStatusLabel(status)}</option>
           ))}
         </TextField>
-        <Button variant="outlined" onClick={() => { loadPrepayments(); loadFilterOptions(); }}>{t('expenses.apply')}</Button>
-        <Button variant="text" onClick={() => { setSearchText(''); setFilterCountryId(''); setFilterStatus(''); setFilterUserId(user?.id || ''); loadPrepayments(); loadFilterOptions(); }}>{t('expenses.reset')}</Button>
+        <Button 
+          variant="text" 
+          onClick={() => 
+            setSearchFilters({ 
+              reason: '', 
+              countryId: '', 
+              status: '', 
+              userId: user?.id || '' 
+            })
+          }
+        >
+          {t('expenses.reset')}
+        </Button>
       </Box>
 
       <TableContainer component={Paper}>
@@ -549,7 +608,7 @@ const PrepaymentsPage: React.FC = () => {
                   </Typography>
                 </TableCell>
               </TableRow>
-            ) : prepayments.length === 0 ? (
+            ) : filteredPrepayments.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
                   <Typography variant="body2" color="text.secondary">
@@ -558,7 +617,7 @@ const PrepaymentsPage: React.FC = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              prepayments.map((prepayment) => (
+              filteredPrepayments.map((prepayment) => (
               <TableRow key={prepayment.id}>
                 <TableCell>{prepayment.id}</TableCell>
                 <TableCell>{prepayment.reason}</TableCell>
