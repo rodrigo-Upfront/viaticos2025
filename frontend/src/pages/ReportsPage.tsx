@@ -266,8 +266,8 @@ const ReportsPage: React.FC = () => {
     try {
       setLoading(prev => ({ ...prev, reports: true }));
       const response = await reportService.getReports({
-        // user filter for accounting/treasury users
-        ...(filterUserId ? { user_id: filterUserId as number } : {} as any),
+        // Only send user_id filter if user has permission to filter by user
+        ...(canFilterByUser && filterUserId ? { user_id: filterUserId as number } : {} as any),
       });
       const mappedReports = response.reports.map(mapApiToFrontend);
       

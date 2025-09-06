@@ -222,8 +222,8 @@ const PrepaymentsPage: React.FC = () => {
     try {
       setLoading(prev => ({ ...prev, prepayments: true }));
       const response = await prepaymentService.getPrepayments({
-        // Only pass user_id filter to backend, other filters handled client-side
-        ...(searchFilters.userId ? { user_id: searchFilters.userId as number } : {} as any),
+        // Only pass user_id filter to backend if user has permission to filter by user
+        ...(canFilterByUser && searchFilters.userId ? { user_id: searchFilters.userId as number } : {} as any),
       } as any);
       const mappedPrepayments = response.prepayments.map(mapApiToFrontend);
       // Sort by start date descending (newest first)
