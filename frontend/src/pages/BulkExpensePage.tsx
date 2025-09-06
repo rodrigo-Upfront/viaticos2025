@@ -527,90 +527,95 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                     )}
                   </Typography>
                   
-                  {/* Budget Information */}
-                  {reportDetails && reportDetails.prepayment_amount > 0 && (
+                  {/* Combined Budget Information and Expense Summary */}
+                  {(reportDetails && reportDetails.prepayment_amount > 0) || expenseRows.length > 0 ? (
                     <Box sx={{ mt: 2, p: 2, backgroundColor: '#f8f9fa', borderRadius: 1 }}>
                       <Typography variant="body2" color="textSecondary" gutterBottom>
-                        {t('reports.budgetInformation')}:
+                        {reportDetails && reportDetails.prepayment_amount > 0 ? t('reports.budgetInformation') : t('expenses.expenseSummary')}:
                       </Typography>
-                      <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-                        <Box>
-                          <Typography variant="body2" color="textSecondary">
-                            {t('reports.assignedBudget')}:
-                          </Typography>
-                          <Typography variant="body1" fontWeight="medium">
-                            {reportDetails.currency} {reportDetails.prepayment_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </Typography>
-                        </Box>
-                        <Box>
-                          <Typography variant="body2" color="textSecondary">
-                            {t('reports.currentExpenses')}:
-                          </Typography>
-                          <Typography variant="body1" fontWeight="medium">
-                            {reportDetails.currency} {reportDetails.total_expenses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </Typography>
-                        </Box>
-                        <Box>
-                          <Typography variant="body2" color="textSecondary">
-                            {t('reports.remainingBudget')}:
-                          </Typography>
-                          <Typography 
-                            variant="body1" 
-                            fontWeight="medium"
-                            color={reportDetails.prepayment_amount - reportDetails.total_expenses >= 0 ? 'success.main' : 'error.main'}
-                          >
-                            {reportDetails.currency} {(reportDetails.prepayment_amount - reportDetails.total_expenses).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </Typography>
-                        </Box>
+                      <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                        {/* Budget Information */}
+                        {reportDetails && reportDetails.prepayment_amount > 0 && (
+                          <>
+                            <Box>
+                              <Typography variant="body2" color="textSecondary">
+                                {t('reports.assignedBudget')}:
+                              </Typography>
+                              <Typography variant="body1" fontWeight="medium">
+                                {reportDetails.currency} {reportDetails.prepayment_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </Typography>
+                            </Box>
+                            <Box>
+                              <Typography variant="body2" color="textSecondary">
+                                {t('reports.currentExpenses')}:
+                              </Typography>
+                              <Typography variant="body1" fontWeight="medium">
+                                {reportDetails.currency} {reportDetails.total_expenses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </Typography>
+                            </Box>
+                            <Box>
+                              <Typography variant="body2" color="textSecondary">
+                                {t('reports.remainingBudget')}:
+                              </Typography>
+                              <Typography 
+                                variant="body1" 
+                                fontWeight="medium"
+                                color={reportDetails.prepayment_amount - reportDetails.total_expenses >= 0 ? 'success.main' : 'error.main'}
+                              >
+                                {reportDetails.currency} {(reportDetails.prepayment_amount - reportDetails.total_expenses).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </Typography>
+                            </Box>
+                          </>
+                        )}
+
+                        {/* Expense Summary */}
+                        {expenseRows.length > 0 && (
+                          <>
+                            {/* Total Amount */}
+                            <Box>
+                              <Typography variant="body2" color="textSecondary">
+                                {t('common.amount')}:
+                              </Typography>
+                              <Typography variant="body1" fontWeight="medium" color="primary">
+                                {selectedReport?.currency_code || '$'} {totalAmount.toFixed(2)}
+                              </Typography>
+                            </Box>
+
+                            {/* Expense Count */}
+                            <Box>
+                              <Typography variant="body2" color="textSecondary">
+                                {t('expenses.count')}:
+                              </Typography>
+                              <Typography variant="body1" fontWeight="medium">
+                                {expenseCount} {expenseCount === 1 ? t('expenses.expense') : t('expenses.expenses')}
+                              </Typography>
+                            </Box>
+
+                            {/* Category Breakdown */}
+                            {Object.keys(totalsByCategory).length > 0 && (
+                              <Box sx={{ flexGrow: 1 }}>
+                                <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
+                                  {t('expenses.byCategory')}:
+                                </Typography>
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                  {Object.entries(totalsByCategory).map(([category, amount]) => (
+                                    <Chip 
+                                      key={category}
+                                      label={`${category}: ${selectedReport?.currency_code || '$'} ${amount.toFixed(2)}`}
+                                      size="small"
+                                      variant="outlined"
+                                      color="primary"
+                                      sx={{ fontSize: '0.75rem', height: 24 }}
+                                    />
+                                  ))}
+                                </Box>
+                              </Box>
+                            )}
+                          </>
+                        )}
                       </Box>
                     </Box>
-                  )}
-                  
-                  {/* Inline Summary */}
-                  {expenseRows.length > 0 && (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mt: 2 }}>
-                      {/* Total Amount */}
-                      <Box>
-                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-                          {t('common.amount')}
-                        </Typography>
-                        <Typography variant="subtitle1" color="primary" sx={{ fontWeight: 600 }}>
-                          {selectedReport?.currency_code || '$'} {totalAmount.toFixed(2)}
-                        </Typography>
-                      </Box>
-
-                      {/* Expense Count */}
-                      <Box>
-                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-                          {t('expenses.count')}
-                        </Typography>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                          {expenseCount} {expenseCount === 1 ? t('expenses.expense') : t('expenses.expenses')}
-                        </Typography>
-                      </Box>
-
-                      {/* Category Breakdown */}
-                      {Object.keys(totalsByCategory).length > 0 && (
-                        <Box sx={{ flexGrow: 1 }}>
-                          <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem', mb: 0.5 }}>
-                            {t('expenses.byCategory')}
-                          </Typography>
-                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                            {Object.entries(totalsByCategory).map(([category, amount]) => (
-                              <Chip 
-                                key={category}
-                                label={`${category}: ${selectedReport?.currency_code || '$'} ${amount.toFixed(2)}`}
-                                size="small"
-                                variant="outlined"
-                                color="primary"
-                                sx={{ fontSize: '0.75rem', height: 24 }}
-                              />
-                            ))}
-                          </Box>
-                        </Box>
-                      )}
-                    </Box>
-                  )}
+                  ) : null}
                 </Box>
                 <Box display="flex" gap={2}>
                   <Button
