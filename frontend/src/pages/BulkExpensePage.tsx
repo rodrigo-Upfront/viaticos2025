@@ -38,6 +38,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import FileAttachmentModal from '../components/modals/FileAttachmentModal';
+import apiClient from '../services/apiClient';
 
 interface TravelExpenseReport {
   id: number;
@@ -49,6 +50,9 @@ interface TravelExpenseReport {
   currency_code?: string;
   start_date?: string;
   end_date?: string;
+  prepayment_amount?: number;
+  total_expenses?: number;
+  budget_status?: string;
 }
 
 interface Category {
@@ -119,6 +123,12 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
     rowId: '',
     currentFile: null as File | null
   });
+  const [reportDetails, setReportDetails] = useState<{
+    prepayment_amount: number;
+    total_expenses: number;
+    budget_status: string;
+    currency: string;
+  } | null>(null);
 
   const steps = [
     t('expenses.selectReport'),
@@ -128,9 +138,29 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
   // Get selected report
   const selectedReport = reports.find(r => r.id === selectedReportId);
 
+  // Fetch detailed report information including budget
+  const fetchReportDetails = async (reportId: number) => {
+    try {
+      const response = await apiClient.get(`/expense-reports/${reportId}`);
+      const reportData = response.data;
+      setReportDetails({
+        prepayment_amount: Number(reportData.prepayment_amount) || 0,
+        total_expenses: Number(reportData.total_expenses) || 0,
+        budget_status: reportData.budget_status || 'PENDING',
+        currency: reportData.currency || 'USD'
+      });
+    } catch (error) {
+      console.error('Error fetching report details:', error);
+      setReportDetails(null);
+    }
+  };
+
   // Initialize with one empty row when report is selected
   useEffect(() => {
     if (selectedReport && expenseRows.length === 0) {
+      // Fetch detailed report information
+      fetchReportDetails(selectedReport.id);
+      
       const defaultRow = createEmptyRow();
       if (selectedReport) {
         // Set defaults if available - match names to IDs
@@ -496,6 +526,45 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                       </>
                     )}
                   </Typography>
+                  
+                  {/* Budget Information */}
+                  {reportDetails && reportDetails.prepayment_amount > 0 && (
+                    <Box sx={{ mt: 2, p: 2, backgroundColor: '#f8f9fa', borderRadius: 1 }}>
+                      <Typography variant="body2" color="textSecondary" gutterBottom>
+                        {t('reports.budgetInformation')}:
+                      </Typography>
+                      <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+                        <Box>
+                          <Typography variant="body2" color="textSecondary">
+                            {t('reports.assignedBudget')}:
+                          </Typography>
+                          <Typography variant="body1" fontWeight="medium">
+                            {reportDetails.currency} {reportDetails.prepayment_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="body2" color="textSecondary">
+                            {t('reports.currentExpenses')}:
+                          </Typography>
+                          <Typography variant="body1" fontWeight="medium">
+                            {reportDetails.currency} {reportDetails.total_expenses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="body2" color="textSecondary">
+                            {t('reports.remainingBudget')}:
+                          </Typography>
+                          <Typography 
+                            variant="body1" 
+                            fontWeight="medium"
+                            color={reportDetails.prepayment_amount - reportDetails.total_expenses >= 0 ? 'success.main' : 'error.main'}
+                          >
+                            {reportDetails.currency} {(reportDetails.prepayment_amount - reportDetails.total_expenses).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Box>
+                  )}
                   
                   {/* Inline Summary */}
                   {expenseRows.length > 0 && (
