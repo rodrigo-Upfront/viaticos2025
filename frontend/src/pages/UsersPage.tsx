@@ -321,6 +321,7 @@ const UsersPage: React.FC = () => {
         <Table>
           <TableHead>
             <TableRow>
+
               <TableCell>{t('users.avatar')}</TableCell>
               <TableCell>{t('users.name')}</TableCell>
               <TableCell>{t('users.email')}</TableCell>

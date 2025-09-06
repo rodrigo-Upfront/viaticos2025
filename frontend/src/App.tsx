@@ -16,6 +16,7 @@ import Dashboard from './pages/Dashboard';
 import PrepaymentsPage from './pages/PrepaymentsPage';
 import ExpensesPage from './pages/ExpensesPage';
 import BulkExpenseContainer from './pages/BulkExpenseContainer';
+import StatementsPage from './pages/StatementsPage';
 import ReportsPage from './pages/ReportsPage';
 import ApprovalsPage from './pages/ApprovalsPage';
 import UsersPage from './pages/UsersPage';
@@ -63,6 +64,7 @@ function App() {
                           <Route path="/prepayments" element={<PrepaymentsPage />} />
                           <Route path="/expenses" element={<ExpensesPage />} />
                           <Route path="/expenses/bulk-create" element={<BulkExpenseContainer />} />
+                          <Route path="/statements" element={<StatementsPage />} />
                           <Route path="/reports" element={<ReportsPage />} />
                           <Route path="/reports/view/:reportId" element={<ReportViewPage />} />
                           <Route path="/approvals" element={<ApprovalsPage />} />

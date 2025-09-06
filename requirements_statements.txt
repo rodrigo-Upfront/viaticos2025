@@ -1,0 +1,24 @@
+# Additional requirements for Credit Card Statement Processing Feature
+
+# PDF Processing
+pdfplumber==0.10.3          # PDF text and table extraction
+pymupdf==1.23.26            # Alternative PDF processing (fallback)
+
+# Data Processing
+pandas>=2.0.0               # Data manipulation for transaction analysis
+
+# Background Tasks (if not already included)
+celery==5.3.4               # For heavy PDF processing tasks
+redis==5.0.1                # Message broker for Celery
+
+# Optional: Advanced OCR (if PDF text extraction fails)
+# pytesseract==0.3.10       # OCR for image-based PDFs
+# Pillow>=10.0.0            # Image processing for OCR
+
+# Optional: Machine Learning for transaction matching
+# scikit-learn>=1.3.0       # For intelligent expense matching
+# fuzzywuzzy>=0.18.0        # Fuzzy string matching
+# python-levenshtein>=0.20.9 # Fast string similarity
+
+# File handling
+python-magic==0.4.27        # File type detection

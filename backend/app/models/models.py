@@ -111,6 +111,7 @@ class User(Base):
     expense_reports = relationship("TravelExpenseReport", back_populates="requesting_user")
     approvals = relationship("Approval", back_populates="approver_user")
     approval_history = relationship("ApprovalHistory", back_populates="user")
+    statements = relationship("CreditCardStatement", back_populates="uploaded_by")
 
 
 class Currency(Base):
@@ -335,6 +336,9 @@ class ExpenseRejectionHistory(Base):
     user = relationship("User")
 
 
+# Import statement models
+from app.models.statement_models import CreditCardStatement, StatementTransaction
+
 # Add indexes for performance
 from sqlalchemy import Index
 
@@ -344,3 +348,6 @@ Index('idx_prepayment_status', Prepayment.status)
 Index('idx_expense_report', Expense.travel_expense_report_id)
 Index('idx_approval_entity', Approval.entity_type, Approval.entity_id)
 Index('idx_approval_user', Approval.approver_user_id)
+Index('idx_statement_user', CreditCardStatement.uploaded_by_user_id)
+Index('idx_statement_status', CreditCardStatement.status)
+Index('idx_statement_transaction', StatementTransaction.statement_id)
