@@ -17,6 +17,26 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 
+// Expense status labels
+const EXPENSE_STATUS_LABELS: Record<string, { en: string; es: string }> = {
+  pending: { 
+    en: "Pending", 
+    es: "Pendiente" 
+  },
+  in_process: { 
+    en: "In Process", 
+    es: "En Proceso" 
+  },
+  approved: { 
+    en: "Approved", 
+    es: "Aprobado" 
+  },
+  rejected: { 
+    en: "Rejected", 
+    es: "Rechazado" 
+  },
+};
+
 interface Expense {
   id?: number;
   category_id: number;
@@ -50,7 +70,7 @@ interface ExpenseViewModalProps {
 }
 
 const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expense }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   
   if (!expense) {
     return null;
@@ -110,18 +130,9 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
   };
 
   const getStatusLabel = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'pending':
-        return 'Pending';
-      case 'in_process':
-        return 'In Process';
-      case 'approved':
-        return 'Approved';
-      case 'rejected':
-        return 'Rejected';
-      default:
-        return status;
-    }
+    const lang = i18n.language?.startsWith('es') ? 'es' : 'en';
+    const entry = EXPENSE_STATUS_LABELS[status.toLowerCase()];
+    return entry ? entry[lang] : status;
   };
 
   return (

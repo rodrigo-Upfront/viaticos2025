@@ -30,7 +30,60 @@ import {
   Check as CheckIcon,
   Close as CloseIcon,
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import apiClient from '../../services/apiClient';
+
+// Report status labels
+const REPORT_STATUS_LABELS: Record<string, { en: string; es: string }> = {
+  pending: { 
+    en: "Pending Submit", 
+    es: "Pendiente Rendición de Gastos" 
+  },
+  supervisor_pending: { 
+    en: "Supervisor Review", 
+    es: "Revisión Jefatura" 
+  },
+  accounting_pending: { 
+    en: "Accounting Review", 
+    es: "Revisión Contabilidad" 
+  },
+  treasury_pending: { 
+    en: "Treasury Review", 
+    es: "Revisión Tesorería" 
+  },
+  approved_for_reimbursement: { 
+    en: "Approved for Reimbursement", 
+    es: "Aprobado para Reembolso" 
+  },
+  funds_return_pending: { 
+    en: "Funds Return Pending", 
+    es: "Pendiente Devolución" 
+  },
+  review_return: { 
+    en: "Return Documents Review", 
+    es: "Revisar Doc. Devolución" 
+  },
+  approved: { 
+    en: "Approved", 
+    es: "Aprobado" 
+  },
+  approved_expenses: { 
+    en: "Expenses Approved", 
+    es: "Gastos Aprobados" 
+  },
+  approved_repaid: { 
+    en: "Trip Reimbursed", 
+    es: "Viaje Reembolsado" 
+  },
+  approved_returned_funds: { 
+    en: "Funds Returned", 
+    es: "Devolución Realizada" 
+  },
+  rejected: { 
+    en: "Rejected", 
+    es: "Rechazado" 
+  },
+};
 
 interface Expense {
   id: number;
@@ -81,20 +134,13 @@ const ReportApprovalModal: React.FC<ReportApprovalModalProps> = ({
   report,
   onApprovalComplete
 }) => {
+  const { i18n } = useTranslation();
+  
   // Function to get user-friendly status labels
   const getStatusLabel = (status: string): string => {
-    const statusMap: { [key: string]: string } = {
-      'pending': 'Pending',
-      'supervisor_pending': 'Supervisor Pending',
-      'accounting_pending': 'Accounting Pending', 
-      'treasury_pending': 'Treasury Pending',
-      'funds_return_pending': 'Funds Return Pending',
-      'approved_for_reimbursement': 'Approved for Reimbursement',
-      'approved': 'Approved',
-      'rejected': 'Rejected',
-      'pending_approval': 'Pending Approval'
-    };
-    return statusMap[status] || status;
+    const lang = i18n.language?.startsWith('es') ? 'es' : 'en';
+    const entry = REPORT_STATUS_LABELS[status.toLowerCase()];
+    return entry ? entry[lang] : status;
   };
 
   const [expenses, setExpenses] = useState<Expense[]>([]);

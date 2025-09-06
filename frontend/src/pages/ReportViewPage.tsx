@@ -31,6 +31,58 @@ import { useAuth } from '../contexts/AuthContext';
 import ExpenseViewModal from '../components/modals/ExpenseViewModal';
 import FundReturnDocumentModal from '../components/modals/FundReturnDocumentModal';
 
+// Report status labels
+const REPORT_STATUS_LABELS: Record<string, { en: string; es: string }> = {
+  pending: { 
+    en: "Pending Submit", 
+    es: "Pendiente Rendición de Gastos" 
+  },
+  supervisor_pending: { 
+    en: "Supervisor Review", 
+    es: "Revisión Jefatura" 
+  },
+  accounting_pending: { 
+    en: "Accounting Review", 
+    es: "Revisión Contabilidad" 
+  },
+  treasury_pending: { 
+    en: "Treasury Review", 
+    es: "Revisión Tesorería" 
+  },
+  approved_for_reimbursement: { 
+    en: "Approved for Reimbursement", 
+    es: "Aprobado para Reembolso" 
+  },
+  funds_return_pending: { 
+    en: "Funds Return Pending", 
+    es: "Pendiente Devolución" 
+  },
+  review_return: { 
+    en: "Return Documents Review", 
+    es: "Revisar Doc. Devolución" 
+  },
+  approved: { 
+    en: "Approved", 
+    es: "Aprobado" 
+  },
+  approved_expenses: { 
+    en: "Expenses Approved", 
+    es: "Gastos Aprobados" 
+  },
+  approved_repaid: { 
+    en: "Trip Reimbursed", 
+    es: "Viaje Reembolsado" 
+  },
+  approved_returned_funds: { 
+    en: "Funds Returned", 
+    es: "Devolución Realizada" 
+  },
+  rejected: { 
+    en: "Rejected", 
+    es: "Rechazado" 
+  },
+};
+
 interface Expense {
   id: number;
   category_name: string;
@@ -78,7 +130,7 @@ interface CategorySummary {
 }
 
 const ReportViewPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { reportId } = useParams<{ reportId: string }>();
   const { user } = useAuth();
@@ -118,28 +170,9 @@ const ReportViewPage: React.FC = () => {
 
   // Function to get user-friendly status labels
   const getStatusLabel = (status: string): string => {
-    const statusKey = status.toLowerCase().replace(/_/g, '');
-    const statusTranslations: { [key: string]: string } = {
-      'pending': t('status.pendingSubmit'), // Use pendingSubmit for PENDING status to match list view
-      'pendingsubmit': t('status.pendingSubmit'),
-      'supervisorpending': t('status.supervisorPending'),
-      'supervisorreview': t('status.supervisorReview'),
-      'accountingpending': t('status.accountingPending'),
-      'accountingreview': t('status.accountingReview'),
-      'treasurypending': t('status.treasuryPending'),
-      'treasuryreview': t('status.treasuryReview'),
-      'fundsreturnpending': t('status.fundsReturnPending'),
-      'reviewreturn': t('status.reviewReturn'),
-      'approvedforreimbursement': t('status.approvedForReimbursement'),
-      'approved': t('status.approved'),
-      'approvedexpenses': t('status.approvedExpenses'),
-      'approvedrepaid': t('status.approvedRepaid'),
-      'approvedreturnedfunds': t('status.approvedReturnedFunds'),
-      'rejected': t('status.rejected'),
-      'pendingapproval': t('status.pendingApproval'),
-      'inprocess': t('status.inProcess')
-    };
-    return statusTranslations[statusKey] || status;
+    const lang = i18n.language?.startsWith('es') ? 'es' : 'en';
+    const entry = REPORT_STATUS_LABELS[status.toLowerCase()];
+    return entry ? entry[lang] : status;
   };
 
   const getStatusColor = (status: string): "success" | "error" | "warning" | "info" | "default" => {

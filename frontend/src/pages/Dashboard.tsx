@@ -35,6 +35,50 @@ import apiClient from '../services/apiClient';
 import { countryService, Country } from '../services/countryService';
 import { currencyService, Currency } from '../services/currencyService';
 
+// Dashboard status labels - consistent with report module
+const DASHBOARD_STATUS_LABELS: Record<string, { en: string; es: string }> = {
+  pending: { 
+    en: "Pending Submit", 
+    es: "Pendiente Rendición de Gastos" 
+  },
+  supervisor_pending: { 
+    en: "Supervisor Review", 
+    es: "Revisión Jefatura" 
+  },
+  accounting_pending: { 
+    en: "Accounting Review", 
+    es: "Revisión Contabilidad" 
+  },
+  treasury_pending: { 
+    en: "Treasury Review", 
+    es: "Revisión Tesorería" 
+  },
+  funds_return_pending: { 
+    en: "Funds Return Pending", 
+    es: "Pendiente Devolución" 
+  },
+  review_return: { 
+    en: "Return Documents Review", 
+    es: "Revisar Doc. Devolución" 
+  },
+  approved: { 
+    en: "Approved", 
+    es: "Aprobado" 
+  },
+  approved_expenses: { 
+    en: "Expenses Approved", 
+    es: "Gastos Aprobados" 
+  },
+  approved_repaid: { 
+    en: "Trip Reimbursed", 
+    es: "Viaje Reembolsado" 
+  },
+  rejected: { 
+    en: "Rejected", 
+    es: "Rechazado" 
+  },
+};
+
 interface DashboardStats {
   prepayments_pending: number;
   expense_reports_pending_amount: number;
@@ -89,7 +133,7 @@ const Dashboard: React.FC = () => {
   const [recentExpenses, setRecentExpenses] = useState<RecentExpense[]>([]);
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [categoryData, setCategoryData] = useState<CategoryData[]>([]);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
   // Calculate dynamic progress and changes based on real data
@@ -229,20 +273,9 @@ const Dashboard: React.FC = () => {
   };
 
   const getStatusLabel = (status: string) => {
-    const statusLabels: { [key: string]: string } = {
-      'PENDING': 'Borrador',
-      'SUPERVISOR_PENDING': 'VB Supervisor',
-      'ACCOUNTING_PENDING': 'VB Contabilidad',
-      'TREASURY_PENDING': 'VB Tesorería',
-      'FUNDS_RETURN_PENDING': 'Devolución Pendiente',
-      'REVIEW_RETURN': 'Revisar Doc. Devolución',
-      'APPROVED': 'Aprobado',
-      'APPROVED_EXPENSES': 'Gastos Aprobados',
-      'APPROVED_REPAID': 'Viaje Reembolsado',
-      'APPROVED_RETURNED_FUNDS': 'Devolución realizada',
-      'REJECTED': 'Rechazado'
-    };
-    return statusLabels[status] || status;
+    const lang = i18n.language?.startsWith('es') ? 'es' : 'en';
+    const entry = DASHBOARD_STATUS_LABELS[status.toLowerCase()];
+    return entry ? entry[lang] : status;
   };
 
   const getStatusColor = (status: string) => {
