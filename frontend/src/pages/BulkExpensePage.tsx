@@ -200,11 +200,23 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
   };
 
   const updateRow = (rowId: string, field: keyof BulkExpenseRow, value: any) => {
-    setExpenseRows(expenseRows.map(row => 
-      row.id === rowId 
-        ? { ...row, [field]: value, errors: { ...row.errors, [field]: '' } }
-        : row
-    ));
+    setExpenseRows(expenseRows.map(row => {
+      if (row.id === rowId) {
+        const updatedRow = { ...row, [field]: value, errors: { ...row.errors, [field]: '' } };
+        
+        // Auto-set taxable field when document type changes
+        if (field === 'document_type') {
+          if (value === 'FACTURA') {
+            updatedRow.taxable = 'NO'; // Default to NO for FACTURA
+          } else if (value === 'BOLETA') {
+            updatedRow.taxable = 'NO'; // BOLETA doesn't use taxable, but keep consistent
+          }
+        }
+        
+        return updatedRow;
+      }
+      return row;
+    }));
   };
 
   const handleFileAttachment = (rowId: string) => {
@@ -338,6 +350,9 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
   const availableReports = reports.filter(r => 
     r.status === 'PENDING' || r.status === 'pending' || r.status === 'REJECTED' || r.status === 'rejected'
   );
+
+  // Check if any row has FACTURA document type to show taxable column
+  const showTaxableColumn = expenseRows.some(row => row.document_type === 'FACTURA');
 
   return (
     <Box sx={{ p: 3 }}>
@@ -504,7 +519,28 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
           <Card>
             <CardContent>
               <TableContainer sx={{ width: '100%', overflowX: 'auto' }}>
-                <Table size="small" sx={{ minWidth: 1000 }}>
+                <Table size="small" sx={{ 
+                  minWidth: showTaxableColumn ? 1000 : 900,
+                  '& .MuiTableCell-root': {
+                    padding: '8px 12px', // Reduced from default 16px
+                    fontSize: '0.875rem'
+                  },
+                  '& .MuiTableHead .MuiTableCell-root': {
+                    padding: '12px 12px',
+                    fontWeight: 600
+                  },
+                  '& .MuiTextField-root': {
+                    '& .MuiInputBase-input': {
+                      padding: '6px 8px'
+                    }
+                  },
+                  '& .MuiSelect-select': {
+                    padding: '6px 8px !important'
+                  },
+                  '& .MuiFormControl-root': {
+                    minHeight: 'auto'
+                  }
+                }}>
                   <TableHead>
                     <TableRow>
                       <TableCell sx={{ width: 60, position: 'sticky', left: 0, bgcolor: 'background.paper', zIndex: 1 }}>
@@ -517,10 +553,16 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                       <TableCell sx={{ minWidth: 130 }}>{t('expenses.documentType')}</TableCell>
                       <TableCell sx={{ minWidth: 180 }}>{t('expenses.supplier')}</TableCell>
                       <TableCell sx={{ minWidth: 150 }}>{t('expenses.documentNumber')}</TableCell>
-                      <TableCell sx={{ minWidth: 100 }}>{t('expenses.taxable')}</TableCell>
+                      {showTaxableColumn && (
+                        <TableCell sx={{ minWidth: 100 }}>{t('expenses.taxable')}</TableCell>
+                      )}
                       <TableCell sx={{ minWidth: 200 }}>{t('common.comments')}</TableCell>
-                      <TableCell sx={{ width: 80 }}>{t('expenses.attachment')}</TableCell>
-                      <TableCell sx={{ width: 60 }}>{t('common.actions')}</TableCell>
+                      <TableCell sx={{ width: 80, textAlign: 'center' }}>
+                        <AttachFileIcon sx={{ fontSize: '1rem', color: 'text.secondary' }} />
+                      </TableCell>
+                      <TableCell sx={{ width: 60, textAlign: 'center' }}>
+                        <DeleteIcon sx={{ fontSize: '1rem', color: 'text.secondary' }} />
+                      </TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -649,18 +691,21 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                           />
                         </TableCell>
 
-                        {/* Taxable */}
-                        <TableCell>
-                          <FormControl size="small" fullWidth>
-                            <Select
-                              value={row.taxable}
-                              onChange={(e) => updateRow(row.id, 'taxable', e.target.value)}
-                            >
-                              <MenuItem value="NO">{t('common.no')}</MenuItem>
-                              <MenuItem value="SI">{t('common.yes')}</MenuItem>
-                            </Select>
-                          </FormControl>
-                        </TableCell>
+                        {/* Taxable - Only show for FACTURA documents */}
+                        {showTaxableColumn && (
+                          <TableCell>
+                            <FormControl size="small" fullWidth>
+                              <Select
+                                value={row.taxable}
+                                onChange={(e) => updateRow(row.id, 'taxable', e.target.value)}
+                                disabled={row.document_type !== 'FACTURA'}
+                              >
+                                <MenuItem value="NO">{t('common.no')}</MenuItem>
+                                <MenuItem value="SI">{t('common.yes')}</MenuItem>
+                              </Select>
+                            </FormControl>
+                          </TableCell>
+                        )}
 
                         {/* Comments */}
                         <TableCell>
