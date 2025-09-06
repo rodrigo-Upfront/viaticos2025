@@ -75,7 +75,12 @@
     "pendingApprovals": "Pending Approvals",
     "prepaymentsPending": "Prepayments Pending",
     "reportsPending": "Reports Pending",
-    "totalValue": "Total Value"
+    "totalValue": "Total Value",
+    "types": {
+      "prepayment": "Prepayment",
+      "expenseReport": "Expense Report",
+      "reimbursement": "Reimbursement"
+    }
   },
   "reports": {
     "title": "Reports",
@@ -112,8 +117,12 @@
     "expenseDate": "Expense Date",
     "withinBudget": "Within Budget",
     "overBudget": "Over Budget",
+    "underBudget": "Under Budget",
     "approval": "Approval",
-    "submitForApproval": "Submit for Approval"
+    "submitForApproval": "Submit for Approval",
+    "fundReturnDocuments": "Fund Return Documents",
+    "submittedFiles": "Submitted Files",
+    "documentsSubmittedReview": "Documents submitted for treasury review."
   },
   "status": {
     "pending": "Pending",
@@ -300,7 +309,9 @@
     "removeFile": "Remove File",
     "applyDefaults": "Apply Defaults",
     "dateOutOfRange": "Date must be between {{startDate}} and {{endDate}}",
-    "validDates": "Valid dates"
+    "validDates": "Valid dates",
+    "rejectionDate": "Rejection Date",
+    "rejectionReason": "Rejection Reason"
   }
 }
 

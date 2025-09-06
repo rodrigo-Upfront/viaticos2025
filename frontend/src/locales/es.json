@@ -75,7 +75,12 @@
     "pendingApprovals": "Aprobaciones Pendientes",
     "prepaymentsPending": "Anticipos Pendientes",
     "reportsPending": "Reportes Pendientes",
-    "totalValue": "Valor Total"
+    "totalValue": "Valor Total",
+    "types": {
+      "prepayment": "Anticipo",
+      "expenseReport": "Reporte de Gastos",
+      "reimbursement": "Reembolso"
+    }
   },
   "reports": {
     "title": "Reportes",
@@ -113,11 +118,14 @@
     "withinBudget": "Dentro del Presupuesto",
     "overBudget": "Excede Presupuesto",
     "approval": "Aprobación",
-    "submitForApproval": "Enviar para Aprobación"
+    "submitForApproval": "Enviar para Aprobación",
+    "fundReturnDocuments": "Documentos de Devolución",
+    "submittedFiles": "Archivos Enviados",
+    "documentsSubmittedReview": "Documentos enviados para revisión de tesorería."
   },
   "status": {
     "pending": "Pendiente de Aprobación",
-    "pendingSubmit": "Pendiente de Envío",
+    "pendingSubmit": "Pendiente Rendición de Gastos",
     "supervisorReview": "Revisión de Supervisor",
     "supervisorPending": "Pendiente Jefatura",
     "accountingReview": "Revisión de Contabilidad",
@@ -301,7 +309,9 @@
     "removeFile": "Quitar Archivo",
     "applyDefaults": "Aplicar Valores por Defecto",
     "dateOutOfRange": "La fecha debe estar entre {{startDate}} y {{endDate}}",
-    "validDates": "Fechas válidas"
+    "validDates": "Fechas válidas",
+    "rejectionDate": "Fecha de Rechazo",
+    "rejectionReason": "Motivo del Rechazo"
   }
 }
 

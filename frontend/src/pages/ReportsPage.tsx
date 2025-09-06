@@ -43,6 +43,7 @@ import ConfirmDialog from '../components/forms/ConfirmDialog';
 import { reportService, ExpenseReport as ApiReport, ExpenseReportSummary, ExpenseReportManualCreate } from '../services/reportService';
 import { countryService, Country as ApiCountry } from '../services/countryService';
 import { currencyService, Currency } from '../services/currencyService';
+import apiClient from '../services/apiClient';
 
 interface ExpenseReport {
   id: number;
@@ -245,8 +246,12 @@ const ReportsPage: React.FC = () => {
     return status === 'Under-Budget' ? 'success' : 'error';
   };
 
+  const getBudgetStatusLabel = (status: string) => {
+    return status === 'Under-Budget' ? t('reports.withinBudget') : t('reports.overBudget');
+  };
+
   const REPORT_STATUS_LABELS: Record<string, { en: string; es: string }> = {
-    pending: { en: "Pending Submit", es: "Pendiente Envío" },
+    pending: { en: "Pending Submit", es: "Pendiente Rendición de Gastos" },
     supervisor_pending: { en: "Supervisor Review", es: "Revisión Jefatura" },
     accounting_pending: { en: "Accounting Review", es: "Revisión Contabilidad" },
     treasury_pending: { en: "Treasury Review", es: "Revisión Tesorería" },
@@ -296,6 +301,13 @@ const ReportsPage: React.FC = () => {
 
 
 
+
+  const getReportTypeLabel = (reportType?: string) => {
+    if (reportType === 'REIMBURSEMENT') {
+      return t('approvals.types.reimbursement');
+    }
+    return t('approvals.types.expenseReport');
+  };
 
   const handleViewReport = (report: typeof expenseReports[0]) => {
     navigate(`/reports/view/${report.id}`);
@@ -347,18 +359,7 @@ const ReportsPage: React.FC = () => {
     try {
       setLoading(prev => ({ ...prev, action: true }));
       
-      const response = await fetch(`/api/approvals/reports/${report.id}/submit`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to submit report');
-      }
+      const response = await apiClient.post(`/approvals/reports/${report.id}/submit`);
 
       setSnackbar({
         open: true,
@@ -650,7 +651,7 @@ const ReportsPage: React.FC = () => {
                 <TableRow key={report.id}>
                   <TableCell>
                     <Chip
-                      label={report.report_type || 'PREPAYMENT'}
+                      label={getReportTypeLabel(report.report_type)}
                       color={report.report_type === 'REIMBURSEMENT' ? 'secondary' : 'primary'}
                       size="small"
                       variant="filled"
@@ -677,7 +678,7 @@ const ReportsPage: React.FC = () => {
                       <Chip label="-" size="small" variant="outlined" />
                     ) : (
                       <Chip
-                        label={report.budgetStatus}
+                        label={getBudgetStatusLabel(report.budgetStatus)}
                         color={getBudgetStatusColor(report.budgetStatus) as any}
                         size="small"
                       />

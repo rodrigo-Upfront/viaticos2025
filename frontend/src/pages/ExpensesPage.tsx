@@ -16,6 +16,7 @@ import {
   Alert,
   CircularProgress,
   TextField,
+  Tooltip,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -23,6 +24,7 @@ import {
   Visibility as ViewIcon,
   Receipt as ReceiptIcon,
   Delete as DeleteIcon,
+  Info as InfoIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -57,7 +59,9 @@ interface Expense {
   taxable: 'Si' | 'No';
   document_file?: string;
   comments?: string;
-  status: 'pending' | 'in_process' | 'approved';
+  status: 'pending' | 'in_process' | 'approved' | 'rejected';
+  rejection_reason?: string;
+  updated_at?: string;
 }
 
 interface TravelExpenseReport {
@@ -174,6 +178,37 @@ const ExpensesPage: React.FC = () => {
     return entry ? entry[lang] : status;
   };
 
+  const formatRejectionTooltip = (expense: Expense) => {
+    if (expense.status !== 'rejected') {
+      return null;
+    }
+    
+    const rejectionDate = expense.updated_at 
+      ? new Date(expense.updated_at).toLocaleString()
+      : 'N/A';
+    
+    return (
+      <Box>
+        <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+          {t('expenses.rejectionDate')}:
+        </Typography>
+        <Typography variant="body2" sx={{ mb: 1 }}>
+          {rejectionDate}
+        </Typography>
+        {expense.rejection_reason && (
+          <>
+            <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+              {t('expenses.rejectionReason')}:
+            </Typography>
+            <Typography variant="body2">
+              {expense.rejection_reason}
+            </Typography>
+          </>
+        )}
+      </Box>
+    );
+  };
+
   // Helper functions to map between API and frontend formats
   const mapApiToFrontend = (apiExpense: ApiExpense): Expense => {
     const category = categories.find(c => c.id === apiExpense.category_id);
@@ -201,7 +236,9 @@ const ExpensesPage: React.FC = () => {
       taxable: apiExpense.taxable as 'Si' | 'No',
       document_file: apiExpense.document_file,
       comments: apiExpense.comments,
-      status: apiExpense.status.toLowerCase() as 'pending' | 'in_process' | 'approved',
+      status: apiExpense.status.toLowerCase() as 'pending' | 'in_process' | 'approved' | 'rejected',
+      rejection_reason: apiExpense.rejection_reason,
+      updated_at: apiExpense.updated_at,
     };
   };
 
@@ -682,11 +719,31 @@ const ExpensesPage: React.FC = () => {
                     </Box>
                   </TableCell>
                   <TableCell>
-                    <Chip
-                      label={getExpenseStatusLabel(expense.status)}
-                      color={expense.status.toLowerCase() === 'approved' ? 'success' : expense.status.toLowerCase() === 'pending' ? 'warning' : 'default'}
-                      size="small"
-                    />
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <Chip
+                        label={getExpenseStatusLabel(expense.status)}
+                        color={
+                          expense.status.toLowerCase() === 'approved' ? 'success' : 
+                          expense.status.toLowerCase() === 'pending' ? 'warning' : 
+                          expense.status.toLowerCase() === 'rejected' ? 'error' : 
+                          'default'
+                        }
+                        size="small"
+                      />
+                      {expense.status === 'rejected' && (
+                        <Tooltip 
+                          title={formatRejectionTooltip(expense)}
+                          placement="top"
+                          arrow
+                        >
+                          <InfoIcon 
+                            fontSize="small" 
+                            color="error"
+                            sx={{ cursor: 'pointer' }}
+                          />
+                        </Tooltip>
+                      )}
+                    </Box>
                   </TableCell>
                   <TableCell>
                     <IconButton

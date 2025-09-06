@@ -119,6 +119,15 @@ const ApprovalsPage: React.FC = () => {
     setTabValue(newValue);
   };
 
+  const getTypeLabel = (type: string) => {
+    if (type === 'prepayment') {
+      return t('approvals.types.prepayment');
+    } else if (type === 'report') {
+      return t('approvals.types.expenseReport');
+    }
+    return t('approvals.types.expenseReport');
+  };
+
   // Derived data for tabs
   const pendingPrepayments = pendingItems.filter(item => item.type === 'prepayment');
   const pendingExpenseReports = pendingItems.filter(item => item.type === 'report');
@@ -190,7 +199,7 @@ const ApprovalsPage: React.FC = () => {
           
           setSnackbar({
             open: true,
-            message: `${item.type === 'prepayment' ? 'Prepayment' : 'Expense Report'} approved successfully`,
+            message: `${getTypeLabel(item.type)} approved successfully`,
             severity: 'success'
           });
         } catch (error) {
@@ -253,7 +262,7 @@ const ApprovalsPage: React.FC = () => {
       
       setSnackbar({
         open: true,
-        message: `${item.type === 'prepayment' ? 'Prepayment' : 'Expense Report'} rejected`,
+        message: `${getTypeLabel(item.type)} rejected`,
         severity: 'warning'
       });
 
@@ -539,7 +548,7 @@ const ApprovalsPage: React.FC = () => {
                     <TableRow key={`${item.type}-${item.id}`}>
                       <TableCell>
                         <Chip 
-                          label={item.type === 'prepayment' ? 'Prepayment' : 'Expense Report'} 
+                          label={getTypeLabel(item.type)} 
                           color={item.type === 'prepayment' ? 'primary' : 'secondary'}
                           size="small"
                         />
@@ -761,7 +770,7 @@ const ApprovalsPage: React.FC = () => {
                       <TableCell>{item.requester}</TableCell>
                       <TableCell>
                         <Chip 
-                          label={item.prepayment_id ? "Prepayment" : "Reimbursement"} 
+                          label={item.prepayment_id ? t('approvals.types.expenseReport') : t('approvals.types.reimbursement')} 
                           color={item.prepayment_id ? "primary" : "secondary"}
                           size="small"
                         />

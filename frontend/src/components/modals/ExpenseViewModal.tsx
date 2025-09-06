@@ -40,7 +40,7 @@ interface Expense {
   taxable: 'Si' | 'No' | 'SI' | 'NO';
   document_file?: string;
   comments?: string;
-  status: 'pending' | 'in_process' | 'approved' | 'PENDING' | 'IN_PROCESS' | 'APPROVED' | 'REJECTED';
+  status: 'pending' | 'in_process' | 'approved' | 'rejected' | 'PENDING' | 'IN_PROCESS' | 'APPROVED' | 'REJECTED';
 }
 
 interface ExpenseViewModalProps {
@@ -271,7 +271,7 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
           {(expense.document_file || expense.comments) && (
             <Grid item xs={12}>
               <Typography variant="h6" gutterBottom color="primary" sx={{ mt: 2 }}>
-                Additional Information
+                {t('prepayments.additionalInformation')}
               </Typography>
               <Divider sx={{ mb: 1.5 }} />
             </Grid>
@@ -281,7 +281,7 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
           {expense.document_file && (
             <Grid item xs={12}>
               <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
-                Document File
+                {t('expenses.documentFile')}
               </Typography>
               <Box 
                 display="flex" 
@@ -306,7 +306,7 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
                     {expense.document_file}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Click to download • Document attachment
+                    {t('common.downloadFile')} • {t('expenses.attachment')}
                   </Typography>
                 </Box>
               </Box>
@@ -317,7 +317,7 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
           {expense.comments && (
             <Grid item xs={12}>
               <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
-                Comments
+                {t('common.comments')}
               </Typography>
               <Typography variant="body1" sx={{ mb: 1.5 }}>
                 {expense.comments}

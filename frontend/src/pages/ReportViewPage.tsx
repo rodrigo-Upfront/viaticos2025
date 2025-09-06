@@ -17,12 +17,13 @@ import {
   CircularProgress,
   Button,
   Grid,
-
+  Tooltip,
   Alert,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
   Visibility as VisibilityIcon,
+  Info as InfoIcon,
   Send as SendIcon,
 } from '@mui/icons-material';
 import apiClient from '../services/apiClient';
@@ -39,6 +40,7 @@ interface Expense {
   expense_date: string;
   status: string;
   rejection_reason?: string;
+  updated_at?: string;
 }
 
 interface ExpenseReport {
@@ -160,6 +162,37 @@ const ReportViewPage: React.FC = () => {
       default:
         return 'default';
     }
+  };
+
+  const formatRejectionTooltip = (expense: Expense) => {
+    if (expense.status.toLowerCase() !== 'rejected') {
+      return null;
+    }
+    
+    const rejectionDate = expense.updated_at 
+      ? new Date(expense.updated_at).toLocaleString()
+      : 'N/A';
+    
+    return (
+      <Box>
+        <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+          {t('expenses.rejectionDate')}:
+        </Typography>
+        <Typography variant="body2" sx={{ mb: 1 }}>
+          {rejectionDate}
+        </Typography>
+        {expense.rejection_reason && (
+          <>
+            <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+              {t('expenses.rejectionReason')}:
+            </Typography>
+            <Typography variant="body2">
+              {expense.rejection_reason}
+            </Typography>
+          </>
+        )}
+      </Box>
+    );
   };
 
   // Calculate category summary
@@ -517,7 +550,7 @@ const ReportViewPage: React.FC = () => {
                 <TableRow sx={{ 
                   backgroundColor: total > report.prepaidAmount ? '#ffebee' : '#e8f5e8' 
                 }}>
-                  <TableCell><strong>Assigned Budget</strong></TableCell>
+                  <TableCell><strong>{t('reports.assignedBudget')}</strong></TableCell>
                   <TableCell align="center"><strong>1</strong></TableCell>
                   <TableCell align="right">
                     <Typography fontWeight="bold">
@@ -629,13 +662,28 @@ const ReportViewPage: React.FC = () => {
                       <TableCell>{formatDate(expense.expense_date)}</TableCell>
                       <TableCell>{expense.currency_code} {expense.amount}</TableCell>
                       <TableCell>
-                        <Chip
-                          label={getStatusLabel(expense.status)}
-                          color={expense.status.toLowerCase() === 'approved' ? 'success' : 
-                                expense.status.toLowerCase() === 'rejected' ? 'error' : 'warning'}
-                          variant="filled"
-                          size="small"
-                        />
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <Chip
+                            label={getStatusLabel(expense.status)}
+                            color={expense.status.toLowerCase() === 'approved' ? 'success' : 
+                                  expense.status.toLowerCase() === 'rejected' ? 'error' : 'warning'}
+                            variant="filled"
+                            size="small"
+                          />
+                          {expense.status.toLowerCase() === 'rejected' && (
+                            <Tooltip 
+                              title={formatRejectionTooltip(expense)}
+                              placement="top"
+                              arrow
+                            >
+                              <InfoIcon 
+                                fontSize="small" 
+                                color="error"
+                                sx={{ cursor: 'pointer' }}
+                              />
+                            </Tooltip>
+                          )}
+                        </Box>
                       </TableCell>
                       <TableCell>
                         <IconButton
@@ -657,10 +705,10 @@ const ReportViewPage: React.FC = () => {
 
       {/* Fund Return Document Section */}
       {(report.status === 'FUNDS_RETURN_PENDING' || (report.return_document_number && report.return_document_files)) && (
-        <Paper sx={{ borderRadius: 2, boxShadow: 1, mb: 3 }}>
+        <Paper sx={{ borderRadius: 2, boxShadow: 1, mb: 3, mt: 4 }}>
           <Box sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
-              Fund Return Documents
+              {t('reports.fundReturnDocuments')}
             </Typography>
             
             {report.status === 'FUNDS_RETURN_PENDING' && (
@@ -687,11 +735,11 @@ const ReportViewPage: React.FC = () => {
             {report.return_document_number && report.return_document_files && (
               <Box>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  Document Number: <strong>{report.return_document_number}</strong>
+{t('expenses.documentNumber')}: <strong>{report.return_document_number}</strong>
                 </Typography>
                 
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  Submitted Files:
+{t('reports.submittedFiles')}:
                 </Typography>
                 
                 {report.return_document_files.map((file: any, index: number) => (
@@ -716,7 +764,7 @@ const ReportViewPage: React.FC = () => {
                 
                 {report.status === 'REVIEW_RETURN' && (
                   <Alert severity="info" sx={{ mt: 2 }}>
-                    Documents submitted for treasury review.
+{t('reports.documentsSubmittedReview')}
                   </Alert>
                 )}
                 

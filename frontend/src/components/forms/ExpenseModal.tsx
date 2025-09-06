@@ -45,7 +45,7 @@ interface Expense {
   taxable: 'Si' | 'No';
   document_file?: string;
   comments?: string;
-  status: 'pending' | 'in_process' | 'approved';
+  status: 'pending' | 'in_process' | 'approved' | 'rejected';
 }
 
 interface TravelExpenseReport {

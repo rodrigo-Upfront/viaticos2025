@@ -149,22 +149,39 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
     }
   }, [selectedReport, countries, currencies]);
 
-  const createEmptyRow = (): BulkExpenseRow => ({
-    id: uuidv4(),
-    category_id: 0,
-    purpose: '',
-    amount: 0,
-    expense_date: '',
-    document_type: 'BOLETA',
-    boleta_supplier: '',
-    factura_supplier_id: 0,
-    document_number: '',
-    taxable: 'NO',
-    country_id: 0,
-    currency_id: 0,
-    comments: '',
-    errors: {}
-  });
+  const createEmptyRow = (): BulkExpenseRow => {
+    // Get country and currency from selected report
+    let country_id = 0;
+    let currency_id = 0;
+    
+    if (selectedReport) {
+      if (selectedReport.country_name) {
+        const country = countries.find(c => c.name === selectedReport.country_name);
+        if (country) country_id = country.id;
+      }
+      if (selectedReport.currency_code) {
+        const currency = currencies.find(c => c.code === selectedReport.currency_code);
+        if (currency) currency_id = currency.id;
+      }
+    }
+
+    return {
+      id: uuidv4(),
+      category_id: 0,
+      purpose: '',
+      amount: 0,
+      expense_date: selectedReport?.start_date || new Date().toISOString().split('T')[0],
+      document_type: 'BOLETA',
+      boleta_supplier: '',
+      factura_supplier_id: 0,
+      document_number: '',
+      taxable: 'NO',
+      country_id,
+      currency_id,
+      comments: '',
+      errors: {}
+    };
+  };
 
   const handleReportSelect = (reportId: number) => {
     setSelectedReportId(reportId);
@@ -173,19 +190,6 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
 
   const addRow = () => {
     const newRow = createEmptyRow();
-    if (selectedReport) {
-      // Set defaults if available - match names to IDs
-      if (selectedReport.country_name) {
-        const country = countries.find(c => c.name === selectedReport.country_name);
-        if (country) newRow.country_id = country.id;
-      }
-      if (selectedReport.currency_code) {
-        const currency = currencies.find(c => c.code === selectedReport.currency_code);
-        if (currency) newRow.currency_id = currency.id;
-      }
-      // Set expense date to start date of the travel period (safer default)
-      newRow.expense_date = selectedReport.start_date || new Date().toISOString().split('T')[0];
-    }
     setExpenseRows([...expenseRows, newRow]);
   };
 
@@ -288,8 +292,7 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
           });
         }
       }
-      if (!row.country_id) errors.country_id = t('expenses.countryRequired');
-      if (!row.currency_id) errors.currency_id = t('expenses.currencyRequired');
+      // Country and currency are inherited from the selected report
       
       if (row.document_type === 'BOLETA' && !row.boleta_supplier.trim()) {
         errors.boleta_supplier = t('expenses.supplierRequired');
@@ -333,7 +336,7 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
   };
 
   const availableReports = reports.filter(r => 
-    r.status === 'PENDING' || r.status === 'pending' || r.status === 'DRAFT' || r.status === 'draft'
+    r.status === 'PENDING' || r.status === 'pending' || r.status === 'REJECTED' || r.status === 'rejected'
   );
 
   return (
@@ -480,6 +483,7 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                     onClick={applyDefaultsToAll}
                     disabled={expenseRows.length <= 1}
                     color="secondary"
+                    sx={{ display: 'none' }}
                   >
                     {t('expenses.applyDefaults')}
                   </Button>
@@ -489,7 +493,7 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                     onClick={handleSubmit}
                     disabled={loading || expenseRows.length === 0}
                   >
-                    {loading ? t('common.saving') : t('expenses.createAllExpenses')}
+                    {loading ? t('common.saving') : t('common.save')}
                   </Button>
                 </Box>
               </Box>
@@ -500,25 +504,23 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
           <Card>
             <CardContent>
               <TableContainer sx={{ width: '100%', overflowX: 'auto' }}>
-                <Table size="small" sx={{ minWidth: 1200 }}>
+                <Table size="small" sx={{ minWidth: 1000 }}>
                   <TableHead>
                     <TableRow>
-                      <TableCell sx={{ minWidth: 150, position: 'sticky', left: 0, bgcolor: 'background.paper', zIndex: 1 }}>
+                      <TableCell sx={{ width: 60, position: 'sticky', left: 0, bgcolor: 'background.paper', zIndex: 1 }}>
                         #
                       </TableCell>
                       <TableCell sx={{ minWidth: 180 }}>{t('common.category')}</TableCell>
                       <TableCell sx={{ minWidth: 200 }}>{t('expenses.purpose')}</TableCell>
-                      <TableCell sx={{ minWidth: 120 }}>{t('common.currency')}</TableCell>
                       <TableCell sx={{ minWidth: 120 }}>{t('common.amount')}</TableCell>
                       <TableCell sx={{ minWidth: 150 }}>{t('expenses.expenseDate')}</TableCell>
                       <TableCell sx={{ minWidth: 130 }}>{t('expenses.documentType')}</TableCell>
                       <TableCell sx={{ minWidth: 180 }}>{t('expenses.supplier')}</TableCell>
                       <TableCell sx={{ minWidth: 150 }}>{t('expenses.documentNumber')}</TableCell>
                       <TableCell sx={{ minWidth: 100 }}>{t('expenses.taxable')}</TableCell>
-                      <TableCell sx={{ minWidth: 130 }}>{t('common.country')}</TableCell>
                       <TableCell sx={{ minWidth: 200 }}>{t('common.comments')}</TableCell>
-                      <TableCell sx={{ minWidth: 120 }}>{t('expenses.attachment')}</TableCell>
-                      <TableCell sx={{ minWidth: 80 }}>{t('common.actions')}</TableCell>
+                      <TableCell sx={{ width: 80 }}>{t('expenses.attachment')}</TableCell>
+                      <TableCell sx={{ width: 60 }}>{t('common.actions')}</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -558,25 +560,6 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                             error={!!row.errors.purpose}
                             placeholder={t('expenses.enterPurpose')}
                           />
-                        </TableCell>
-
-                        {/* Currency */}
-                        <TableCell>
-                          <FormControl size="small" fullWidth error={!!row.errors.currency_id}>
-                            <Select
-                              value={row.currency_id}
-                              onChange={(e) => updateRow(row.id, 'currency_id', e.target.value)}
-                            >
-                              <MenuItem value={0}>
-                                <em>{t('expenses.selectCurrency')}</em>
-                              </MenuItem>
-                              {currencies.map((currency) => (
-                                <MenuItem key={currency.id} value={currency.id}>
-                                  {currency.code} - {currency.name}
-                                </MenuItem>
-                              ))}
-                            </Select>
-                          </FormControl>
                         </TableCell>
 
                         {/* Amount */}
@@ -675,25 +658,6 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                             >
                               <MenuItem value="NO">{t('common.no')}</MenuItem>
                               <MenuItem value="SI">{t('common.yes')}</MenuItem>
-                            </Select>
-                          </FormControl>
-                        </TableCell>
-
-                        {/* Country */}
-                        <TableCell>
-                          <FormControl size="small" fullWidth error={!!row.errors.country_id}>
-                            <Select
-                              value={row.country_id}
-                              onChange={(e) => updateRow(row.id, 'country_id', e.target.value)}
-                            >
-                              <MenuItem value={0}>
-                                <em>{t('expenses.selectCountry')}</em>
-                              </MenuItem>
-                              {countries.map((country) => (
-                                <MenuItem key={country.id} value={country.id}>
-                                  {country.name}
-                                </MenuItem>
-                              ))}
                             </Select>
                           </FormControl>
                         </TableCell>

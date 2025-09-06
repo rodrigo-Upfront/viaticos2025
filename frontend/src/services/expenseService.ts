@@ -21,6 +21,7 @@ export interface Expense {
   taxable?: string;
   document_file?: string;
   comments?: string;
+  rejection_reason?: string;
   status: string;
   created_at: string;
   updated_at: string;
