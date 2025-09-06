@@ -275,14 +275,16 @@ const ReportsPage: React.FC = () => {
       console.log('Mapped report statuses:', mappedReports.map(r => ({ id: r.id, status: r.status })));
       
       // Check what each card should show
-      const pendingCount = mappedReports.filter(r => r.status.toUpperCase() === 'PENDING').length;
+      const pendingCount = mappedReports.filter(r => 
+        ['PENDING', 'REJECTED'].includes(r.status.toUpperCase())
+      ).length;
       const approvalCount = mappedReports.filter(r => 
         ['SUPERVISOR_PENDING', 'ACCOUNTING_PENDING', 'TREASURY_PENDING'].includes(r.status.toUpperCase())
       ).length;
       const returnCount = mappedReports.filter(r => r.status.toUpperCase() === 'FUNDS_RETURN_PENDING').length;
       
       console.log('Card counts should be:');
-      console.log('- Pending Submit (PENDING):', pendingCount);
+      console.log('- Pending Submit (PENDING + REJECTED):', pendingCount);
       console.log('- Pending Approval (SUPERVISOR_PENDING, ACCOUNTING_PENDING, TREASURY_PENDING):', approvalCount);
       console.log('- Pending Return (FUNDS_RETURN_PENDING):', returnCount);
       console.log('- All unique statuses found:', Array.from(new Set(mappedReports.map(r => r.status))));
@@ -602,12 +604,14 @@ const ReportsPage: React.FC = () => {
         <Grid item xs={12} sm={4} md={4}>
           <StatCard
             title={t('reports.pendingSubmit')}
-            value={loading.reports ? '-' : expenseReports.filter(r => r.status.toUpperCase() === 'PENDING').length}
+            value={loading.reports ? '-' : expenseReports.filter(r => 
+              ['PENDING', 'REJECTED'].includes(r.status.toUpperCase())
+            ).length}
             icon={<AssignmentIcon />}
             bgColor="#fef7f7"
             barColor="#e74c3c"
             onClick={() => {
-              setSearchFilters(prev => ({ ...prev, status: 'PENDING' }));
+              setSearchFilters(prev => ({ ...prev, status: 'REJECTED' }));
             }}
           />
         </Grid>
