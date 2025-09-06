@@ -268,6 +268,25 @@ const ReportsPage: React.FC = () => {
         ...(filterUserId ? { user_id: filterUserId as number } : {} as any),
       });
       const mappedReports = response.reports.map(mapApiToFrontend);
+      
+      // Debug: Log actual status values from API vs what we're filtering for
+      console.log('=== DEBUGGING STATUS VALUES ===');
+      console.log('Raw API response statuses:', response.reports.map(r => ({ id: r.id, status: r.status })));
+      console.log('Mapped report statuses:', mappedReports.map(r => ({ id: r.id, status: r.status })));
+      
+      // Check what each card should show
+      const pendingCount = mappedReports.filter(r => r.status.toUpperCase() === 'PENDING').length;
+      const approvalCount = mappedReports.filter(r => 
+        ['SUPERVISOR_PENDING', 'ACCOUNTING_PENDING', 'TREASURY_PENDING'].includes(r.status.toUpperCase())
+      ).length;
+      const returnCount = mappedReports.filter(r => r.status.toUpperCase() === 'FUNDS_RETURN_PENDING').length;
+      
+      console.log('Card counts should be:');
+      console.log('- Pending Submit (PENDING):', pendingCount);
+      console.log('- Pending Approval (SUPERVISOR_PENDING, ACCOUNTING_PENDING, TREASURY_PENDING):', approvalCount);
+      console.log('- Pending Return (FUNDS_RETURN_PENDING):', returnCount);
+      console.log('- All unique statuses found:', Array.from(new Set(mappedReports.map(r => r.status))));
+      
       setExpenseReports(mappedReports);
       setFilteredReports(mappedReports);
     } catch (error) {
