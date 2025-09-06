@@ -268,6 +268,7 @@ const ReportsPage: React.FC = () => {
         ...(filterUserId ? { user_id: filterUserId as number } : {} as any),
       });
       const mappedReports = response.reports.map(mapApiToFrontend);
+      console.log('Loaded reports with statuses:', mappedReports.map(r => ({ id: r.id, status: r.status })));
       setExpenseReports(mappedReports);
       setFilteredReports(mappedReports);
     } catch (error) {
@@ -583,7 +584,11 @@ const ReportsPage: React.FC = () => {
         <Grid item xs={12} sm={4} md={4}>
           <StatCard
             title={t('reports.pendingSubmit')}
-            value={loading.reports ? '-' : expenseReports.filter(r => r.status.toLowerCase() === 'pending').length}
+            value={loading.reports ? '-' : (() => {
+              const pendingCount = expenseReports.filter(r => r.status.toLowerCase() === 'pending').length;
+              console.log('Pending count:', pendingCount, 'from statuses:', expenseReports.map(r => r.status));
+              return pendingCount;
+            })()}
             icon={<AssignmentIcon />}
             bgColor="#fef7f7"
             barColor="#e74c3c"
