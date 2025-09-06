@@ -149,7 +149,7 @@ const ReportApprovalPage: React.FC = () => {
   const getStatusLabel = (status: string): string => {
     const statusKey = status.toLowerCase().replace(/_/g, '');
     const statusTranslations: { [key: string]: string } = {
-      'pending': t('status.pending'),
+      'pending': t('status.pendingSubmit'), // Use pendingSubmit for PENDING status to match list view
       'pendingsubmit': t('status.pendingSubmit'),
       'supervisorpending': t('status.supervisorPending'),
       'supervisorreview': t('status.supervisorReview'),
