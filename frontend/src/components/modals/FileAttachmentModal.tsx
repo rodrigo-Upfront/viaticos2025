@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -36,6 +36,11 @@ const FileAttachmentModal: React.FC<FileAttachmentModalProps> = ({
   const { t } = useTranslation();
   const [selectedFile, setSelectedFile] = useState<File | null>(currentFile);
   const [dragOver, setDragOver] = useState(false);
+
+  // Reset selectedFile when modal opens or currentFile/rowId changes
+  useEffect(() => {
+    setSelectedFile(currentFile);
+  }, [open, currentFile, rowId]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] || null;
