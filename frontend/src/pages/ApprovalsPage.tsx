@@ -35,6 +35,8 @@ import {
   Assignment as AssignmentIcon,
   ThumbUp as QuickApproveIcon,
   ThumbDown as QuickRejectIcon,
+  Payment as PaymentIcon,
+  Receipt as ReceiptIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
@@ -65,6 +67,67 @@ function TabPanel(props: TabPanelProps) {
     </div>
   );
 }
+
+const StatCard: React.FC<{
+  title: string;
+  value: number | string;
+  icon: React.ReactNode;
+  bgColor: string;
+  barColor: string;
+  onClick?: () => void;
+  percentage?: number;
+}> = ({ title, value, icon, bgColor, barColor, onClick, percentage = 0 }) => (
+  <Card sx={{ 
+    height: '100%', 
+    backgroundColor: bgColor,
+    position: 'relative',
+    overflow: 'visible',
+    border: '1px solid rgba(0,0,0,0.08)',
+    borderRadius: 4,
+    cursor: onClick ? 'pointer' : 'default',
+    transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+    '&:hover': onClick ? {
+      transform: 'translateY(-2px)',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+    } : {}
+  }}
+  onClick={onClick}
+  >
+    <CardContent sx={{ p: 3 }}>
+      {/* Header with Icon */}
+      <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+        <Typography variant="body1" sx={{ color: '#666', fontWeight: 500, fontSize: '0.9rem' }}>
+          {title}
+        </Typography>
+        <Box sx={{ fontSize: 24, color: barColor }}>
+          {icon}
+        </Box>
+      </Box>
+
+      {/* Main Value */}
+      <Typography variant="h4" component="div" fontWeight="bold" sx={{ mb: 1, color: '#333' }}>
+        {typeof value === 'number' ? value.toLocaleString() : value}
+      </Typography>
+
+      {/* Accent Bar */}
+      <Box sx={{
+        width: '100%',
+        height: 4,
+        backgroundColor: 'rgba(0,0,0,0.06)',
+        borderRadius: 2,
+        overflow: 'hidden'
+      }}>
+        <Box sx={{
+          width: `${Math.min(100, Math.max(0, percentage))}%`,
+          height: '100%',
+          backgroundColor: barColor,
+          borderRadius: 2,
+          transition: 'width 0.3s ease-in-out'
+        }} />
+      </Box>
+    </CardContent>
+  </Card>
+);
 
 const ApprovalsPage: React.FC = () => {
   const { t } = useTranslation();
@@ -445,60 +508,42 @@ const ApprovalsPage: React.FC = () => {
 
       {/* Summary Cards */}
       <Grid container spacing={3} mb={3}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center">
-                <PendingIcon color="warning" sx={{ mr: 1 }} />
-                <Box>
-                  <Typography color="textSecondary" gutterBottom>
-                    {t('approvals.pendingApprovals')}
-                  </Typography>
-                  <Typography variant="h4">
-                    {loading.pendingItems ? '-' : allPendingItems.length}
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
+        <Grid item xs={12} sm={4} md={4}>
+          <StatCard
+            title={t('approvals.pendingApprovals')}
+            value={loading.pendingItems ? '-' : allPendingItems.length}
+            icon={<PendingIcon />}
+            bgColor="#fef7f7"
+            barColor="#e74c3c"
+            percentage={loading.pendingItems ? 0 : 100} // Always 100% since this is the total
+            onClick={() => setTabValue(0)} // Switch to "All Pending" tab
+          />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
-                {t('approvals.prepaymentsPending')}
-              </Typography>
-              <Typography variant="h4">
-                {loading.pendingItems ? '-' : pendingPrepayments.length}
-              </Typography>
-            </CardContent>
-          </Card>
+        <Grid item xs={12} sm={4} md={4}>
+          <StatCard
+            title={t('approvals.prepaymentsPending')}
+            value={loading.pendingItems ? '-' : pendingPrepayments.length}
+            icon={<PaymentIcon />}
+            bgColor="#f8f6ff"
+            barColor="#6f42c1"
+            percentage={loading.pendingItems ? 0 : 
+              allPendingItems.length > 0 ? (pendingPrepayments.length / allPendingItems.length) * 100 : 0
+            }
+            onClick={() => setTabValue(1)} // Switch to "Prepayments" tab
+          />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
-                {t('approvals.reportsPending')}
-              </Typography>
-              <Typography variant="h4">
-                {loading.pendingItems ? '-' : pendingExpenseReports.length}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
-                {t('approvals.totalValue')}
-              </Typography>
-              <Typography variant="h4">
-                {loading.pendingItems ? '-' : `$${allPendingItems.reduce((sum, item) => 
-                  sum + (item.type === 'prepayment' ? parseFloat(item.amount || '0') : parseFloat(item.total_expenses || '0')), 0
-                ).toLocaleString()}`}
-              </Typography>
-            </CardContent>
-          </Card>
+        <Grid item xs={12} sm={4} md={4}>
+          <StatCard
+            title={t('approvals.reportsPending')}
+            value={loading.pendingItems ? '-' : pendingExpenseReports.length}
+            icon={<ReceiptIcon />}
+            bgColor="#fefbf3"
+            barColor="#f39c12"
+            percentage={loading.pendingItems ? 0 : 
+              allPendingItems.length > 0 ? (pendingExpenseReports.length / allPendingItems.length) * 100 : 0
+            }
+            onClick={() => setTabValue(2)} // Switch to "Expense Reports" tab
+          />
         </Grid>
       </Grid>
 
