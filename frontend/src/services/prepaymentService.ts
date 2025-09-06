@@ -71,6 +71,7 @@ export class PrepaymentService {
     search?: string;
     status_filter?: string;
     country_id?: number;
+    user_id?: number;
   }): Promise<PrepaymentListResponse> {
     const searchParams = new URLSearchParams();
     if (params?.skip) searchParams.append('skip', params.skip.toString());
@@ -78,6 +79,7 @@ export class PrepaymentService {
     if (params?.search) searchParams.append('search', params.search);
     if (params?.status_filter) searchParams.append('status_filter', params.status_filter);
     if (params?.country_id) searchParams.append('country_id', params.country_id.toString());
+    if (params?.user_id) searchParams.append('user_id', params.user_id.toString());
     
     // Use trailing slash to avoid 307 redirects that can drop CORS headers
     const url = `${this.basePath}/${searchParams.toString() ? `?${searchParams}` : ''}`;
@@ -126,6 +128,14 @@ export class PrepaymentService {
     currencies: Array<{id: number; code: string; name: string}>;
   }> {
     const response = await apiClient.get(`${this.basePath}/filter-options`);
+    return response.data;
+  }
+
+  /**
+   * Get users for filtering (accounting/treasury only)
+   */
+  async getUsersForFilter(): Promise<{id: number, name: string, email: string, profile: string}[]> {
+    const response = await apiClient.get(`${this.basePath}/users-for-filter`);
     return response.data;
   }
 

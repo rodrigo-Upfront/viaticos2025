@@ -16,6 +16,10 @@ import {
   Snackbar,
   Alert,
   CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 // no SelectChangeEvent needed when using TextField with select
 import {
@@ -27,6 +31,7 @@ import {
   Search as SearchIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../contexts/AuthContext';
 import PrepaymentModal from '../components/forms/PrepaymentModal';
 import PrepaymentViewModal from '../components/modals/PrepaymentViewModal';
 import ConfirmDialog from '../components/forms/ConfirmDialog';
@@ -114,6 +119,14 @@ const PrepaymentsPage: React.FC = () => {
   const [searchText, setSearchText] = useState('');
   const [filterCountryId, setFilterCountryId] = useState<number | ''>('');
   const [filterStatus, setFilterStatus] = useState<string>('');
+  
+  // User filter state (for accounting/treasury users)
+  const { user } = useAuth();
+  const [filterUserId, setFilterUserId] = useState<number | ''>(user?.id || '');
+  const [availableUsers, setAvailableUsers] = useState<{id: number, name: string, email: string, profile: string}[]>([]);
+  
+  // Check if user can filter by other users
+  const canFilterByUser = user?.profile === 'ACCOUNTING' || user?.profile === 'TREASURY' || user?.is_superuser;
 
   // Load data on component mount
   useEffect(() => {
@@ -121,7 +134,10 @@ const PrepaymentsPage: React.FC = () => {
     loadCountries();
     loadCurrencies();
     loadFilterOptions();
-  }, []);
+    if (canFilterByUser) {
+      loadAvailableUsers();
+    }
+  }, [canFilterByUser]);
 
   // Helper function to convert API prepayment to frontend format
   const mapApiToFrontend = (apiPrepayment: ApiPrepayment): Prepayment => {
@@ -166,6 +182,8 @@ const PrepaymentsPage: React.FC = () => {
         status_filter: filterStatus ? filterStatus.toUpperCase() : undefined,
         // country filter supported in backend using country_id
         ...(filterCountryId ? { country_id: filterCountryId as number } : {} as any),
+        // user filter for accounting/treasury users
+        ...(filterUserId ? { user_id: filterUserId as number } : {} as any),
       } as any);
       const mappedPrepayments = response.prepayments.map(mapApiToFrontend);
       // Sort by start date descending (newest first)
@@ -277,6 +295,16 @@ const PrepaymentsPage: React.FC = () => {
         ...prev,
         countries: countries.map(c => ({id: c.id, name: c.name}))
       }));
+    }
+  };
+
+  const loadAvailableUsers = async () => {
+    try {
+      const users = await prepaymentService.getUsersForFilter();
+      setAvailableUsers(users);
+    } catch (error) {
+      console.error('Failed to load available users:', error);
+      // If user doesn't have permission, this will fail silently
     }
   };
 
@@ -447,6 +475,24 @@ const PrepaymentsPage: React.FC = () => {
           InputProps={{ startAdornment: <SearchIcon fontSize="small" /> as any }}
           sx={{ minWidth: 240 }}
         />
+        
+        {/* User filter - only for accounting/treasury users */}
+        {canFilterByUser && (
+          <FormControl size="small" sx={{ minWidth: 200 }}>
+            <InputLabel>{t('common.user')}</InputLabel>
+            <Select
+              value={filterUserId}
+              label={t('common.user')}
+              onChange={(e) => setFilterUserId(e.target.value as number | '')}
+            >
+              <MenuItem value={user?.id}>{t('common.myRecords')}</MenuItem>
+              {availableUsers.map(u => (
+                <MenuItem key={u.id} value={u.id}>{u.name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        )}
+        
         <TextField
           select
           size="small"
@@ -476,7 +522,7 @@ const PrepaymentsPage: React.FC = () => {
           ))}
         </TextField>
         <Button variant="outlined" onClick={() => { loadPrepayments(); loadFilterOptions(); }}>{t('expenses.apply')}</Button>
-        <Button variant="text" onClick={() => { setSearchText(''); setFilterCountryId(''); setFilterStatus(''); loadPrepayments(); loadFilterOptions(); }}>{t('expenses.reset')}</Button>
+        <Button variant="text" onClick={() => { setSearchText(''); setFilterCountryId(''); setFilterStatus(''); setFilterUserId(user?.id || ''); loadPrepayments(); loadFilterOptions(); }}>{t('expenses.reset')}</Button>
       </Box>
 
       <TableContainer component={Paper}>

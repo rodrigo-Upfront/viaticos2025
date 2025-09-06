@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import {
   Box,
   Typography,
@@ -103,6 +104,14 @@ const ReportsPage: React.FC = () => {
     status: '',
   });
 
+  // User filter state (for accounting/treasury users)
+  const { user } = useAuth();
+  const [filterUserId, setFilterUserId] = useState<number | ''>(user?.id || '');
+  const [availableUsers, setAvailableUsers] = useState<{id: number, name: string, email: string, profile: string}[]>([]);
+  
+  // Check if user can filter by other users
+  const canFilterByUser = user?.profile === 'ACCOUNTING' || user?.profile === 'TREASURY' || user?.is_superuser;
+
   // Load data on component mount
   useEffect(() => {
     loadReports();
@@ -110,7 +119,17 @@ const ReportsPage: React.FC = () => {
     loadCountries();
     loadCurrencies();
     loadFilterOptions();
-  }, []);
+    if (canFilterByUser) {
+      loadAvailableUsers();
+    }
+  }, [canFilterByUser]);
+
+  // Reload reports when user filter changes
+  useEffect(() => {
+    if (canFilterByUser) {
+      loadReports();
+    }
+  }, [filterUserId, canFilterByUser]);
 
   // Filter reports based on search criteria
   useEffect(() => {
@@ -182,7 +201,10 @@ const ReportsPage: React.FC = () => {
   const loadReports = async () => {
     try {
       setLoading(prev => ({ ...prev, reports: true }));
-      const response = await reportService.getReports();
+      const response = await reportService.getReports({
+        // user filter for accounting/treasury users
+        ...(filterUserId ? { user_id: filterUserId as number } : {} as any),
+      });
       const mappedReports = response.reports.map(mapApiToFrontend);
       setExpenseReports(mappedReports);
       setFilteredReports(mappedReports);
@@ -226,6 +248,16 @@ const ReportsPage: React.FC = () => {
     } catch (error) {
       console.error('Failed to load filter options:', error);
       // Don't show error for filter options, fallback to empty arrays
+    }
+  };
+
+  const loadAvailableUsers = async () => {
+    try {
+      const users = await reportService.getUsersForFilter();
+      setAvailableUsers(users);
+    } catch (error) {
+      console.error('Failed to load available users:', error);
+      // If user doesn't have permission, this will fail silently
     }
   };
 
@@ -542,6 +574,25 @@ const ReportsPage: React.FC = () => {
           {t('reports.searchAndFilter')}
         </Typography>
         <Grid container spacing={2}>
+          {/* User filter - only for accounting/treasury users */}
+          {canFilterByUser && (
+            <Grid item xs={12} sm={6} md={3}>
+              <FormControl fullWidth size="small">
+                <InputLabel>{t('common.user')}</InputLabel>
+                <Select
+                  value={filterUserId}
+                  label={t('common.user')}
+                  onChange={(e) => setFilterUserId(e.target.value as number | '')}
+                >
+                  <MenuItem value={user?.id}>{t('common.myRecords')}</MenuItem>
+                  {availableUsers.map(u => (
+                    <MenuItem key={u.id} value={u.id}>{u.name}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+          )}
+          
           <Grid item xs={12} sm={6} md={3}>
             <TextField
               fullWidth

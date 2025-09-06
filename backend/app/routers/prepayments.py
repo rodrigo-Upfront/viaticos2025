@@ -31,6 +31,7 @@ async def get_prepayments(
     search: Optional[str] = Query(None, description="Search by reason or destination"),
     status_filter: Optional[str] = Query(None, description="Filter by status"),
     country_id: Optional[int] = Query(None, description="Filter by destination country id"),
+    user_id: Optional[int] = Query(None, description="Filter by user ID (accounting/treasury only)"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -43,9 +44,20 @@ async def get_prepayments(
         joinedload(Prepayment.currency)
     )
     
-    # Non-superusers can only see their own prepayments
+    # Permission-based filtering
     if not current_user.is_superuser:
-        query = query.filter(Prepayment.requesting_user_id == current_user.id)
+        if user_id and current_user.profile in [UserProfile.ACCOUNTING, UserProfile.TREASURY]:
+            # Accounting/Treasury can view any user's records when user_id is specified
+            query = query.filter(Prepayment.requesting_user_id == user_id)
+        elif user_id and current_user.profile not in [UserProfile.ACCOUNTING, UserProfile.TREASURY]:
+            # Regular users cannot filter by other users - return 403
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Insufficient permissions to filter by user"
+            )
+        else:
+            # Default: users see only their own prepayments
+            query = query.filter(Prepayment.requesting_user_id == current_user.id)
     
     # Apply search filter
     if search:
@@ -137,6 +149,35 @@ async def get_prepayment_filter_options(
         "countries": distinct_countries,
         "currencies": distinct_currencies
     }
+
+
+@router.get("/users-for-filter")
+async def get_users_for_filter(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get list of users for filtering (accounting/treasury only)
+    """
+    # Only accounting and treasury users can access this endpoint
+    if current_user.profile not in [UserProfile.ACCOUNTING, UserProfile.TREASURY] and not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions to access user list"
+        )
+    
+    # Get all users (excluding superusers for cleaner list)
+    users = db.query(User).filter(User.is_superuser == False).order_by(User.name, User.surname).all()
+    
+    return [
+        {
+            "id": user.id,
+            "name": f"{user.name} {user.surname}",
+            "email": user.email,
+            "profile": user.profile.value
+        }
+        for user in users
+    ]
 
 
 @router.get("/{prepayment_id}", response_model=PrepaymentResponse)

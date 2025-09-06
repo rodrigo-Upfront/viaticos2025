@@ -71,11 +71,13 @@ export class ReportService {
     skip?: number;
     limit?: number;
     status_filter?: string;
+    user_id?: number;
   }): Promise<ExpenseReportListResponse> {
     const searchParams = new URLSearchParams();
     if (params?.skip) searchParams.append('skip', params.skip.toString());
     if (params?.limit) searchParams.append('limit', params.limit.toString());
     if (params?.status_filter) searchParams.append('status_filter', params.status_filter);
+    if (params?.user_id) searchParams.append('user_id', params.user_id.toString());
     
     // Use trailing slash to avoid 307 redirect that strips CORS headers
     const url = `${this.basePath}/${searchParams.toString() ? `?${searchParams}` : ''}`;
@@ -149,6 +151,14 @@ export class ReportService {
     types: string[];
   }> {
     const response = await apiClient.get(`${this.basePath}/filter-options`);
+    return response.data;
+  }
+
+  /**
+   * Get users for filtering (accounting/treasury only)
+   */
+  async getUsersForFilter(): Promise<{id: number, name: string, email: string, profile: string}[]> {
+    const response = await apiClient.get(`${this.basePath}/users-for-filter`);
     return response.data;
   }
 }
