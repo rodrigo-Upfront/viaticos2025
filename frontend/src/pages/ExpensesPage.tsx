@@ -196,7 +196,12 @@ const ExpensesPage: React.FC = () => {
       );
     }
 
-    setFilteredExpenses(filtered);
+    // Sort by expense date descending (newest first)
+    const sortedFiltered = filtered.sort((a, b) => 
+      new Date(b.expense_date).getTime() - new Date(a.expense_date).getTime()
+    );
+    
+    setFilteredExpenses(sortedFiltered);
   }, [expenses, searchFilters]);
 
   const [modal, setModal] = useState({
@@ -330,8 +335,12 @@ const ExpensesPage: React.FC = () => {
       setLoading(prev => ({ ...prev, expenses: true }));
       const response = await expenseService.getExpenses();
       const mappedExpenses = response.expenses.map(mapApiToFrontend);
-      setExpenses(mappedExpenses);
-      setFilteredExpenses(mappedExpenses);
+      // Sort by expense date descending (newest first)
+      const sortedExpenses = mappedExpenses.sort((a, b) => 
+        new Date(b.expense_date).getTime() - new Date(a.expense_date).getTime()
+      );
+      setExpenses(sortedExpenses);
+      setFilteredExpenses(sortedExpenses);
     } catch (error) {
       console.error('Failed to load expenses:', error);
       setSnackbar({

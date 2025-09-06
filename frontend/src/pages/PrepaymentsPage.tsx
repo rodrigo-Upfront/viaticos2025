@@ -168,7 +168,11 @@ const PrepaymentsPage: React.FC = () => {
         ...(filterCountryId ? { country_id: filterCountryId as number } : {} as any),
       } as any);
       const mappedPrepayments = response.prepayments.map(mapApiToFrontend);
-      setPrepayments(mappedPrepayments);
+      // Sort by start date descending (newest first)
+      const sortedPrepayments = mappedPrepayments.sort((a, b) => 
+        new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+      );
+      setPrepayments(sortedPrepayments);
     } catch (error) {
       console.error('Failed to load prepayments:', error);
       setSnackbar({
