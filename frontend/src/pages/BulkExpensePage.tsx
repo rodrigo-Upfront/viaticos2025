@@ -354,6 +354,18 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
   // Check if any row has FACTURA document type to show taxable column
   const showTaxableColumn = expenseRows.some(row => row.document_type === 'FACTURA');
 
+  // Calculate totals
+  const totalAmount = expenseRows.reduce((sum, row) => sum + (row.amount || 0), 0);
+  const totalsByCategory = expenseRows.reduce((acc, row) => {
+    if (row.category_id && row.amount) {
+      const category = categories.find(cat => cat.id === row.category_id);
+      const categoryName = category?.name || t('common.uncategorized');
+      acc[categoryName] = (acc[categoryName] || 0) + row.amount;
+    }
+    return acc;
+  }, {} as Record<string, number>);
+  const expenseCount = expenseRows.length;
+
   return (
     <Box sx={{ p: 3 }}>
       {/* Header with Breadcrumbs */}
@@ -464,8 +476,8 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
           {/* Report Info Header */}
           <Card sx={{ mb: 3 }}>
             <CardContent>
-              <Box display="flex" justifyContent="space-between" alignItems="center">
-                <Box>
+              <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+                <Box sx={{ flex: 1 }}>
                   <Typography variant="h6">
                     {t('expenses.addingExpensesTo')}: {selectedReport.reason}
                   </Typography>
@@ -484,6 +496,52 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                       </>
                     )}
                   </Typography>
+                  
+                  {/* Inline Summary */}
+                  {expenseRows.length > 0 && (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mt: 2 }}>
+                      {/* Total Amount */}
+                      <Box>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                          {t('common.amount')}
+                        </Typography>
+                        <Typography variant="subtitle1" color="primary" sx={{ fontWeight: 600 }}>
+                          {selectedReport?.currency_code || '$'} {totalAmount.toFixed(2)}
+                        </Typography>
+                      </Box>
+
+                      {/* Expense Count */}
+                      <Box>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                          {t('expenses.count')}
+                        </Typography>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                          {expenseCount} {expenseCount === 1 ? t('expenses.expense') : t('expenses.expenses')}
+                        </Typography>
+                      </Box>
+
+                      {/* Category Breakdown */}
+                      {Object.keys(totalsByCategory).length > 0 && (
+                        <Box sx={{ flexGrow: 1 }}>
+                          <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem', mb: 0.5 }}>
+                            {t('expenses.byCategory')}
+                          </Typography>
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                            {Object.entries(totalsByCategory).map(([category, amount]) => (
+                              <Chip 
+                                key={category}
+                                label={`${category}: ${selectedReport?.currency_code || '$'} ${amount.toFixed(2)}`}
+                                size="small"
+                                variant="outlined"
+                                color="primary"
+                                sx={{ fontSize: '0.75rem', height: 24 }}
+                              />
+                            ))}
+                          </Box>
+                        </Box>
+                      )}
+                    </Box>
+                  )}
                 </Box>
                 <Box display="flex" gap={2}>
                   <Button
@@ -512,6 +570,7 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                   </Button>
                 </Box>
               </Box>
+
             </CardContent>
           </Card>
 
@@ -551,7 +610,7 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                       <TableCell sx={{ minWidth: 120 }}>{t('common.amount')}</TableCell>
                       <TableCell sx={{ minWidth: 150 }}>{t('expenses.expenseDate')}</TableCell>
                       <TableCell sx={{ minWidth: 130 }}>{t('expenses.documentType')}</TableCell>
-                      <TableCell sx={{ minWidth: 180 }}>{t('expenses.supplier')}</TableCell>
+                      <TableCell sx={{ minWidth: 180 }}>{t('expenses.supplierName')}</TableCell>
                       <TableCell sx={{ minWidth: 150 }}>{t('expenses.documentNumber')}</TableCell>
                       {showTaxableColumn && (
                         <TableCell sx={{ minWidth: 100 }}>{t('expenses.taxable')}</TableCell>
