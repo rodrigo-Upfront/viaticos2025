@@ -865,7 +865,7 @@ const ReportApprovalPage: React.FC = () => {
                         <IconButton
                           size="small"
                           onClick={() => handleViewExpense(expense)}
-                          title="View Details"
+                          title={t('reports.viewDetails')}
                         >
                           <VisibilityIcon />
                         </IconButton>
@@ -874,7 +874,7 @@ const ReportApprovalPage: React.FC = () => {
                         <TableCell>
                           {expense.status === 'APPROVED' || expense.status === 'REJECTED' ? (
                             <Typography variant="caption" color="text.secondary">
-                              {expense.status === 'APPROVED' ? 'Approved' : 'Rejected'}
+                              {expense.status === 'APPROVED' ? t('common.approved') : t('common.rejected')}
                             </Typography>
                           ) : (
                             <Box sx={{ display: 'flex', gap: 1 }}>
@@ -883,7 +883,7 @@ const ReportApprovalPage: React.FC = () => {
                                 color="success"
                                 onClick={() => handleExpenseApprove(expense.id)}
                                 disabled={submitting}
-                                title="Approve Expense"
+                                title={t('reports.approveExpense')}
                               >
                                 <CheckIcon />
                               </IconButton>
@@ -901,7 +901,7 @@ const ReportApprovalPage: React.FC = () => {
                                   }
                                 }}
                                 disabled={submitting}
-                                title="Reject Expense"
+                                title={t('reports.rejectExpense')}
                               >
                                 <CloseIcon />
                               </IconButton>

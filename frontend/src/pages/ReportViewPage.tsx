@@ -722,7 +722,7 @@ const ReportViewPage: React.FC = () => {
                         <IconButton
                           onClick={() => handleViewExpense(expense)}
                           size="small"
-                          title="View Details"
+                          title={t('reports.viewDetails')}
                         >
                           <VisibilityIcon />
                         </IconButton>

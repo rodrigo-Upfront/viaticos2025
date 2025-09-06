@@ -533,7 +533,7 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                       <Typography variant="body2" color="textSecondary" gutterBottom>
                         {reportDetails && reportDetails.prepayment_amount > 0 ? t('reports.budgetInformation') : t('expenses.expenseSummary')}:
                       </Typography>
-                      <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                      <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', alignItems: 'flex-start', minWidth: '100%' }}>
                         {/* Budget Information */}
                         {reportDetails && reportDetails.prepayment_amount > 0 && (
                           <>
@@ -593,11 +593,11 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
 
                             {/* Category Breakdown */}
                             {Object.keys(totalsByCategory).length > 0 && (
-                              <Box sx={{ flexGrow: 1 }}>
+                              <Box sx={{ flexGrow: 1, minWidth: '300px', width: '100%' }}>
                                 <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
                                   {t('expenses.byCategory')}:
                                 </Typography>
-                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, width: '100%' }}>
                                   {Object.entries(totalsByCategory).map(([category, amount]) => (
                                     <Chip 
                                       key={category}
