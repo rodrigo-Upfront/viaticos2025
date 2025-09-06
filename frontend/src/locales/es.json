@@ -250,6 +250,7 @@
     "title": "Gastos",
     "createExpense": "CREAR GASTO",
     "searchPurpose": "Buscar propósito...",
+    "searchAndFilter": "Buscar y Filtrar",
     "from": "Desde",
     "to": "Hasta",
     "apply": "APLICAR",

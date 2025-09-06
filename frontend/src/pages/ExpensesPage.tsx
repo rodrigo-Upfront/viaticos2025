@@ -17,6 +17,13 @@ import {
   CircularProgress,
   TextField,
   Tooltip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  OutlinedInput,
+  Checkbox,
+  ListItemText,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -105,6 +112,7 @@ const ExpensesPage: React.FC = () => {
   const [travelExpenseReports, setTravelExpenseReports] = useState<TravelExpenseReport[]>([]);
   const [countries, setCountries] = useState<{ id: number; name: string }[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [filteredExpenses, setFilteredExpenses] = useState<Expense[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
 
   // Dynamic filter options based on user's data
@@ -120,13 +128,16 @@ const ExpensesPage: React.FC = () => {
     reports: []
   });
 
-  // Filters/search state
-  const [searchPurpose, setSearchPurpose] = useState('');
-  const [filterCategoryId, setFilterCategoryId] = useState<number | ''>('');
-  const [filterCountryId, setFilterCountryId] = useState<number | ''>('');
-  const [filterReportId, setFilterReportId] = useState<number | ''>('');
-  const [filterStartDate, setFilterStartDate] = useState('');
-  const [filterEndDate, setFilterEndDate] = useState('');
+  // Filters/search state - changed to object like reports module
+  const [searchFilters, setSearchFilters] = useState({
+    purpose: '',
+    categoryId: '',
+    countryId: '',
+    reportId: '',
+    startDate: '',
+    endDate: '',
+    statuses: ['pending', 'in_process', 'rejected'] as string[] // Default: all except approved
+  });
 
   // Load data on component mount
   useEffect(() => {
@@ -138,6 +149,55 @@ const ExpensesPage: React.FC = () => {
     loadCurrencies();
     loadFilterOptions();
   }, []);
+
+  // Filter expenses based on search criteria - real-time filtering
+  useEffect(() => {
+    let filtered = expenses;
+
+    if (searchFilters.purpose) {
+      filtered = filtered.filter(expense => 
+        expense.purpose.toLowerCase().includes(searchFilters.purpose.toLowerCase())
+      );
+    }
+
+    if (searchFilters.categoryId) {
+      filtered = filtered.filter(expense => 
+        expense.category_id === Number(searchFilters.categoryId)
+      );
+    }
+
+    if (searchFilters.countryId) {
+      filtered = filtered.filter(expense => 
+        expense.country_id === Number(searchFilters.countryId)
+      );
+    }
+
+    if (searchFilters.reportId) {
+      filtered = filtered.filter(expense => 
+        expense.travel_expense_report_id === Number(searchFilters.reportId)
+      );
+    }
+
+    if (searchFilters.startDate) {
+      filtered = filtered.filter(expense => 
+        expense.expense_date >= searchFilters.startDate
+      );
+    }
+
+    if (searchFilters.endDate) {
+      filtered = filtered.filter(expense => 
+        expense.expense_date <= searchFilters.endDate
+      );
+    }
+
+    if (searchFilters.statuses.length > 0) {
+      filtered = filtered.filter(expense => 
+        searchFilters.statuses.includes(expense.status)
+      );
+    }
+
+    setFilteredExpenses(filtered);
+  }, [expenses, searchFilters]);
 
   const [modal, setModal] = useState({
     open: false,
@@ -268,16 +328,10 @@ const ExpensesPage: React.FC = () => {
   const loadExpenses = async () => {
     try {
       setLoading(prev => ({ ...prev, expenses: true }));
-      const response = await expenseService.getExpenses({
-        search: searchPurpose || undefined,
-        ...(filterCategoryId ? { category_id: filterCategoryId as number } : {} as any),
-        ...(filterCountryId ? { country_id: filterCountryId as number } : {} as any),
-        ...(filterReportId ? { report_id: filterReportId as number } : {} as any),
-        ...(filterStartDate ? { start_date: filterStartDate } : {} as any),
-        ...(filterEndDate ? { end_date: filterEndDate } : {} as any),
-      } as any);
+      const response = await expenseService.getExpenses();
       const mappedExpenses = response.expenses.map(mapApiToFrontend);
       setExpenses(mappedExpenses);
+      setFilteredExpenses(mappedExpenses);
     } catch (error) {
       console.error('Failed to load expenses:', error);
       setSnackbar({
@@ -594,75 +648,116 @@ const ExpensesPage: React.FC = () => {
       </Box>
 
       {/* Search and filters */}
-      <Box display="flex" gap={2} alignItems="center" mb={2}>
-        <TextField
-          size="small"
-          placeholder={t('expenses.searchPurpose')}
-          value={searchPurpose}
-          onChange={(e) => setSearchPurpose(e.target.value)}
-          sx={{ minWidth: 240 }}
-        />
-        <TextField
-          select
-          size="small"
-          label={t('common.category')}
-          value={filterCategoryId}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFilterCategoryId(e.target.value === '' ? '' : Number(e.target.value))}
-          sx={{ minWidth: 200 }}
-          SelectProps={{ native: true }}
-        >
-          <option value=""></option>
-          {filterOptions.categories.map(c => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
-        </TextField>
-        <TextField
-          select
-          size="small"
-          label={t('common.country')}
-          value={filterCountryId}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFilterCountryId(e.target.value === '' ? '' : Number(e.target.value))}
-          sx={{ minWidth: 200 }}
-          SelectProps={{ native: true }}
-        >
-          <option value=""></option>
-          {filterOptions.countries.map(c => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
-        </TextField>
-        <TextField
-          select
-          size="small"
-          label={t('common.report')}
-          value={filterReportId}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFilterReportId(e.target.value === '' ? '' : Number(e.target.value))}
-          sx={{ minWidth: 200 }}
-          SelectProps={{ native: true }}
-        >
-          <option value=""></option>
-          {filterOptions.reports.map(r => (
-            <option key={r.id} value={r.id}>{r.name}</option>
-          ))}
-        </TextField>
-        <TextField
-          label={t('expenses.from')}
-          type="date"
-          size="small"
-          value={filterStartDate}
-          onChange={(e) => setFilterStartDate(e.target.value)}
-          InputLabelProps={{ shrink: true }}
-        />
-        <TextField
-          label={t('expenses.to')}
-          type="date"
-          size="small"
-          value={filterEndDate}
-          onChange={(e) => setFilterEndDate(e.target.value)}
-          InputLabelProps={{ shrink: true }}
-        />
-        <Button variant="outlined" onClick={loadExpenses}>{t('expenses.apply')}</Button>
-        <Button variant="text" onClick={() => { setSearchPurpose(''); setFilterCategoryId(''); setFilterCountryId(''); setFilterReportId(''); setFilterStartDate(''); setFilterEndDate(''); loadExpenses(); }}>{t('expenses.reset')}</Button>
-      </Box>
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          {t('expenses.searchAndFilter')}
+        </Typography>
+        <Box display="flex" gap={2} alignItems="center" flexWrap="wrap">
+          <TextField
+            size="small"
+            placeholder={t('expenses.searchPurpose')}
+            value={searchFilters.purpose}
+            onChange={(e) => setSearchFilters(prev => ({ ...prev, purpose: e.target.value }))}
+            sx={{ minWidth: 240 }}
+          />
+          
+          <FormControl size="small" sx={{ minWidth: 200 }}>
+            <InputLabel>{t('common.status')}</InputLabel>
+            <Select
+              multiple
+              value={searchFilters.statuses}
+              onChange={(e) => setSearchFilters(prev => ({ ...prev, statuses: typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value }))}
+              input={<OutlinedInput label={t('common.status')} />}
+              renderValue={(selected) => selected.map(status => getExpenseStatusLabel(status)).join(', ')}
+            >
+              {['pending', 'in_process', 'approved', 'rejected'].map((status) => (
+                <MenuItem key={status} value={status}>
+                  <Checkbox checked={searchFilters.statuses.indexOf(status) > -1} />
+                  <ListItemText primary={getExpenseStatusLabel(status)} />
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <TextField
+            select
+            size="small"
+            label={t('common.category')}
+            value={searchFilters.categoryId}
+            onChange={(e) => setSearchFilters(prev => ({ ...prev, categoryId: e.target.value }))}
+            sx={{ minWidth: 200 }}
+            SelectProps={{ native: true }}
+          >
+            <option value=""></option>
+            {filterOptions.categories.map(c => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </TextField>
+          
+          <TextField
+            select
+            size="small"
+            label={t('common.country')}
+            value={searchFilters.countryId}
+            onChange={(e) => setSearchFilters(prev => ({ ...prev, countryId: e.target.value }))}
+            sx={{ minWidth: 200 }}
+            SelectProps={{ native: true }}
+          >
+            <option value=""></option>
+            {filterOptions.countries.map(c => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </TextField>
+          
+          <TextField
+            select
+            size="small"
+            label={t('common.report')}
+            value={searchFilters.reportId}
+            onChange={(e) => setSearchFilters(prev => ({ ...prev, reportId: e.target.value }))}
+            sx={{ minWidth: 200 }}
+            SelectProps={{ native: true }}
+          >
+            <option value=""></option>
+            {filterOptions.reports.map(r => (
+              <option key={r.id} value={r.id}>{r.name}</option>
+            ))}
+          </TextField>
+          
+          <TextField
+            label={t('expenses.from')}
+            type="date"
+            size="small"
+            value={searchFilters.startDate}
+            onChange={(e) => setSearchFilters(prev => ({ ...prev, startDate: e.target.value }))}
+            InputLabelProps={{ shrink: true }}
+          />
+          
+          <TextField
+            label={t('expenses.to')}
+            type="date"
+            size="small"
+            value={searchFilters.endDate}
+            onChange={(e) => setSearchFilters(prev => ({ ...prev, endDate: e.target.value }))}
+            InputLabelProps={{ shrink: true }}
+          />
+          
+          <Button 
+            variant="text" 
+            onClick={() => setSearchFilters({
+              purpose: '',
+              categoryId: '',
+              countryId: '',
+              reportId: '',
+              startDate: '',
+              endDate: '',
+              statuses: ['pending', 'in_process', 'rejected']
+            })}
+          >
+            {t('expenses.reset')}
+          </Button>
+        </Box>
+      </Paper>
 
       <TableContainer component={Paper}>
         <Table>
@@ -689,7 +784,7 @@ const ExpensesPage: React.FC = () => {
                   </Typography>
                 </TableCell>
               </TableRow>
-            ) : expenses.length === 0 ? (
+            ) : filteredExpenses.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
                   <Typography variant="body2" color="text.secondary">
@@ -698,7 +793,7 @@ const ExpensesPage: React.FC = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              expenses.map((expense) => (
+              filteredExpenses.map((expense) => (
                 <TableRow key={expense.id}>
                   <TableCell>{expense.id}</TableCell>
                   <TableCell>{expense.category}</TableCell>

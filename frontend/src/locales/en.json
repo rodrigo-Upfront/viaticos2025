@@ -250,6 +250,7 @@
     "title": "Expenses",
     "createExpense": "CREATE EXPENSE",
     "searchPurpose": "Search purpose...",
+    "searchAndFilter": "Search and Filter",
     "from": "From",
     "to": "To",
     "apply": "APPLY",
