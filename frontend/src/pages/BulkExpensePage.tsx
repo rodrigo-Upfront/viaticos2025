@@ -529,7 +529,7 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                   
                   {/* Combined Budget Information and Expense Summary */}
                   {(reportDetails && reportDetails.prepayment_amount > 0) || expenseRows.length > 0 ? (
-                    <Box sx={{ mt: 2, p: 2, backgroundColor: '#f8f9fa', borderRadius: 1 }}>
+                    <Box sx={{ mt: 2, p: 2, backgroundColor: '#f8f9fa', borderRadius: 1, width: '100%' }}>
                       <Typography variant="body2" color="textSecondary" gutterBottom>
                         {reportDetails && reportDetails.prepayment_amount > 0 ? t('reports.budgetInformation') : t('expenses.expenseSummary')}:
                       </Typography>
