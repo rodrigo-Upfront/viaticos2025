@@ -76,7 +76,8 @@ const StatCard: React.FC<{
   bgColor: string;
   barColor: string;
   onClick?: () => void;
-}> = ({ title, value, icon, bgColor, barColor, onClick }) => (
+  percentage?: number;
+}> = ({ title, value, icon, bgColor, barColor, onClick, percentage = 0 }) => (
   <Card sx={{ 
     height: '100%', 
     backgroundColor: bgColor,
@@ -118,10 +119,11 @@ const StatCard: React.FC<{
         overflow: 'hidden'
       }}>
         <Box sx={{
-          width: '60%',
+          width: `${Math.min(100, Math.max(0, percentage))}%`,
           height: '100%',
           backgroundColor: barColor,
-          borderRadius: 2
+          borderRadius: 2,
+          transition: 'width 0.3s ease-in-out'
         }} />
       </Box>
     </CardContent>
@@ -284,9 +286,10 @@ const ReportsPage: React.FC = () => {
       const returnCount = mappedReports.filter(r => r.status.toUpperCase() === 'FUNDS_RETURN_PENDING').length;
       
       console.log('Card counts should be:');
-      console.log('- Pending Submit (PENDING + REJECTED):', pendingCount);
-      console.log('- Pending Approval (SUPERVISOR_PENDING, ACCOUNTING_PENDING, TREASURY_PENDING):', approvalCount);
-      console.log('- Pending Return (FUNDS_RETURN_PENDING):', returnCount);
+      console.log('- Pending Submit (PENDING + REJECTED):', pendingCount, `(${mappedReports.length > 0 ? ((pendingCount / mappedReports.length) * 100).toFixed(1) : 0}%)`);
+      console.log('- Pending Approval (SUPERVISOR_PENDING, ACCOUNTING_PENDING, TREASURY_PENDING):', approvalCount, `(${mappedReports.length > 0 ? ((approvalCount / mappedReports.length) * 100).toFixed(1) : 0}%)`);
+      console.log('- Pending Return (FUNDS_RETURN_PENDING):', returnCount, `(${mappedReports.length > 0 ? ((returnCount / mappedReports.length) * 100).toFixed(1) : 0}%)`);
+      console.log('- Total reports:', mappedReports.length);
       console.log('- All unique statuses found:', Array.from(new Set(mappedReports.map(r => r.status))));
       
       setExpenseReports(mappedReports);
@@ -604,12 +607,21 @@ const ReportsPage: React.FC = () => {
         <Grid item xs={12} sm={4} md={4}>
           <StatCard
             title={t('reports.pendingSubmit')}
-            value={loading.reports ? '-' : expenseReports.filter(r => 
-              ['PENDING', 'REJECTED'].includes(r.status.toUpperCase())
-            ).length}
+            value={loading.reports ? '-' : (() => {
+              const count = expenseReports.filter(r => 
+                ['PENDING', 'REJECTED'].includes(r.status.toUpperCase())
+              ).length;
+              return count;
+            })()}
             icon={<AssignmentIcon />}
             bgColor="#fef7f7"
             barColor="#e74c3c"
+            percentage={loading.reports ? 0 : (() => {
+              const count = expenseReports.filter(r => 
+                ['PENDING', 'REJECTED'].includes(r.status.toUpperCase())
+              ).length;
+              return expenseReports.length > 0 ? (count / expenseReports.length) * 100 : 0;
+            })()}
             onClick={() => {
               setSearchFilters(prev => ({ ...prev, status: 'REJECTED' }));
             }}
@@ -618,12 +630,21 @@ const ReportsPage: React.FC = () => {
         <Grid item xs={12} sm={4} md={4}>
           <StatCard
             title={t('reports.pendingApproval')}
-            value={loading.reports ? '-' : expenseReports.filter(r => 
-              ['SUPERVISOR_PENDING', 'ACCOUNTING_PENDING', 'TREASURY_PENDING'].includes(r.status.toUpperCase())
-            ).length}
+            value={loading.reports ? '-' : (() => {
+              const count = expenseReports.filter(r => 
+                ['SUPERVISOR_PENDING', 'ACCOUNTING_PENDING', 'TREASURY_PENDING'].includes(r.status.toUpperCase())
+              ).length;
+              return count;
+            })()}
             icon={<PendingActionsIcon />}
             bgColor="#fefbf3"
             barColor="#f39c12"
+            percentage={loading.reports ? 0 : (() => {
+              const count = expenseReports.filter(r => 
+                ['SUPERVISOR_PENDING', 'ACCOUNTING_PENDING', 'TREASURY_PENDING'].includes(r.status.toUpperCase())
+              ).length;
+              return expenseReports.length > 0 ? (count / expenseReports.length) * 100 : 0;
+            })()}
             onClick={() => {
               // Set multiple statuses - we'll need to update the filter logic for this
               setSearchFilters(prev => ({ ...prev, status: 'SUPERVISOR_PENDING' }));
@@ -633,10 +654,17 @@ const ReportsPage: React.FC = () => {
         <Grid item xs={12} sm={4} md={4}>
           <StatCard
             title={t('reports.pendingReturn')}
-            value={loading.reports ? '-' : expenseReports.filter(r => r.status.toUpperCase() === 'FUNDS_RETURN_PENDING').length}
+            value={loading.reports ? '-' : (() => {
+              const count = expenseReports.filter(r => r.status.toUpperCase() === 'FUNDS_RETURN_PENDING').length;
+              return count;
+            })()}
             icon={<UndoIcon />}
             bgColor="#f7fdf9"
             barColor="#27ae60"
+            percentage={loading.reports ? 0 : (() => {
+              const count = expenseReports.filter(r => r.status.toUpperCase() === 'FUNDS_RETURN_PENDING').length;
+              return expenseReports.length > 0 ? (count / expenseReports.length) * 100 : 0;
+            })()}
             onClick={() => {
               setSearchFilters(prev => ({ ...prev, status: 'FUNDS_RETURN_PENDING' }));
             }}
