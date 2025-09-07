@@ -64,9 +64,9 @@ services:
       - GENERATE_SOURCEMAP=true
     ports:
       - "3000:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+    # volumes: # Removed volume mount to avoid overwriting built files
+    #   - ./frontend:/app
+    #   - /app/node_modules
     depends_on:
       - backend
     networks:

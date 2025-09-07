@@ -551,10 +551,10 @@ async def update_expense(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not enough permissions"
             )
-        if expense.status != ExpenseStatus.PENDING:
+        if expense.status not in [ExpenseStatus.PENDING, ExpenseStatus.REJECTED]:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Can only edit pending expenses"
+                detail="Can only edit pending or rejected expenses"
             )
     
     try:

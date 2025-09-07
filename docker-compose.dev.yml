@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  frontend:
+    command: ["npm", "start"]
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000/api
+      - REACT_APP_UPLOAD_MAX_SIZE=10485760
+      - GENERATE_SOURCEMAP=true
+      - CHOKIDAR_USEPOLLING=true  # For file watching in Docker
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    stdin_open: true
+    tty: true
