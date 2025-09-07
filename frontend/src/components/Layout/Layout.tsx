@@ -67,6 +67,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
   const { language, changeLanguage } = useLanguage();
+  
 
   useEffect(() => {
     const loadCounts = async () => {

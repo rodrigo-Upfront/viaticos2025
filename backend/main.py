@@ -16,7 +16,7 @@ from app.database.connection import engine, get_db
 from app.models import models
 from app.routers import (
     auth, users, countries, categories, suppliers, currencies,
-    prepayments, expense_reports, expenses, approvals, dashboard
+    prepayments, expense_reports, expenses, approvals, dashboard, category_alerts
 )
 from app.core.config import settings
 from sqlalchemy import text
@@ -233,6 +233,16 @@ async def lifespan(app: FastAPI):
                 conn.execute(text("ALTER TABLE approval_history ADD COLUMN IF NOT EXISTS expense_rejections TEXT"))
             except Exception:
                 pass
+            
+            # Add currency_id to category_country_alerts if missing
+            try:
+                conn.execute(text("ALTER TABLE category_country_alerts ADD COLUMN IF NOT EXISTS currency_id INTEGER REFERENCES currencies(id)"))
+                # Update unique constraint to include currency_id
+                conn.execute(text("ALTER TABLE category_country_alerts DROP CONSTRAINT IF EXISTS _category_country_alert_uc"))
+                conn.execute(text("ALTER TABLE category_country_alerts ADD CONSTRAINT _category_country_currency_alert_uc UNIQUE (category_id, country_id, currency_id)"))
+            except Exception:
+                pass
+            
             conn.commit()
             print("✅ Expense table supports reimbursements")
     except Exception as e:
@@ -292,6 +302,7 @@ app.include_router(expense_reports.router, prefix="/api/expense-reports", tags=[
 app.include_router(expenses.router, prefix="/api/expenses", tags=["Expenses"])
 app.include_router(approvals.router, prefix="/api/approvals", tags=["Approvals"])
 app.include_router(dashboard.router, prefix="/api/dashboard", tags=["Dashboard"])
+app.include_router(category_alerts.router, prefix="/api", tags=["Category Alerts"])
 
 
 @app.get("/")

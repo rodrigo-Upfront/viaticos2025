@@ -43,10 +43,22 @@ async def get_dashboard_stats(
                 "symbol": currency.symbol,
             }
     
-    # Base queries
+    # Base queries - filter by user unless superuser
     prepayments_query = db.query(Prepayment)
     reports_query = db.query(TravelExpenseReport)
     expenses_query = db.query(Expense)
+    
+    # Apply user filtering for non-superusers
+    if not current_user.is_superuser:
+        prepayments_query = prepayments_query.filter(Prepayment.requesting_user_id == current_user.id)
+        reports_query = reports_query.filter(TravelExpenseReport.requesting_user_id == current_user.id)
+        # For expenses, filter by the requesting user of the associated report or by created_by_user_id for standalone expenses
+        expenses_query = expenses_query.filter(
+            ((Expense.travel_expense_report_id.isnot(None)) & 
+             (Expense.travel_expense_report.has(TravelExpenseReport.requesting_user_id == current_user.id))) |
+            ((Expense.travel_expense_report_id.is_(None)) & 
+             (Expense.created_by_user_id == current_user.id))
+        )
     
     # Apply filters
     if country_id:
@@ -132,6 +144,15 @@ async def get_monthly_expenses(
         # Base query for expenses
         expenses_query = db.query(Expense)
         
+        # Apply user filtering for non-superusers
+        if not current_user.is_superuser:
+            expenses_query = expenses_query.filter(
+                ((Expense.travel_expense_report_id.isnot(None)) & 
+                 (Expense.travel_expense_report.has(TravelExpenseReport.requesting_user_id == current_user.id))) |
+                ((Expense.travel_expense_report_id.is_(None)) & 
+                 (Expense.created_by_user_id == current_user.id))
+            )
+        
         # Apply filters
         if country_id:
             expenses_query = expenses_query.filter(Expense.country_id == country_id)
@@ -172,6 +193,16 @@ async def get_category_breakdown(
     
     # Base query for expenses with category join
     expenses_query = db.query(Expense).join(ExpenseCategory, Expense.category_id == ExpenseCategory.id)
+    
+    # Apply user filtering for non-superusers
+    if not current_user.is_superuser:
+        expenses_query = expenses_query.filter(
+            ((Expense.travel_expense_report_id.isnot(None)) & 
+             (Expense.travel_expense_report.has(TravelExpenseReport.requesting_user_id == current_user.id))) |
+            ((Expense.travel_expense_report_id.is_(None)) & 
+             (Expense.created_by_user_id == current_user.id))
+        )
+        print(f"🔍 Applied user filter for user: {current_user.id}")
     
     # Apply filters
     if country_id:
@@ -224,8 +255,14 @@ async def get_recent_prepayments(
 ):
     """Get recent prepayments"""
     
+    prepayments_query = db.query(Prepayment)
+    
+    # Apply user filtering for non-superusers
+    if not current_user.is_superuser:
+        prepayments_query = prepayments_query.filter(Prepayment.requesting_user_id == current_user.id)
+    
     recent_prepayments = (
-        db.query(Prepayment)
+        prepayments_query
         .join(Country, Prepayment.destination_country_id == Country.id)
         .join(Currency, Prepayment.currency_id == Currency.id)
         .order_by(desc(Prepayment.created_at))
@@ -257,8 +294,19 @@ async def get_recent_expenses(
 ):
     """Get recent expenses"""
     
+    expenses_query = db.query(Expense)
+    
+    # Apply user filtering for non-superusers
+    if not current_user.is_superuser:
+        expenses_query = expenses_query.filter(
+            ((Expense.travel_expense_report_id.isnot(None)) & 
+             (Expense.travel_expense_report.has(TravelExpenseReport.requesting_user_id == current_user.id))) |
+            ((Expense.travel_expense_report_id.is_(None)) & 
+             (Expense.created_by_user_id == current_user.id))
+        )
+    
     recent_expenses = (
-        db.query(Expense)
+        expenses_query
         .join(ExpenseCategory, Expense.category_id == ExpenseCategory.id)
         .join(Currency, Expense.currency_id == Currency.id)
         .order_by(desc(Expense.created_at))

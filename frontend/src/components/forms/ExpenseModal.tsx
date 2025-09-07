@@ -24,6 +24,8 @@ import {
 import { useTranslation } from 'react-i18next';
 import apiClient from '../../services/apiClient';
 import { Currency } from '../../services/currencyService';
+import { categoryAlertService } from '../../services/categoryAlertService';
+import ExpenseAlertDialog from './ExpenseAlertDialog';
 
 interface Expense {
   id?: number;
@@ -120,6 +122,21 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [travelDates, setTravelDates] = useState<{ start_date?: string; end_date?: string }>({});
+  const [alertDialog, setAlertDialog] = useState<{
+    open: boolean;
+    expenseAmount: number;
+    alertAmount: number;
+    categoryName: string;
+    countryName: string;
+    currencyCode: string;
+  }>({
+    open: false,
+    expenseAmount: 0,
+    alertAmount: 0,
+    categoryName: '',
+    countryName: '',
+    currencyCode: ''
+  });
   const [fileUploading, setFileUploading] = useState(false);
 
   const fetchTravelDatesForReport = async (reportId: number) => {
@@ -452,6 +469,66 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
+  const checkExpenseAlert = async () => {
+    try {
+      // Get currency info - find currency by code since formData.currency is a string code
+      const selectedCurrency = currencies.find(c => c.code === formData.currency);
+      const currencyCode = formData.currency || 'USD';
+      const currencyId = selectedCurrency?.id;
+
+      if (!currencyId) {
+        console.warn('Currency ID not found, proceeding without alert check');
+        proceedWithSave();
+        return;
+      }
+
+      // Check for alert
+      const alertResponse = await categoryAlertService.checkExpenseAlert(
+        formData.category_id,
+        formData.country_id,
+        currencyId,
+        formData.amount
+      );
+
+      if (alertResponse.has_alert && alertResponse.exceeds_alert) {
+        // Show alert dialog
+        const categoryName = categories.find(c => c.id === formData.category_id)?.name || '';
+        const countryName = countries.find(c => c.id === formData.country_id)?.name || '';
+        
+        setAlertDialog({
+          open: true,
+          expenseAmount: formData.amount,
+          alertAmount: alertResponse.alert_amount || 0,
+          categoryName,
+          countryName,
+          currencyCode
+        });
+      } else {
+        // No alert or amount is within threshold, proceed with save
+        proceedWithSave();
+      }
+    } catch (error) {
+      console.error('Error checking expense alert:', error);
+      // If alert check fails, proceed with save anyway
+      proceedWithSave();
+    }
+  };
+
+  const proceedWithSave = () => {
+    console.log('Proceeding with save');
+    onSave(formData, selectedFile || undefined);
+    onClose();
+  };
+
+  const handleAlertProceed = () => {
+    setAlertDialog(prev => ({ ...prev, open: false }));
+    proceedWithSave();
+  };
+
+  const handleAlertCancel = () => {
+    setAlertDialog(prev => ({ ...prev, open: false }));
+  };
+
   const handleSubmit = () => {
     console.log('UPDATE CLICKED - Form data:', formData.expense_date, 'Travel dates:', travelDates);
     
@@ -505,9 +582,8 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
     
     // Only proceed if no errors
     if (Object.keys(newErrors).length === 0) {
-      console.log('Validation passed, calling onSave');
-      onSave(formData, selectedFile || undefined);
-      onClose();
+      console.log('Validation passed, checking for alerts');
+      checkExpenseAlert();
     } else {
       console.log('Validation BLOCKED save. Errors:', newErrors);
     }
@@ -662,7 +738,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
                     onChange={(e) => setFormData(prev => ({ ...prev, taxable: e.target.checked ? 'Si' : 'No' }))}
                   />
                 }
-                label="Taxable"
+                label={t('expenses.taxable')}
                 sx={{ mt: 2 }}
               />
             </>
@@ -836,6 +912,18 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
 {loading ? 'Saving...' : mode === 'create' ? t('expenses.create') : 'Update'}
         </Button>
       </DialogActions>
+
+      {/* Expense Alert Dialog */}
+      <ExpenseAlertDialog
+        open={alertDialog.open}
+        onClose={handleAlertCancel}
+        onProceed={handleAlertProceed}
+        expenseAmount={alertDialog.expenseAmount}
+        alertAmount={alertDialog.alertAmount}
+        categoryName={alertDialog.categoryName}
+        countryName={alertDialog.countryName}
+        currencyCode={alertDialog.currencyCode}
+      />
     </Dialog>
   );
 };

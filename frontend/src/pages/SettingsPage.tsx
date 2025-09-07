@@ -28,12 +28,14 @@ import {
   Category as CategoryIcon,
   Business as SupplierIcon,
   AttachMoney as CurrencyIcon,
+  NotificationsActive as AlertIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import CountryModal from '../components/forms/CountryModal';
 import CategoryModal from '../components/forms/CategoryModal';
 import SupplierModal from '../components/forms/SupplierModal';
 import CurrencyModal from '../components/forms/CurrencyModal';
+import CategoryAlertsModal from '../components/forms/CategoryAlertsModal';
 import ConfirmDialog from '../components/forms/ConfirmDialog';
 import { supplierService, Supplier as ApiSupplier } from '../services/supplierService';
 import { categoryService, Category as ApiCategory } from '../services/categoryService';
@@ -114,6 +116,13 @@ const SettingsPage: React.FC = () => {
   // Currencies state
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [currencyModal, setCurrencyModal] = useState({ open: false, mode: 'create' as 'create' | 'edit', currency: undefined as Currency | undefined });
+
+  // Category alerts state
+  const [categoryAlertsModal, setCategoryAlertsModal] = useState({ 
+    open: false, 
+    categoryId: 0, 
+    categoryName: '' 
+  });
 
   // Confirmation dialog state
   const [confirmDialog, setConfirmDialog] = useState({
@@ -401,6 +410,14 @@ const SettingsPage: React.FC = () => {
     }
   };
 
+  const handleSetCategoryAlerts = (category: Category) => {
+    setCategoryAlertsModal({
+      open: true,
+      categoryId: category.id!,
+      categoryName: category.name
+    });
+  };
+
   // Supplier CRUD operations
   const handleCreateSupplier = () => {
     setSupplierModal({ open: true, mode: 'create', supplier: undefined });
@@ -654,6 +671,7 @@ const SettingsPage: React.FC = () => {
                   <TableCell>{t('users.name')}</TableCell>
                   <TableCell>{t('configuration.sapAccount')}</TableCell>
                   <TableCell>{t('configuration.alertAmount')}</TableCell>
+                  <TableCell>{t('configuration.setAlerts')}</TableCell>
                   <TableCell>{t('common.actions')}</TableCell>
                 </TableRow>
               </TableHead>
@@ -664,6 +682,16 @@ const SettingsPage: React.FC = () => {
                     <TableCell>{category.name}</TableCell>
                     <TableCell>{category.account}</TableCell>
                     <TableCell>${category.alertAmount.toLocaleString()}</TableCell>
+                    <TableCell>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleSetCategoryAlerts(category)}
+                        color="primary"
+                        title={t('configuration.setAlerts')}
+                      >
+                        <AlertIcon />
+                      </IconButton>
+                    </TableCell>
                     <TableCell>
                       <IconButton
                         size="small"
@@ -824,6 +852,14 @@ const SettingsPage: React.FC = () => {
         onSave={handleSaveCurrency}
         currency={currencyModal.currency}
         mode={currencyModal.mode}
+      />
+
+      {/* Category Alerts Modal */}
+      <CategoryAlertsModal
+        open={categoryAlertsModal.open}
+        onClose={() => setCategoryAlertsModal({ open: false, categoryId: 0, categoryName: '' })}
+        categoryId={categoryAlertsModal.categoryId}
+        categoryName={categoryAlertsModal.categoryName}
       />
 
       {/* Confirmation Dialog */}

@@ -441,7 +441,7 @@ const Dashboard: React.FC = () => {
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Solicitudes Pendientes de Aprobación"
-            value={stats?.prepayments_pending || 1}
+            value={stats?.prepayments_pending || 0}
             icon={<Payment />}
             bgColor="#f8f6ff"
             barColor="#6f42c1"
@@ -454,7 +454,7 @@ const Dashboard: React.FC = () => {
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Informes Pendientes de Rendición"
-            value={`${getCurrencyDisplay()} ${(stats?.expense_reports_pending_amount || 1622).toLocaleString()}.00`}
+            value={`${getCurrencyDisplay()} ${(stats?.expense_reports_pending_amount || 0).toLocaleString()}.00`}
             icon={<Receipt />}
             bgColor="#fef7f7"
             barColor="#e74c3c"
@@ -467,7 +467,7 @@ const Dashboard: React.FC = () => {
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Gastos Pendientes de Aprobación"
-            value={`${getCurrencyDisplay()} ${(stats?.expenses_pending_amount || 1622).toLocaleString()}.00`}
+            value={`${getCurrencyDisplay()} ${(stats?.expenses_pending_amount || 0).toLocaleString()}.00`}
             icon={<PendingActions />}
             bgColor="#fefbf3"
             barColor="#f39c12"

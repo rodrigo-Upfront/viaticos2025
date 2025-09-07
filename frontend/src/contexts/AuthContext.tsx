@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import authService from '../services/authService';
+import ForcePasswordChangeModal from '../components/forms/ForcePasswordChangeModal';
 
 interface User {
   id: number;
@@ -37,6 +38,7 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showPasswordChangeModal, setShowPasswordChangeModal] = useState(false);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -46,6 +48,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (token) {
           const userData = await authService.getCurrentUser();
           setUser(userData);
+          
+          // Check if password change is required
+          if (userData.force_password_change) {
+            setShowPasswordChangeModal(true);
+          }
         }
       } catch (error) {
         // Token is invalid or expired
@@ -65,6 +72,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(response.user);
       localStorage.setItem('access_token', response.access_token);
       localStorage.setItem('refresh_token', response.refresh_token);
+      
+      // Check if password change is required
+      if (response.user.force_password_change) {
+        setShowPasswordChangeModal(true);
+      }
     } catch (error) {
       throw error;
     }
@@ -74,7 +86,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(null);
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
+    setShowPasswordChangeModal(false);
     authService.logout();
+  };
+
+  const handlePasswordChanged = () => {
+    console.log('🔄 NEW CODE: Password changed successfully - no logout required');
+    // Password was changed successfully, update user state and close modal
+    setShowPasswordChangeModal(false);
+    
+    // Update the user object to remove the force_password_change flag
+    if (user) {
+      setUser({ ...user, force_password_change: false });
+    }
+    
+    // Show success message (you can customize this with a toast/snackbar if preferred)
+    alert('Password has been updated successfully!');
   };
 
   const value = {
@@ -85,6 +112,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isAuthenticated: !!user,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      
+      {/* Force Password Change Modal */}
+      {user && (
+        <ForcePasswordChangeModal
+          open={showPasswordChangeModal}
+          onPasswordChanged={handlePasswordChanged}
+          onClose={() => setShowPasswordChangeModal(false)}
+          userEmail={user.email}
+        />
+      )}
+    </AuthContext.Provider>
+  );
 };
 

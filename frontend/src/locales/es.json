@@ -10,7 +10,23 @@
     "password": "Contraseña",
     "loginButton": "Ingresar",
     "loginError": "Error de inicio de sesión",
-    "welcome": "Bienvenido a Viaticos 2025"
+    "welcome": "Bienvenido a Viaticos 2025",
+    "passwordChangeRequired": "Actualización de Contraseña Recomendada",
+    "passwordChangeMessage": "Su administrador ha solicitado que actualice su contraseña por motivos de seguridad. Puede continuar usando el sistema, pero recomendamos actualizar su contraseña cuando sea conveniente.",
+    "loggedInAs": "Conectado como",
+    "currentPassword": "Contraseña Actual",
+    "newPassword": "Nueva Contraseña",
+    "confirmNewPassword": "Confirmar Nueva Contraseña",
+    "changePassword": "Cambiar Contraseña",
+    "currentPasswordRequired": "La contraseña actual es requerida",
+    "newPasswordRequired": "La nueva contraseña es requerida",
+    "confirmPasswordRequired": "Por favor confirme su nueva contraseña",
+    "passwordMinLength": "La contraseña debe tener al menos 6 caracteres",
+    "passwordMinLengthHint": "Mínimo 6 caracteres",
+    "passwordsDoNotMatch": "Las contraseñas no coinciden",
+    "newPasswordMustBeDifferent": "La nueva contraseña debe ser diferente a la actual",
+    "passwordChangeError": "Error al cambiar la contraseña",
+    "passwordChangeNote": "Después de actualizar su contraseña, puede continuar usando el sistema normalmente."
   },
   "navigation": {
     "dashboard": "Panel de Control",
@@ -28,7 +44,11 @@
     "pendingExpenses": "Gastos Pendientes",
     "approvedExpenses": "Gastos Aprobados",
     "monthlyExpenses": "Gastos Mensuales",
-    "expensesByCategory": "Gastos por Categoría"
+    "expensesByCategory": "Gastos por Categoría",
+    "filterByCountry": "Filtrar por País",
+    "filterByCurrency": "Filtrar por Moneda",
+    "allCountries": "Todos los Países",
+    "allCurrencies": "Todas las Monedas"
   },
   "common": {
     "save": "Guardar",
@@ -188,12 +208,6 @@
     "prepayments": "ANTICIPOS",
     "expenseReports": "REPORTES DE GASTOS"
   },
-  "dashboard": {
-    "filterByCountry": "Filtrar por País",
-    "filterByCurrency": "Filtrar por Moneda",
-    "allCountries": "Todos los Países",
-    "allCurrencies": "Todas las Monedas"
-  },
   "prepaymentModule": {
     "title": "Anticipos",
     "createPrepayment": "CREAR ANTICIPO",
@@ -254,7 +268,13 @@
     "sapAccount": "Cuenta SAP",
     "alertAmount": "Monto de Alerta",
     "code": "Código",
-    "symbol": "Símbolo"
+    "symbol": "Símbolo",
+    "setAlerts": "Configurar Alertas",
+    "alertsByCountryAndCurrency": "Alertas por País y Moneda",
+    "addAlert": "Agregar Alerta",
+    "country": "País",
+    "currency": "Moneda",
+    "noAlertsConfigured": "No hay alertas configuradas para esta categoría"
   },
   "expenses": {
     "title": "Gastos",
@@ -319,6 +339,19 @@
     "row": "Fila",
     "attachDocumentHelp": "Selecciona un archivo para adjuntar a este gasto",
     "dropFileHere": "Suelta el archivo aquí",
+    "expenseAmountAlert": "Alerta de Monto de Gasto",
+    "expenseExceedsAlert": "El monto del gasto excede el umbral de alerta configurado para esta categoría y país.",
+    "amountComparison": "Comparación de Montos",
+    "yourExpenseAmount": "Monto de tu Gasto",
+    "difference": "Diferencia",
+    "proceedConfirmation": "¿Deseas proceder con la creación de este gasto?",
+    "proceedAnyway": "Proceder de Todos Modos",
+    "bulkExpenseAmountAlert": "Alerta de Múltiples Gastos",
+    "bulkExpenseExceedsAlert": "{{count}} gastos exceden los límites de alerta configurados.",
+    "expensesExceedingLimits": "Gastos que Exceden los Límites",
+    "summary": "Resumen",
+    "totalExpensesExceeding": "Total de Gastos que Exceden Límites",
+    "bulkProceedConfirmation": "Aún puedes crear todos los gastos, pero por favor revisa los montos que exceden los límites configurados.",
     "clickOrDragFile": "Haz clic o arrastra un archivo aquí",
     "acceptedFormats": "Formatos aceptados",
     "fileSizeWarning": "El archivo es grande. Se recomienda usar archivos menores a 5MB",

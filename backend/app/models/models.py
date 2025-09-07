@@ -163,6 +163,7 @@ class CategoryCountryAlert(Base):
     id = Column(Integer, primary_key=True, index=True)
     category_id = Column(Integer, ForeignKey("expense_categories.id"), nullable=False)
     country_id = Column(Integer, ForeignKey("countries.id"), nullable=False)
+    currency_id = Column(Integer, ForeignKey("currencies.id"), nullable=False)
     alert_amount = Column(Numeric(12, 2), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
@@ -170,9 +171,10 @@ class CategoryCountryAlert(Base):
     # Relationships
     category = relationship("ExpenseCategory", back_populates="country_alerts")
     country = relationship("Country")
+    currency = relationship("Currency")
     
     # Unique constraint
-    __table_args__ = (UniqueConstraint('category_id', 'country_id', name='_category_country_alert_uc'),)
+    __table_args__ = (UniqueConstraint('category_id', 'country_id', 'currency_id', name='_category_country_currency_alert_uc'),)
 
 
 class FacturaSupplier(Base):

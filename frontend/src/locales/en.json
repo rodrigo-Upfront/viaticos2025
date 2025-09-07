@@ -10,7 +10,23 @@
     "password": "Password",
     "loginButton": "Sign In",
     "loginError": "Login error",
-    "welcome": "Welcome to Viaticos 2025"
+    "welcome": "Welcome to Viaticos 2025",
+    "passwordChangeRequired": "Password Update Recommended",
+    "passwordChangeMessage": "Your administrator has requested that you update your password for security purposes. You can continue using the system, but we recommend updating your password when convenient.",
+    "loggedInAs": "Logged in as",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmNewPassword": "Confirm New Password",
+    "changePassword": "Change Password",
+    "currentPasswordRequired": "Current password is required",
+    "newPasswordRequired": "New password is required",
+    "confirmPasswordRequired": "Please confirm your new password",
+    "passwordMinLength": "Password must be at least 6 characters long",
+    "passwordMinLengthHint": "Minimum 6 characters",
+    "passwordsDoNotMatch": "Passwords do not match",
+    "newPasswordMustBeDifferent": "New password must be different from current password",
+    "passwordChangeError": "Failed to change password",
+    "passwordChangeNote": "After updating your password, you can continue using the system normally."
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -28,7 +44,11 @@
     "pendingExpenses": "Pending Expenses",
     "approvedExpenses": "Approved Expenses",
     "monthlyExpenses": "Monthly Expenses",
-    "expensesByCategory": "Expenses by Category"
+    "expensesByCategory": "Expenses by Category",
+    "filterByCountry": "Filter by Country",
+    "filterByCurrency": "Filter by Currency",
+    "allCountries": "All Countries",
+    "allCurrencies": "All Currencies"
   },
   "common": {
     "save": "Save",
@@ -188,12 +208,6 @@
     "prepayments": "PREPAYMENTS",
     "expenseReports": "EXPENSE REPORTS"
   },
-  "dashboard": {
-    "filterByCountry": "Filter by Country",
-    "filterByCurrency": "Filter by Currency",
-    "allCountries": "All Countries",
-    "allCurrencies": "All Currencies"
-  },
   "prepaymentModule": {
     "title": "Prepayments",
     "createPrepayment": "CREATE PREPAYMENT",
@@ -254,7 +268,13 @@
     "sapAccount": "SAP Account",
     "alertAmount": "Alert Amount",
     "code": "Code",
-    "symbol": "Symbol"
+    "symbol": "Symbol",
+    "setAlerts": "Set Alerts",
+    "alertsByCountryAndCurrency": "Alerts by Country and Currency",
+    "addAlert": "Add Alert",
+    "country": "Country",
+    "currency": "Currency",
+    "noAlertsConfigured": "No alerts configured for this category"
   },
   "expenses": {
     "title": "Expenses",
@@ -319,6 +339,19 @@
     "row": "Row",
     "attachDocumentHelp": "Select a file to attach to this expense",
     "dropFileHere": "Drop file here",
+    "expenseAmountAlert": "Expense Amount Alert",
+    "expenseExceedsAlert": "The expense amount exceeds the configured alert threshold for this category and country.",
+    "amountComparison": "Amount Comparison",
+    "yourExpenseAmount": "Your Expense Amount",
+    "difference": "Difference",
+    "proceedConfirmation": "Do you want to proceed with creating this expense?",
+    "proceedAnyway": "Proceed Anyway",
+    "bulkExpenseAmountAlert": "Multiple Expenses Alert",
+    "bulkExpenseExceedsAlert": "{{count}} expenses exceed configured alert limits.",
+    "expensesExceedingLimits": "Expenses Exceeding Limits",
+    "summary": "Summary",
+    "totalExpensesExceeding": "Total Expenses Exceeding Limits",
+    "bulkProceedConfirmation": "You can still create all expenses, but please review the amounts that exceed the configured limits.",
     "clickOrDragFile": "Click or drag a file here",
     "acceptedFormats": "Accepted formats",
     "fileSizeWarning": "File is large. Recommended to use files smaller than 5MB",
