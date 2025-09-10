@@ -45,7 +45,7 @@ interface User {
   credit_card_number?: string;
   supervisor_id?: number;
   supervisor?: string;
-  profile: 'employee' | 'manager' | 'accounting' | 'treasury';
+  profile: 'EMPLOYEE' | 'MANAGER' | 'ACCOUNTING' | 'TREASURY';
   is_superuser: boolean;
   is_approver: boolean;
   force_password_change: boolean;
@@ -93,7 +93,7 @@ const UsersPage: React.FC = () => {
       credit_card_number: apiUser.credit_card_number,
       supervisor_id: apiUser.supervisor_id,
       supervisor: supervisor ? `${supervisor.name} ${supervisor.surname}` : apiUser.supervisor_name,
-      profile: apiUser.profile.toLowerCase() as 'employee' | 'manager' | 'accounting' | 'treasury',
+      profile: apiUser.profile as 'EMPLOYEE' | 'MANAGER' | 'ACCOUNTING' | 'TREASURY',
       is_superuser: apiUser.is_superuser,
       is_approver: apiUser.is_approver,
       force_password_change: apiUser.force_password_change,
@@ -284,13 +284,13 @@ const UsersPage: React.FC = () => {
 
   const getProfileColor = (profile: string) => {
     switch (profile) {
-      case 'treasury':
+      case 'TREASURY':
         return 'error';
-      case 'accounting':
+      case 'ACCOUNTING':
         return 'warning';
-      case 'manager':
+      case 'MANAGER':
         return 'info';
-      case 'employee':
+      case 'EMPLOYEE':
         return 'default';
       default:
         return 'default';

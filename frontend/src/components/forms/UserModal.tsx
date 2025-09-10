@@ -30,7 +30,7 @@ interface User {
   credit_card_number?: string;
   supervisor_id?: number;
   supervisor?: string; // For display
-  profile: 'employee' | 'manager' | 'accounting' | 'treasury';
+  profile: 'EMPLOYEE' | 'MANAGER' | 'ACCOUNTING' | 'TREASURY';
   is_superuser: boolean;
   is_approver: boolean;
   force_password_change: boolean;
@@ -75,7 +75,7 @@ const UserModal: React.FC<UserModalProps> = ({
     credit_card_number: '',
     supervisor_id: undefined,
     supervisor: '',
-    profile: 'employee' as 'employee' | 'manager' | 'accounting' | 'treasury',
+    profile: 'EMPLOYEE' as 'EMPLOYEE' | 'MANAGER' | 'ACCOUNTING' | 'TREASURY',
     is_superuser: false,
     is_approver: false,
     force_password_change: true,
@@ -98,7 +98,7 @@ const UserModal: React.FC<UserModalProps> = ({
         credit_card_number: '',
         supervisor_id: undefined,
         supervisor: '',
-        profile: 'employee' as 'employee' | 'manager' | 'accounting' | 'treasury',
+        profile: 'EMPLOYEE' as 'EMPLOYEE' | 'MANAGER' | 'ACCOUNTING' | 'TREASURY',
         is_superuser: false,
         is_approver: false,
         force_password_change: true,
@@ -235,7 +235,7 @@ const UserModal: React.FC<UserModalProps> = ({
       credit_card_number: '',
       supervisor_id: undefined,
       supervisor: '',
-      profile: 'employee' as 'employee' | 'manager' | 'accounting' | 'treasury',
+      profile: 'EMPLOYEE' as 'EMPLOYEE' | 'MANAGER' | 'ACCOUNTING' | 'TREASURY',
       is_superuser: false,
       is_approver: false,
       force_password_change: true,
@@ -351,10 +351,10 @@ const UserModal: React.FC<UserModalProps> = ({
                   onChange={handleSelectChange('profile')}
                   label="Profile"
                 >
-                  <MenuItem value="employee">Employee</MenuItem>
-                  <MenuItem value="manager">Manager</MenuItem>
-                  <MenuItem value="accounting">Accounting</MenuItem>
-                  <MenuItem value="treasury">Treasury</MenuItem>
+                  <MenuItem value="EMPLOYEE">Employee</MenuItem>
+                  <MenuItem value="MANAGER">Manager</MenuItem>
+                  <MenuItem value="ACCOUNTING">Accounting</MenuItem>
+                  <MenuItem value="TREASURY">Treasury</MenuItem>
                 </Select>
               </FormControl>
             </Grid>

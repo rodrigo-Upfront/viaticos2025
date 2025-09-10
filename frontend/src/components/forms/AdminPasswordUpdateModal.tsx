@@ -33,7 +33,7 @@ interface User {
   credit_card_number?: string;
   supervisor_id?: number;
   supervisor?: string;
-  profile: 'employee' | 'manager' | 'accounting' | 'treasury';
+  profile: 'EMPLOYEE' | 'MANAGER' | 'ACCOUNTING' | 'TREASURY';
   is_superuser: boolean;
   is_approver: boolean;
   force_password_change?: boolean;
