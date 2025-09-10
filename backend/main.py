@@ -281,7 +281,7 @@ app = FastAPI(
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://frontend:3000", "http://161.35.39.205:3000", "http://161.35.39.205"],
+    allow_origins=["*"],  # Allow all origins for broader device compatibility
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
