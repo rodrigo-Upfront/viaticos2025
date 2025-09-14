@@ -56,6 +56,7 @@ async def get_category_alerts(
             "country_id": alert.country_id,
             "currency_id": alert.currency_id,
             "alert_amount": alert.alert_amount,
+            "alert_message": getattr(alert, 'alert_message', None),
             "created_at": alert.created_at,
             "updated_at": alert.updated_at,
             "category_name": category_name,
@@ -182,5 +183,6 @@ async def check_expense_alert(
     return {
         "has_alert": True,
         "alert_amount": float(alert.alert_amount),
-        "exceeds_alert": exceeds_alert
+        "exceeds_alert": exceeds_alert,
+        "alert_message": getattr(alert, 'alert_message', None)
     }

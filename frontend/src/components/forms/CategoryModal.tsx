@@ -14,7 +14,6 @@ interface Category {
   id?: number;
   name: string;
   account: string;
-  alertAmount: number;
 }
 
 interface CategoryModalProps {
@@ -34,8 +33,7 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
 }) => {
   const [formData, setFormData] = useState<Category>({
     name: '',
-    account: '',
-    alertAmount: 0
+    account: ''
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
@@ -43,13 +41,13 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
     if (category && mode === 'edit') {
       setFormData(category);
     } else {
-      setFormData({ name: '', account: '', alertAmount: 0 });
+      setFormData({ name: '', account: '' });
     }
     setErrors({});
   }, [category, mode, open]);
 
   const handleChange = (field: keyof Category) => (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = field === 'alertAmount' ? parseFloat(event.target.value) || 0 : event.target.value;
+    const value = event.target.value;
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -74,10 +72,6 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
       newErrors.account = 'SAP account is required';
     }
 
-    if (formData.alertAmount < 0) {
-      newErrors.alertAmount = 'Alert amount cannot be negative';
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -90,7 +84,7 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
   };
 
   const handleClose = () => {
-    setFormData({ name: '', account: '', alertAmount: 0 });
+    setFormData({ name: '', account: '' });
     setErrors({});
     onClose();
   };
@@ -126,20 +120,7 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
             placeholder="e.g., 10001"
           />
 
-          <TextField
-            fullWidth
-            label="Alert Amount"
-            type="number"
-            value={formData.alertAmount}
-            onChange={handleChange('alertAmount')}
-            error={!!errors.alertAmount}
-            helperText={errors.alertAmount || 'Warning will be shown when expense exceeds this amount'}
-            margin="normal"
-            InputProps={{
-              startAdornment: <InputAdornment position="start">$</InputAdornment>,
-            }}
-            placeholder="0.00"
-          />
+          {/* Category-level alert removed; use per country/currency alerts */}
         </Box>
       </DialogContent>
       <DialogActions>

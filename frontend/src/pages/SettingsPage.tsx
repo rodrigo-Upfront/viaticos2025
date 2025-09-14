@@ -73,7 +73,6 @@ interface Category {
   id?: number;
   name: string;
   account: string;
-  alertAmount: number;
 }
 
 interface Supplier {
@@ -177,7 +176,6 @@ const SettingsPage: React.FC = () => {
         id: cat.id,
         name: cat.name,
         account: cat.account,
-        alertAmount: Number(cat.alert_amount)
       }));
       setCategories(mappedCategories);
     } catch (error) {
@@ -364,15 +362,13 @@ const SettingsPage: React.FC = () => {
       if (categoryModal.mode === 'create') {
         const apiData = {
           name: categoryData.name,
-          account: categoryData.account,
-          alert_amount: categoryData.alertAmount
+          account: categoryData.account
         };
         const newCategory = await categoryService.createCategory(apiData);
         const mappedCategory = {
           id: newCategory.id,
           name: newCategory.name,
-          account: newCategory.account,
-          alertAmount: Number(newCategory.alert_amount)
+          account: newCategory.account
         };
         setCategories(prev => [...prev, mappedCategory]);
         setSnackbar({
@@ -383,15 +379,13 @@ const SettingsPage: React.FC = () => {
       } else if (categoryData.id) {
         const apiData = {
           name: categoryData.name,
-          account: categoryData.account,
-          alert_amount: categoryData.alertAmount
+          account: categoryData.account
         };
         const updatedCategory = await categoryService.updateCategory(categoryData.id, apiData);
         const mappedCategory = {
           id: updatedCategory.id,
           name: updatedCategory.name,
-          account: updatedCategory.account,
-          alertAmount: Number(updatedCategory.alert_amount)
+          account: updatedCategory.account
         };
         setCategories(prev => prev.map(c => c.id === categoryData.id ? mappedCategory : c));
         setSnackbar({
@@ -670,7 +664,6 @@ const SettingsPage: React.FC = () => {
                   <TableCell>{t('tables.id')}</TableCell>
                   <TableCell>{t('users.name')}</TableCell>
                   <TableCell>{t('configuration.sapAccount')}</TableCell>
-                  <TableCell>{t('configuration.alertAmount')}</TableCell>
                   <TableCell>{t('configuration.setAlerts')}</TableCell>
                   <TableCell>{t('common.actions')}</TableCell>
                 </TableRow>
@@ -681,7 +674,6 @@ const SettingsPage: React.FC = () => {
                     <TableCell>{category.id}</TableCell>
                     <TableCell>{category.name}</TableCell>
                     <TableCell>{category.account}</TableCell>
-                    <TableCell>${category.alertAmount.toLocaleString()}</TableCell>
                     <TableCell>
                       <IconButton
                         size="small"

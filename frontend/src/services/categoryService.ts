@@ -9,7 +9,6 @@ export interface Category {
   id: number;
   name: string;
   account: string;
-  alert_amount: number;
   created_at: string;
   updated_at: string;
 }
@@ -17,13 +16,11 @@ export interface Category {
 export interface CategoryCreate {
   name: string;
   account: string;
-  alert_amount: number;
 }
 
 export interface CategoryUpdate {
   name?: string;
   account?: string;
-  alert_amount?: number;
 }
 
 export interface CategoryListResponse {

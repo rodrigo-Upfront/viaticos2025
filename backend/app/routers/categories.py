@@ -83,8 +83,7 @@ async def create_category(
         # Create category
         db_category = ExpenseCategory(
             name=category_data.name,
-            account=category_data.account,
-            alert_amount=category_data.alert_amount
+            account=category_data.account
         )
         
         db.add(db_category)

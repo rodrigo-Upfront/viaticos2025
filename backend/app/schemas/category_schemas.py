@@ -13,13 +13,7 @@ class CategoryBase(BaseModel):
     """Base category schema"""
     name: str = Field(..., min_length=1, max_length=200, description="Category name")
     account: str = Field(..., min_length=1, max_length=50, description="SAP account")
-    alert_amount: Decimal = Field(..., ge=0, description="Alert amount for expenses")
-
-    @validator('alert_amount', pre=True)
-    def validate_alert_amount(cls, v):
-        if isinstance(v, (int, float)):
-            return Decimal(str(v))
-        return v
+    # Category-level alert removed in favor of per-country/currency alerts
 
 
 class CategoryCreate(CategoryBase):
@@ -31,13 +25,7 @@ class CategoryUpdate(CategoryBase):
     """Schema for updating a category"""
     name: Optional[str] = Field(None, min_length=1, max_length=200)
     account: Optional[str] = Field(None, min_length=1, max_length=50)
-    alert_amount: Optional[Decimal] = Field(None, ge=0)
-
-    @validator('alert_amount', pre=True)
-    def validate_alert_amount(cls, v):
-        if v is not None and isinstance(v, (int, float)):
-            return Decimal(str(v))
-        return v
+    # No alert_amount here
 
 
 class CategoryResponse(CategoryBase):
@@ -55,7 +43,6 @@ class CategoryResponse(CategoryBase):
             id=obj.id,
             name=obj.name,
             account=obj.account,
-            alert_amount=obj.alert_amount,
             created_at=obj.created_at,
             updated_at=obj.updated_at
         )

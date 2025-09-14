@@ -108,13 +108,12 @@ Viaticos 2025 is a comprehensive travel expense management system that handles t
 - `id` (Primary Key, Auto-increment)
 - `name` (String, Mandatory, Unique)
 - `account` (String, Mandatory)
-- `alert_amount` (Decimal, Optional, 2 decimals)
 - `created_at` (DateTime)
 - `updated_at` (DateTime)
 
 **Business Rules:**
 - Only accessible by superusers
-- Alert amount triggers warning when expenses exceed this threshold
+- Alerts are configured per Category+Country+Currency in `category_country_alerts` with amount and optional message
 
 ### 4.5 Factura Supplier
 **Purpose:** Suppliers for formal invoices (facturas)

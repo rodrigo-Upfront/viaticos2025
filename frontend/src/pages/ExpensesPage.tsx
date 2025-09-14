@@ -83,7 +83,6 @@ interface Category {
   id: number;
   name: string;
   account: string;
-  alertAmount: number;
 }
 
 interface Supplier {
@@ -360,8 +359,7 @@ const ExpensesPage: React.FC = () => {
       const mappedCategories = response.categories.map((cat: ApiCategory) => ({
         id: cat.id,
         name: cat.name,
-        account: cat.account,
-        alertAmount: Number(cat.alert_amount)
+        account: cat.account
       }));
       setCategories(mappedCategories);
     } catch (error) {

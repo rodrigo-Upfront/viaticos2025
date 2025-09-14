@@ -9,6 +9,7 @@ class CategoryCountryAlertBase(BaseModel):
     country_id: int
     currency_id: int
     alert_amount: Decimal
+    alert_message: Optional[str] = None
 
 
 class CategoryCountryAlertCreate(CategoryCountryAlertBase):
@@ -17,6 +18,7 @@ class CategoryCountryAlertCreate(CategoryCountryAlertBase):
 
 class CategoryCountryAlertUpdate(BaseModel):
     alert_amount: Optional[Decimal] = None
+    alert_message: Optional[str] = None
 
 
 class CategoryCountryAlert(CategoryCountryAlertBase):

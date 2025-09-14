@@ -148,7 +148,6 @@ class ExpenseCategory(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), unique=True, nullable=False)
     account = Column(String(50), nullable=False)
-    alert_amount = Column(Numeric(12, 2), nullable=True)  # Default alert amount
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
@@ -165,6 +164,8 @@ class CategoryCountryAlert(Base):
     country_id = Column(Integer, ForeignKey("countries.id"), nullable=False)
     currency_id = Column(Integer, ForeignKey("currencies.id"), nullable=False)
     alert_amount = Column(Numeric(12, 2), nullable=False)
+    # Optional custom message to be shown when alert is triggered
+    alert_message = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     

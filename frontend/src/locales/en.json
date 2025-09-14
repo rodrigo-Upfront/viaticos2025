@@ -267,6 +267,8 @@
     "addCurrency": "ADD CURRENCY",
     "sapAccount": "SAP Account",
     "alertAmount": "Alert Amount",
+    "alertMessage": "Alert Message",
+    "alertMessageHelp": "Optional message shown when alert triggers",
     "code": "Code",
     "symbol": "Symbol",
     "setAlerts": "Set Alerts",

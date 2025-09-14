@@ -61,7 +61,6 @@ interface Category {
   id: number;
   name: string;
   account: string;
-  alertAmount: number;
 }
 
 interface Supplier {
@@ -129,13 +128,15 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
     categoryName: string;
     countryName: string;
     currencyCode: string;
+    alertMessage?: string;
   }>({
     open: false,
     expenseAmount: 0,
     alertAmount: 0,
     categoryName: '',
     countryName: '',
-    currencyCode: ''
+    currencyCode: '',
+    alertMessage: ''
   });
   const [fileUploading, setFileUploading] = useState(false);
 
@@ -501,7 +502,8 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
           alertAmount: alertResponse.alert_amount || 0,
           categoryName,
           countryName,
-          currencyCode
+          currencyCode,
+          alertMessage: alertResponse.alert_message || ''
         });
       } else {
         // No alert or amount is within threshold, proceed with save
@@ -923,6 +925,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
         categoryName={alertDialog.categoryName}
         countryName={alertDialog.countryName}
         currencyCode={alertDialog.currencyCode}
+        alertMessage={alertDialog.alertMessage}
       />
     </Dialog>
   );

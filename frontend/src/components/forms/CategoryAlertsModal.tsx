@@ -71,6 +71,7 @@ const CategoryAlertsModal: React.FC<CategoryAlertsModalProps> = ({
     country_id: number;
     currency_id: number;
     alert_amount: string;
+    alert_message?: string;
   } | null>(null);
   const [error, setError] = useState<string>('');
 
@@ -105,7 +106,8 @@ const CategoryAlertsModal: React.FC<CategoryAlertsModalProps> = ({
     setNewAlert({
       country_id: 0,
       currency_id: 0,
-      alert_amount: ''
+      alert_amount: '',
+      alert_message: ''
     });
   };
 
@@ -120,7 +122,8 @@ const CategoryAlertsModal: React.FC<CategoryAlertsModalProps> = ({
         category_id: categoryId,
         country_id: newAlert.country_id,
         currency_id: newAlert.currency_id,
-        alert_amount: parseFloat(newAlert.alert_amount)
+        alert_amount: parseFloat(newAlert.alert_amount),
+        alert_message: newAlert.alert_message?.trim() ? newAlert.alert_message : undefined
       };
 
       await categoryAlertService.createAlert(alertData);
@@ -142,10 +145,11 @@ const CategoryAlertsModal: React.FC<CategoryAlertsModalProps> = ({
     setEditingAlert(alertId);
   };
 
-  const handleSaveEdit = async (alertId: number, newAmount: string) => {
+  const handleSaveEdit = async (alertId: number, newAmount: string, newMessage?: string) => {
     try {
       await categoryAlertService.updateAlert(alertId, {
-        alert_amount: parseFloat(newAmount)
+        alert_amount: parseFloat(newAmount),
+        alert_message: newMessage
       });
       setEditingAlert(null);
       loadData();
@@ -221,6 +225,7 @@ const CategoryAlertsModal: React.FC<CategoryAlertsModalProps> = ({
                     <TableCell>{t('configuration.country')}</TableCell>
                     <TableCell>{t('configuration.currency')}</TableCell>
                     <TableCell>{t('configuration.alertAmount')}</TableCell>
+                    <TableCell>{t('configuration.alertMessage')}</TableCell>
                     <TableCell>{t('common.actions')}</TableCell>
                   </TableRow>
                 </TableHead>
@@ -274,6 +279,19 @@ const CategoryAlertsModal: React.FC<CategoryAlertsModalProps> = ({
                             alert_amount: e.target.value
                           })}
                           inputProps={{ min: 0, step: 0.01 }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <TextField
+                          size="small"
+                          value={newAlert.alert_message || ''}
+                          onChange={(e) => setNewAlert({
+                            ...newAlert,
+                            alert_message: e.target.value
+                          })}
+                          placeholder={t('configuration.alertMessageHelp')}
+                          inputProps={{ maxLength: 300 }}
+                          fullWidth
                         />
                       </TableCell>
                       <TableCell>
@@ -338,7 +356,7 @@ interface AlertRowProps {
   alert: CategoryCountryAlert;
   isEditing: boolean;
   onEdit: () => void;
-  onSave: (alertId: number, newAmount: string) => void;
+  onSave: (alertId: number, newAmount: string, newMessage?: string) => void;
   onCancel: () => void;
   onDelete: () => void;
   getCountryName: (countryId: number) => string;
@@ -356,10 +374,12 @@ const AlertRow: React.FC<AlertRowProps> = ({
   getCurrencyDisplay
 }) => {
   const [editAmount, setEditAmount] = useState(alert.alert_amount.toString());
+  const [editMessage, setEditMessage] = useState(alert.alert_message || '');
 
   useEffect(() => {
     if (isEditing) {
       setEditAmount(alert.alert_amount.toString());
+      setEditMessage(alert.alert_message || '');
     }
   }, [isEditing, alert.alert_amount]);
 
@@ -385,11 +405,26 @@ const AlertRow: React.FC<AlertRowProps> = ({
       </TableCell>
       <TableCell>
         {isEditing ? (
+          <TextField
+            size="small"
+            value={editMessage}
+            onChange={(e) => setEditMessage(e.target.value)}
+            inputProps={{ maxLength: 300 }}
+            fullWidth
+          />
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            {alert.alert_message || '-'}
+          </Typography>
+        )}
+      </TableCell>
+      <TableCell>
+        {isEditing ? (
           <>
             <IconButton
               size="small"
               color="primary"
-              onClick={() => onSave(alert.id, editAmount)}
+              onClick={() => onSave(alert.id, editAmount, editMessage.trim() || undefined)}
             >
               <SaveIcon />
             </IconButton>

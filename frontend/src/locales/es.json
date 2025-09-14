@@ -267,6 +267,8 @@
     "addCurrency": "AGREGAR MONEDA",
     "sapAccount": "Cuenta SAP",
     "alertAmount": "Monto de Alerta",
+    "alertMessage": "Mensaje de Alerta",
+    "alertMessageHelp": "Mensaje opcional mostrado cuando se activa la alerta",
     "code": "Código",
     "symbol": "Símbolo",
     "setAlerts": "Configurar Alertas",

@@ -24,6 +24,7 @@ interface ExpenseAlertDialogProps {
   categoryName: string;
   countryName: string;
   currencyCode: string;
+  alertMessage?: string;
 }
 
 const ExpenseAlertDialog: React.FC<ExpenseAlertDialogProps> = ({
@@ -34,7 +35,8 @@ const ExpenseAlertDialog: React.FC<ExpenseAlertDialogProps> = ({
   alertAmount,
   categoryName,
   countryName,
-  currencyCode
+  currencyCode,
+  alertMessage
 }) => {
   const { t } = useTranslation();
 
@@ -57,7 +59,7 @@ const ExpenseAlertDialog: React.FC<ExpenseAlertDialogProps> = ({
       </DialogTitle>
       <DialogContent>
         <Alert severity="warning" sx={{ mb: 2 }}>
-          {t('expenses.expenseExceedsAlert')}
+          {alertMessage || t('expenses.expenseExceedsAlert')}
         </Alert>
         
         <Box sx={{ mb: 2 }}>

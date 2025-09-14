@@ -6,6 +6,7 @@ export interface CategoryCountryAlert {
   country_id: number;
   currency_id: number;
   alert_amount: number;
+  alert_message?: string;
   created_at: string;
   updated_at: string;
   category_name?: string;
@@ -19,16 +20,19 @@ export interface CategoryCountryAlertCreate {
   country_id: number;
   currency_id: number;
   alert_amount: number;
+  alert_message?: string;
 }
 
 export interface CategoryCountryAlertUpdate {
   alert_amount?: number;
+  alert_message?: string;
 }
 
 export interface AlertCheckResponse {
   has_alert: boolean;
   alert_amount: number | null;
   exceeds_alert: boolean;
+  alert_message?: string | null;
 }
 
 export class CategoryAlertService {
