@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -11,6 +11,8 @@ import {
   Divider,
   Grid,
 } from '@mui/material';
+import HistoryIcon from '@mui/icons-material/History';
+import ExpenseRejectionHistoryModal from '../forms/ExpenseRejectionHistoryModal';
 import {
   Receipt as ReceiptIcon,
   Description as DocumentIcon,
@@ -71,6 +73,7 @@ interface ExpenseViewModalProps {
 
 const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expense }) => {
   const { t, i18n } = useTranslation();
+  const [historyOpen, setHistoryOpen] = useState(false);
   
   if (!expense) {
     return null;
@@ -338,6 +341,11 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
         </Grid>
       </DialogContent>
       <DialogActions>
+        {expense?.id && (
+          <Button onClick={() => setHistoryOpen(true)} startIcon={<HistoryIcon />} color="inherit">
+            Rejection history
+          </Button>
+        )}
         <Button onClick={onClose} color="primary">
 {t('common.close')}
         </Button>
@@ -354,6 +362,12 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
           </Button>
         )}
       </DialogActions>
+
+      <ExpenseRejectionHistoryModal
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        expenseId={expense?.id || null}
+      />
     </Dialog>
   );
 };

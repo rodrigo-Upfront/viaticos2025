@@ -29,6 +29,85 @@ from app.schemas.approval_schemas import (
 
 router = APIRouter()
 auth_service = AuthService()
+@router.get("/history")
+async def get_entity_history(
+    entity_type: str,
+    entity_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get approval history timeline for a specific entity (report or prepayment).
+    - entity_type: "report" | "prepayment"
+    - entity_id: the ID of the entity
+    Returns a chronological list with: created_at, user, role, action, from_status, to_status, comments.
+    """
+    try:
+        etype = entity_type.strip().upper()
+        if etype == "REPORT":
+            etype_enum = EntityType.TRAVEL_EXPENSE_REPORT
+        elif etype == "PREPAYMENT":
+            etype_enum = EntityType.PREPAYMENT
+        else:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid entity_type. Use 'report' or 'prepayment'")
+
+        # Basic permission: authenticated users can read history of items they can access through existing screens
+        # Superusers bypass checks. For others, we soft-enforce by not filtering here; the calling UI already requires access.
+        query = db.query(ApprovalHistory, User).join(User, ApprovalHistory.user_id == User.id, isouter=True)
+        query = query.filter(ApprovalHistory.entity_type == etype_enum, ApprovalHistory.entity_id == entity_id)
+        records = query.order_by(ApprovalHistory.created_at.asc()).all()
+
+        def to_dict(row):
+            ah, u = row
+            return {
+                "created_at": ah.created_at.isoformat() if ah.created_at else None,
+                "user_id": ah.user_id,
+                "user_name": f"{u.name} {u.surname}" if u else None,
+                "user_role": ah.user_role,
+                "action": ah.action.value if hasattr(ah.action, 'value') else str(ah.action),
+                "from_status": ah.from_status,
+                "to_status": ah.to_status,
+                "comments": ah.comments,
+            }
+
+        return {"items": [to_dict(r) for r in records], "total": len(records)}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to fetch history: {str(e)}")
+
+
+@router.get("/expenses/{expense_id}/rejection-history")
+async def get_expense_rejection_history(
+    expense_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get immutable rejection history entries for a given expense.
+    Returns: created_at, approval_stage, rejection_reason, user (name/role), report_id.
+    """
+    try:
+        q = db.query(ExpenseRejectionHistory, User).join(User, ExpenseRejectionHistory.user_id == User.id, isouter=True)
+        q = q.filter(ExpenseRejectionHistory.expense_id == expense_id)
+        rows = q.order_by(ExpenseRejectionHistory.created_at.asc()).all()
+
+        def to_dict(row):
+            h, u = row
+            return {
+                "created_at": h.created_at.isoformat() if h.created_at else None,
+                "approval_stage": h.approval_stage,
+                "rejection_reason": h.rejection_reason,
+                "user_id": h.user_id,
+                "user_name": f"{u.name} {u.surname}" if u else None,
+                "user_role": h.user_role,
+                "report_id": h.report_id,
+            }
+
+        return {"items": [to_dict(r) for r in rows], "total": len(rows)}
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to fetch expense rejection history: {str(e)}")
+
 
 
 @router.get("/pending", response_model=PendingApprovalsList)

@@ -31,6 +31,8 @@ import {
   ArrowBack as ArrowBackIcon,
   Visibility as VisibilityIcon,
 } from '@mui/icons-material';
+import HistoryIcon from '@mui/icons-material/History';
+import ExpenseRejectionHistoryModal from '../components/forms/ExpenseRejectionHistoryModal';
 import apiClient from '../services/apiClient';
 import { useAuth } from '../contexts/AuthContext';
 import ExpenseViewModal from '../components/modals/ExpenseViewModal';
@@ -196,6 +198,7 @@ const ReportApprovalPage: React.FC = () => {
     status: 'pending' | 'in_process' | 'approved';
   } | undefined>(undefined);
   const [expenseDetailModal, setExpenseDetailModal] = useState(false);
+  const [historyExpenseId, setHistoryExpenseId] = useState<number | null>(null);
 
   // Function to get user-friendly status labels
   const getStatusLabel = (status: string): string => {
@@ -869,6 +872,13 @@ const ReportApprovalPage: React.FC = () => {
                         >
                           <VisibilityIcon />
                         </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => setHistoryExpenseId(expense.id)}
+                          title="Rejection history"
+                        >
+                          <HistoryIcon />
+                        </IconButton>
                       </TableCell>
                       {isAccountingUser && (
                         <TableCell>
@@ -1013,6 +1023,13 @@ const ReportApprovalPage: React.FC = () => {
         open={expenseDetailModal}
         onClose={() => setExpenseDetailModal(false)}
         expense={selectedExpense}
+      />
+
+      {/* Expense Rejection History Modal */}
+      <ExpenseRejectionHistoryModal
+        open={historyExpenseId !== null}
+        onClose={() => setHistoryExpenseId(null)}
+        expenseId={historyExpenseId}
       />
     </Box>
   );

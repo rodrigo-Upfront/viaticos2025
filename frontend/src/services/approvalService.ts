@@ -1,9 +1,35 @@
-/**
- * Approval Service
- * Real API calls for approval workflow management
- */
-
 import apiClient from './apiClient';
+
+export interface ApprovalHistoryItem {
+  created_at: string | null;
+  user_id: number | null;
+  user_name: string | null;
+  user_role: string | null;
+  action: string;
+  from_status: string | null;
+  to_status: string | null;
+  comments: string | null;
+}
+
+export interface ApprovalHistoryResponse {
+  items: ApprovalHistoryItem[];
+  total: number;
+}
+
+export interface ExpenseRejectionHistoryItem {
+  created_at: string | null;
+  approval_stage: string | null;
+  rejection_reason: string | null;
+  user_id: number | null;
+  user_name: string | null;
+  user_role: string | null;
+  report_id: number | null;
+}
+
+export interface ExpenseRejectionHistoryResponse {
+  items: ExpenseRejectionHistoryItem[];
+  total: number;
+}
 
 export interface PendingApprovalItem {
   id: number;
@@ -58,33 +84,39 @@ export interface ApprovalListResponse {
 export class ApprovalService {
   private readonly basePath = '/approvals';
 
-  /**
-   * Get pending approvals (formatted for frontend)
-   */
+  // New: per-entity timeline
+  async getEntityHistory(entityType: 'report' | 'prepayment', entityId: number): Promise<ApprovalHistoryResponse> {
+    const response = await apiClient.get(`/approvals/history`, {
+      params: { entity_type: entityType, entity_id: entityId }
+    });
+    return response.data;
+  }
+
+  // New: expense rejection history
+  async getExpenseRejectionHistory(expenseId: number): Promise<ExpenseRejectionHistoryResponse> {
+    const response = await apiClient.get(`/approvals/expenses/${expenseId}/rejection-history`);
+    return response.data;
+  }
+
+  /** Get pending approvals (formatted for frontend) */
   async getPendingApprovals(): Promise<PendingApprovalsList> {
     const response = await apiClient.get(`${this.basePath}/pending`);
     return response.data;
   }
 
-  /**
-   * Approve or reject a prepayment
-   */
+  /** Approve or reject a prepayment */
   async approvePrepayment(prepaymentId: number, action: ApprovalAction): Promise<any> {
     const response = await apiClient.post(`${this.basePath}/prepayments/${prepaymentId}/approve`, action);
     return response.data;
   }
 
-  /**
-   * Approve or reject an expense report
-   */
+  /** Approve or reject an expense report */
   async approveExpenseReport(reportId: number, action: ApprovalAction): Promise<any> {
     const response = await apiClient.post(`${this.basePath}/reports/${reportId}/approve`, action);
     return response.data;
   }
 
-  /**
-   * Get approval history
-   */
+  /** Get approval history (user-centric list) */
   async getApprovals(params?: {
     skip?: number;
     limit?: number;
@@ -96,23 +128,18 @@ export class ApprovalService {
     if (params?.limit) searchParams.append('limit', params.limit.toString());
     if (params?.entity_type) searchParams.append('entity_type', params.entity_type);
     if (params?.status_filter) searchParams.append('status_filter', params.status_filter);
-    
     const url = `${this.basePath}${searchParams.toString() ? `?${searchParams}` : ''}`;
     const response = await apiClient.get(url);
     return response.data;
   }
 
-  /**
-   * Get approval by ID
-   */
+  /** Get single approval by ID */
   async getApproval(id: number): Promise<ApprovalResponse> {
     const response = await apiClient.get(`${this.basePath}/${id}`);
     return response.data;
   }
 
-  /**
-   * Get distinct filter options for approvals based on user's visible data
-   */
+  /** Distinct filter options */
   async getFilterOptions(): Promise<{
     statuses: string[];
     countries: Array<{id: number; name: string}>;
@@ -123,5 +150,4 @@ export class ApprovalService {
   }
 }
 
-// Export singleton instance
 export const approvalService = new ApprovalService();

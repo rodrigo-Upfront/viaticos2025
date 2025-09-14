@@ -26,6 +26,8 @@ import {
   Info as InfoIcon,
   Send as SendIcon,
 } from '@mui/icons-material';
+import HistoryIcon from '@mui/icons-material/History';
+import EntityHistoryModal from '../components/forms/EntityHistoryModal';
 import apiClient from '../services/apiClient';
 import { useAuth } from '../contexts/AuthContext';
 import ExpenseViewModal from '../components/modals/ExpenseViewModal';
@@ -142,6 +144,7 @@ const ReportViewPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string>('');
   const [fundReturnModalOpen, setFundReturnModalOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   
   // ExpenseViewModal state
   const [selectedExpense, setSelectedExpense] = useState<{
@@ -521,12 +524,17 @@ const ReportViewPage: React.FC = () => {
                 </Typography>
               </Box>
             </Box>
-            <Chip
+            <Box display="flex" alignItems="center" gap={1}>
+              <Chip
               label={getStatusLabel(report.status)}
               color={getStatusColor(report.status)}
               variant="filled"
               sx={{ fontSize: '0.875rem', fontWeight: 'bold' }}
-            />
+              />
+              <Button variant="text" startIcon={<HistoryIcon />} onClick={() => setHistoryOpen(true)}>
+                History
+              </Button>
+            </Box>
           </Box>
           
           {/* Submit for Approval button - only show if report is in PENDING status */}
@@ -830,6 +838,14 @@ const ReportViewPage: React.FC = () => {
         onClose={() => setFundReturnModalOpen(false)}
         onSubmit={handleFundReturnSubmission}
         reportId={parseInt(reportId || '0')}
+      />
+
+      {/* Entity History Modal for Report */}
+      <EntityHistoryModal
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        entityType="report"
+        entityId={report?.id || null}
       />
       </Container>
     </Box>
