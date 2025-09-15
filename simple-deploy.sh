@@ -27,5 +27,5 @@ ssh $SERVER_USER@$SERVER_IP "
 "
 
 echo "✅ Deployment successful!"
-echo "Frontend: http://$SERVER_IP:3000"
-echo "Backend: http://$SERVER_IP:8000"
+echo "Application: http://$SERVER_IP"
+echo "API Health: http://$SERVER_IP/api/health"

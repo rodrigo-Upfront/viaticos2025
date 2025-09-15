@@ -95,16 +95,16 @@ esac
 echo -e "${YELLOW}🔍 Verifying deployment...${NC}"
 sleep 3
 
-# Check backend health
-BACKEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://$SERVER_IP:8000/api/health)
+# Check backend health (through Nginx proxy)
+BACKEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://$SERVER_IP/api/health)
 if [ "$BACKEND_STATUS" = "200" ]; then
     echo -e "${GREEN}✅ Backend is healthy${NC}"
 else
     echo -e "${RED}❌ Backend health check failed (HTTP $BACKEND_STATUS)${NC}"
 fi
 
-# Check frontend
-FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://$SERVER_IP:3000)
+# Check frontend (through Nginx proxy)
+FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://$SERVER_IP/)
 if [ "$FRONTEND_STATUS" = "200" ]; then
     echo -e "${GREEN}✅ Frontend is accessible${NC}"
 else
@@ -112,6 +112,5 @@ else
 fi
 
 echo -e "${GREEN}🎉 Deployment verification complete!${NC}"
-echo "🌐 Frontend: http://$SERVER_IP:3000"
-echo "🔧 Backend: http://$SERVER_IP:8000"
-echo "💚 Health: http://$SERVER_IP:8000/api/health"
+echo "🌐 Application: http://$SERVER_IP"
+echo "💚 API Health: http://$SERVER_IP/api/health"

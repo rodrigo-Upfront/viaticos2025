@@ -39,17 +39,17 @@ ssh $SERVER_USER@$SERVER_IP "
     echo '🔄 Pulling latest code...' &&
     git pull origin main && 
     
-    # Selective rebuild based on changes using fast Docker files
+    # Selective rebuild based on changes using production files (server doesn't have fast files)
     if [ $BACKEND_CHANGED -gt 0 ]; then
-        echo '🔨 Fast rebuilding backend...' &&
-        docker-compose -f docker-compose.fast.yml build --no-cache backend &&
-        docker-compose -f docker-compose.fast.yml up -d backend
+        echo '🔨 Rebuilding backend...' &&
+        docker-compose -f docker-compose.prod.yml build backend &&
+        docker-compose -f docker-compose.prod.yml up -d backend
     fi
     
     if [ $FRONTEND_CHANGED -gt 0 ]; then
-        echo '🔨 Fast rebuilding frontend...' &&
-        docker-compose -f docker-compose.fast.yml build --no-cache frontend &&
-        docker-compose -f docker-compose.fast.yml up -d frontend
+        echo '🔨 Rebuilding frontend...' &&
+        docker-compose -f docker-compose.prod.yml build frontend &&
+        docker-compose -f docker-compose.prod.yml up -d frontend
     fi
     
     if [ $DB_CHANGED -gt 0 ]; then
@@ -59,7 +59,7 @@ ssh $SERVER_USER@$SERVER_IP "
     # If no specific changes, restart all
     if [ $BACKEND_CHANGED -eq 0 ] && [ $FRONTEND_CHANGED -eq 0 ]; then
         echo '🔄 No specific changes detected, restarting all services...' &&
-        docker-compose -f docker-compose.fast.yml restart
+        docker-compose -f docker-compose.prod.yml restart
     fi
     
     echo '✅ Deployment complete!'
@@ -69,16 +69,16 @@ ssh $SERVER_USER@$SERVER_IP "
 echo -e "${YELLOW}🔍 Verifying deployment...${NC}"
 sleep 5
 
-# Check backend health
-BACKEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://$SERVER_IP:8000/api/health)
+# Check backend health (through Nginx proxy)
+BACKEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://$SERVER_IP/api/health)
 if [ "$BACKEND_STATUS" = "200" ]; then
     echo -e "${GREEN}✅ Backend is healthy${NC}"
 else
     echo -e "${RED}❌ Backend health check failed (HTTP $BACKEND_STATUS)${NC}"
 fi
 
-# Check frontend
-FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://$SERVER_IP:3000)
+# Check frontend (through Nginx proxy)
+FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://$SERVER_IP/)
 if [ "$FRONTEND_STATUS" = "200" ]; then
     echo -e "${GREEN}✅ Frontend is accessible${NC}"
 else
@@ -86,6 +86,5 @@ else
 fi
 
 echo -e "${GREEN}🎉 Deployment complete!${NC}"
-echo "Frontend: http://$SERVER_IP:3000"
-echo "Backend: http://$SERVER_IP:8000"
-echo "API Health: http://$SERVER_IP:8000/api/health"
+echo "Application: http://$SERVER_IP"
+echo "API Health: http://$SERVER_IP/api/health"
