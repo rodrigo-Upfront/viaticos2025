@@ -16,15 +16,7 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
-COPY . .
-
-# Create storage directories
-RUN mkdir -p /app/storage/uploads/prepayments \
-    /app/storage/uploads/expenses \
-    /app/storage/exports/csv \
-    /app/storage/exports/excel \
-    /app/storage/exports/pdf
+# In development we bind-mount the source code; do not COPY it into the image
 
 # Expose port
 EXPOSE 8000

@@ -71,6 +71,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   useEffect(() => {
     const loadCounts = async () => {
+      if (!user) return; // Don't load data if user is not authenticated
       try {
         const [preps, exps, reps] = await Promise.all([
           prepaymentService.getPrepayments({ limit: 1 }),
@@ -83,7 +84,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       }
     };
     loadCounts();
-  }, [location.pathname]);
+  }, [location.pathname, user]);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);

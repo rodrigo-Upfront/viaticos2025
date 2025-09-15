@@ -16,7 +16,7 @@ services:
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile.prod
+      dockerfile: Dockerfile.fast
     environment:
       DATABASE_URL: postgresql://postgres:postgres123@database:5432/viaticos
       SECRET_KEY: your-super-secret-key-change-in-production-2024
@@ -27,12 +27,12 @@ services:
     ports:
       - "8000:8000"
     restart: unless-stopped
-    # No bind mounts in production
+    # Optimized for faster rebuilds
 
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile.prod
+      dockerfile: Dockerfile.fast
       args:
         REACT_APP_API_BASE_URL: http://161.35.39.205/api
     environment:

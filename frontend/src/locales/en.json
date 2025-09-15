@@ -92,7 +92,8 @@
     "saving": "Saving...",
     "select": "Select",
     "back": "Back",
-    "remove": "Remove"
+    "remove": "Remove",
+    "history": "History"
   },
   "approvals": {
     "pendingApprovals": "Pending Approvals",
@@ -173,7 +174,9 @@
     "approvedExpenses": "Expenses Approved",
     "approvedRepaid": "Trip Reimbursed",
     "approvedReturnedFunds": "Refund completed",
-    "pendingApproval": "Pending Approval"
+    "pendingApproval": "Pending Approval",
+    "submitted": "Submitted",
+    "resubmitted": "Resubmitted"
   },
   "prepayments": {
     "tripInformation": "Trip Information",
@@ -249,7 +252,10 @@
     "superuser": "Superuser",
     "approver": "Approver",
     "forcePasswordChange": "Force Password Change",
-    "update": "UPDATE"
+    "update": "UPDATE",
+    "accounting": "Accounting",
+    "treasury": "Treasury",
+    "manager": "Manager"
   },
   "configuration": {
     "title": "Configuration",
@@ -363,7 +369,20 @@
     "dateOutOfRange": "Date must be between {{startDate}} and {{endDate}}",
     "validDates": "Valid dates",
     "rejectionDate": "Rejection Date",
-    "rejectionReason": "Rejection Reason"
+    "rejectionReason": "Rejection Reason",
+    "rejectionHistory": "History",
+    "noRejectionHistory": "No rejection history for this expense.",
+    "approvalHistory": "History",
+    "noApprovalHistory": "No history entries.",
+    "historyDate": "Date",
+    "historyStage": "Stage",
+    "historyReason": "Reason",
+    "historyBy": "Responsible",
+    "historyReport": "Report",
+    "historyAction": "Action",
+    "historyFrom": "From",
+    "historyTo": "To",
+    "historyComments": "Comments"
   }
 }
 

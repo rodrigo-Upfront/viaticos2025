@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -15,9 +15,11 @@ import {
   Description as DocumentIcon,
   FlightTakeoff as TravelIcon,
   AccountBalance as MoneyIcon,
+  History as HistoryIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import apiClient from '../../services/apiClient';
+import EntityHistoryModal from '../forms/EntityHistoryModal';
 
 interface Prepayment {
   id?: number;
@@ -42,6 +44,7 @@ interface PrepaymentViewModalProps {
 
 const PrepaymentViewModal: React.FC<PrepaymentViewModalProps> = ({ open, onClose, prepayment }) => {
   const { t, i18n } = useTranslation();
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   if (!prepayment) {
     return null;
@@ -323,6 +326,11 @@ const PrepaymentViewModal: React.FC<PrepaymentViewModalProps> = ({ open, onClose
         </Grid>
       </DialogContent>
       <DialogActions>
+        {prepayment.id && (
+          <Button onClick={() => setHistoryOpen(true)} startIcon={<HistoryIcon />} color="inherit">
+            {t('common.history')}
+          </Button>
+        )}
         <Button onClick={onClose} color="primary">
           {t('common.close')}
         </Button>
@@ -339,6 +347,13 @@ const PrepaymentViewModal: React.FC<PrepaymentViewModalProps> = ({ open, onClose
           </Button>
         )}
       </DialogActions>
+      
+      <EntityHistoryModal
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        entityType="prepayment"
+        entityId={prepayment.id || null}
+      />
     </Dialog>
   );
 };

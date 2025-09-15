@@ -1,87 +1,117 @@
 #!/bin/bash
+# Comprehensive deployment script for Viaticos 2025
 
-# 🚀 Viaticos 2025 - DigitalOcean Deployment Script
+# Configuration
+SERVER_IP="161.35.39.205"
+SERVER_USER="root"
+APP_DIR="/var/www/viaticos2025"
 
-set -e
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
 
-echo "🚀 Viaticos 2025 - DigitalOcean Deployment"
-echo "==========================================="
-
-# Check if doctl is installed
-if ! command -v doctl &> /dev/null; then
-    echo "❌ doctl is not installed. Please install it first:"
-    echo "   brew install doctl"
-    exit 1
-fi
-
-# Check if user is authenticated
-if ! doctl auth list | grep -q "current"; then
-    echo "❌ You need to authenticate with DigitalOcean first:"
-    echo "   doctl auth init"
+# Function to show usage
+show_usage() {
+    echo -e "${BLUE}Viaticos 2025 Deployment Script${NC}"
+    echo "Usage: $0 [OPTION]"
     echo ""
-    echo "1. Go to https://cloud.digitalocean.com/account/api/tokens"
-    echo "2. Generate a new token"
-    echo "3. Run 'doctl auth init' and paste the token"
-    exit 1
-fi
-
-echo "✅ doctl is installed and authenticated"
-
-# Check if app.yaml exists
-if [ ! -f ".do/app.yaml" ]; then
-    echo "❌ .do/app.yaml not found"
-    exit 1
-fi
-
-echo "✅ Found deployment configuration"
-
-# Generate a strong JWT secret if not provided
-if [ -z "$JWT_SECRET" ]; then
-    JWT_SECRET=$(openssl rand -base64 32)
-    echo "🔑 Generated JWT secret: $JWT_SECRET"
-fi
-
-echo ""
-echo "📋 Pre-deployment checklist:"
-echo "   1. ✅ Code is ready for deployment"
-echo "   2. ✅ Docker configurations are prepared"
-echo "   3. ✅ Environment variables are configured"
-echo ""
-
-read -p "🤔 Do you want to proceed with deployment? (y/N): " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "❌ Deployment cancelled"
-    exit 1
-fi
-
-echo ""
-echo "🚀 Starting deployment..."
-
-# Deploy the app
-echo "📦 Creating app on DigitalOcean..."
-APP_ID=$(doctl apps create .do/app.yaml --format ID --no-header)
-
-if [ $? -eq 0 ]; then
-    echo "✅ App created successfully!"
-    echo "📱 App ID: $APP_ID"
+    echo "Options:"
+    echo "  fast     - Fast deployment with optimized rebuilds"
+    echo "  prod     - Full production deployment (secure, slower)"
+    echo "  simple   - Simple git pull and restart (fastest)"
+    echo "  help     - Show this help message"
     echo ""
-    echo "🔗 View your app:"
-    echo "   Web: https://cloud.digitalocean.com/apps/$APP_ID"
-    echo "   CLI: doctl apps get $APP_ID"
-    echo ""
-    echo "📊 Monitor deployment:"
-    echo "   doctl apps logs $APP_ID"
-    echo ""
-    echo "⏳ Deployment typically takes 5-10 minutes..."
-    echo ""
-    echo "🎉 Next steps after deployment completes:"
-    echo "   1. Set the JWT_SECRET environment variable"
-    echo "   2. Create initial super admin user"
-    echo "   3. Add initial countries and categories"
-    echo ""
-    echo "📖 See DEPLOYMENT.md for detailed post-deployment setup"
+    echo "Examples:"
+    echo "  $0 fast    # Fast deployment for development-like speed"
+    echo "  $0 prod    # Full production deployment"
+    echo "  $0 simple  # Quick restart without rebuild"
+}
+
+# Function for fast deployment
+fast_deploy() {
+    echo -e "${YELLOW}🚀 Fast Deployment Mode${NC}"
+    ./fast-deploy.sh
+}
+
+# Function for production deployment
+prod_deploy() {
+    echo -e "${YELLOW}🏭 Production Deployment Mode${NC}"
+    
+    echo -e "${YELLOW}📤 Pushing changes to GitHub...${NC}"
+    git add .
+    git commit -m "deploy: $(date '+%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
+    git push origin main
+    
+    echo -e "${YELLOW}📥 Deploying on server...${NC}"
+    ssh $SERVER_USER@$SERVER_IP "
+        cd $APP_DIR && 
+        echo '🔄 Pulling latest code...' &&
+        git pull origin main && 
+        echo '🔨 Rebuilding all services...' &&
+        docker-compose -f docker-compose.prod.yml build &&
+        docker-compose -f docker-compose.prod.yml up -d &&
+        echo '✅ Production deployment complete!'
+    "
+}
+
+# Function for simple deployment
+simple_deploy() {
+    echo -e "${YELLOW}⚡ Simple Deployment Mode${NC}"
+    ./simple-deploy.sh
+}
+
+# Main script logic
+case "$1" in
+    "fast")
+        fast_deploy
+        ;;
+    "prod")
+        prod_deploy
+        ;;
+    "simple")
+        simple_deploy
+        ;;
+    "help"|"-h"|"--help")
+        show_usage
+        ;;
+    "")
+        echo -e "${RED}❌ No deployment mode specified${NC}"
+        echo ""
+        show_usage
+        exit 1
+        ;;
+    *)
+        echo -e "${RED}❌ Unknown option: $1${NC}"
+        echo ""
+        show_usage
+        exit 1
+        ;;
+esac
+
+# Final verification
+echo -e "${YELLOW}🔍 Verifying deployment...${NC}"
+sleep 3
+
+# Check backend health
+BACKEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://$SERVER_IP:8000/api/health)
+if [ "$BACKEND_STATUS" = "200" ]; then
+    echo -e "${GREEN}✅ Backend is healthy${NC}"
 else
-    echo "❌ Deployment failed"
-    exit 1
+    echo -e "${RED}❌ Backend health check failed (HTTP $BACKEND_STATUS)${NC}"
 fi
+
+# Check frontend
+FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://$SERVER_IP:3000)
+if [ "$FRONTEND_STATUS" = "200" ]; then
+    echo -e "${GREEN}✅ Frontend is accessible${NC}"
+else
+    echo -e "${RED}❌ Frontend check failed (HTTP $FRONTEND_STATUS)${NC}"
+fi
+
+echo -e "${GREEN}🎉 Deployment verification complete!${NC}"
+echo "🌐 Frontend: http://$SERVER_IP:3000"
+echo "🔧 Backend: http://$SERVER_IP:8000"
+echo "💚 Health: http://$SERVER_IP:8000/api/health"

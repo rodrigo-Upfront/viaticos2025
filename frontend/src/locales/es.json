@@ -92,7 +92,8 @@
     "saving": "Guardando...",
     "select": "Seleccionar",
     "back": "Atrás",
-    "remove": "Quitar"
+    "remove": "Quitar",
+    "history": "Historial"
   },
   "approvals": {
     "pendingApprovals": "Aprobaciones Pendientes",
@@ -173,7 +174,9 @@
     "approvedRepaid": "Viaje Reembolsado",
     "approvedReturnedFunds": "Devolución Realizada",
     "pendingApproval": "Pendiente de Aprobación",
-    "revisionContabilidad": "Revisión Contabilidad"
+    "revisionContabilidad": "Revisión Contabilidad",
+    "submitted": "Enviado",
+    "resubmitted": "Reenviado"
   },
   "prepayments": {
     "tripInformation": "Información del Viaje",
@@ -249,7 +252,10 @@
     "superuser": "Superusuario",
     "approver": "Aprobador",
     "forcePasswordChange": "Forzar Cambio de Contraseña",
-    "update": "ACTUALIZAR"
+    "update": "ACTUALIZAR",
+    "accounting": "Contabilidad",
+    "treasury": "Tesorería",
+    "manager": "Gerente"
   },
   "configuration": {
     "title": "Configuración",
@@ -363,7 +369,20 @@
     "dateOutOfRange": "La fecha debe estar entre {{startDate}} y {{endDate}}",
     "validDates": "Fechas válidas",
     "rejectionDate": "Fecha de Rechazo",
-    "rejectionReason": "Motivo del Rechazo"
+    "rejectionReason": "Motivo del Rechazo",
+    "rejectionHistory": "Historial",
+    "noRejectionHistory": "No hay historial de rechazos para este gasto.",
+    "approvalHistory": "Historial",
+    "noApprovalHistory": "No hay entradas en el historial.",
+    "historyDate": "Fecha",
+    "historyStage": "Etapa",
+    "historyReason": "Motivo",
+    "historyBy": "Responsable",
+    "historyReport": "Reporte",
+    "historyAction": "Acción",
+    "historyFrom": "De",
+    "historyTo": "A",
+    "historyComments": "Comentarios"
   }
 }
 

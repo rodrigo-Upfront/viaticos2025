@@ -343,7 +343,7 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
       <DialogActions>
         {expense?.id && (
           <Button onClick={() => setHistoryOpen(true)} startIcon={<HistoryIcon />} color="inherit">
-            Rejection history
+            {t('expenses.rejectionHistory')}
           </Button>
         )}
         <Button onClick={onClose} color="primary">

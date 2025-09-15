@@ -3,27 +3,14 @@ FROM node:18-alpine
 # Set working directory
 WORKDIR /app
 
-# Copy package files
+# Copy only package files to leverage caching
 COPY package*.json ./
 
-# Install dependencies
+# Install dependencies (dev server will be used, source bind-mounted)
 RUN npm install
 
-# Copy application code
-COPY . .
-
-# Accept build argument for API URL
-ARG REACT_APP_API_BASE_URL
-ENV REACT_APP_API_BASE_URL=$REACT_APP_API_BASE_URL
-
-# Build the app for production
-RUN npm run build
-
-# Install serve to serve the built app
-RUN npm install -g serve
-
-# Expose port
+# Expose port for CRA dev server
 EXPOSE 3000
 
-# Serve the built app
-CMD ["serve", "-s", "build", "-l", "3000"]
+# Default command runs dev server; code is provided via bind mount
+CMD ["npm", "start"]

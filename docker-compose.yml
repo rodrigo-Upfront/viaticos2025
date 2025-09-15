@@ -59,14 +59,16 @@ services:
       dockerfile: Dockerfile
     container_name: viaticos_frontend
     environment:
-      - REACT_APP_API_URL=http://localhost:8000/api
+      - REACT_APP_API_BASE_URL=http://localhost:8000/api
       - REACT_APP_UPLOAD_MAX_SIZE=10485760
       - GENERATE_SOURCEMAP=true
+      - CHOKIDAR_USEPOLLING=true
     ports:
       - "3000:3000"
-    # volumes: # Removed volume mount to avoid overwriting built files
-    #   - ./frontend:/app
-    #   - /app/node_modules
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: ["sh", "-c", "npm install && npm start"]
     depends_on:
       - backend
     networks:

@@ -125,3 +125,39 @@ class ReportApprovalResponse(BaseModel):
     status: str
     message: str
     expense_updates: Optional[Dict[int, str]] = None  # expense_id -> new_status
+
+
+class ExpenseRejectionHistoryItem(BaseModel):
+    """Schema for individual expense rejection history item"""
+    created_at: str
+    approval_stage: str
+    rejection_reason: str
+    user_id: int
+    user_name: Optional[str] = None
+    user_role: str
+    report_id: int
+    report_name: Optional[str] = None
+
+
+class ExpenseRejectionHistoryResponse(BaseModel):
+    """Schema for expense rejection history response"""
+    items: List[ExpenseRejectionHistoryItem]
+    total: int
+
+
+class ApprovalHistoryItem(BaseModel):
+    """Schema for individual approval history item"""
+    created_at: str
+    user_id: int
+    user_name: Optional[str] = None
+    user_role: str
+    action: str
+    from_status: str
+    to_status: str
+    comments: Optional[str] = None
+
+
+class ApprovalHistoryResponse(BaseModel):
+    """Schema for approval history response"""
+    items: List[ApprovalHistoryItem]
+    total: int

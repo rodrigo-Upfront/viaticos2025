@@ -24,6 +24,7 @@ export interface ExpenseRejectionHistoryItem {
   user_name: string | null;
   user_role: string | null;
   report_id: number | null;
+  report_name: string | null;
 }
 
 export interface ExpenseRejectionHistoryResponse {

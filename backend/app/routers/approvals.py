@@ -24,12 +24,13 @@ from app.schemas.approval_schemas import (
     ApprovalCreate, ApprovalResponse, ApprovalList, 
     ApprovalAction, PendingApprovalItem, PendingApprovalsList,
     ReportApprovalAction, ReportApprovalResponse, ExpenseRejection,
-    QuickApprovalAction, ExpenseApprovalAction
+    QuickApprovalAction, ExpenseApprovalAction,
+    ExpenseRejectionHistoryResponse, ApprovalHistoryResponse
 )
 
 router = APIRouter()
 auth_service = AuthService()
-@router.get("/history")
+@router.get("/history", response_model=ApprovalHistoryResponse)
 async def get_entity_history(
     entity_type: str,
     entity_id: int,
@@ -77,7 +78,7 @@ async def get_entity_history(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to fetch history: {str(e)}")
 
 
-@router.get("/expenses/{expense_id}/rejection-history")
+@router.get("/expenses/{expense_id}/rejection-history", response_model=ExpenseRejectionHistoryResponse)
 async def get_expense_rejection_history(
     expense_id: int,
     current_user: User = Depends(get_current_user),
@@ -88,12 +89,16 @@ async def get_expense_rejection_history(
     Returns: created_at, approval_stage, rejection_reason, user (name/role), report_id.
     """
     try:
-        q = db.query(ExpenseRejectionHistory, User).join(User, ExpenseRejectionHistory.user_id == User.id, isouter=True)
+        q = db.query(ExpenseRejectionHistory, User, TravelExpenseReport).join(
+            User, ExpenseRejectionHistory.user_id == User.id, isouter=True
+        ).join(
+            TravelExpenseReport, ExpenseRejectionHistory.report_id == TravelExpenseReport.id, isouter=True
+        )
         q = q.filter(ExpenseRejectionHistory.expense_id == expense_id)
         rows = q.order_by(ExpenseRejectionHistory.created_at.asc()).all()
 
         def to_dict(row):
-            h, u = row
+            h, u, r = row
             return {
                 "created_at": h.created_at.isoformat() if h.created_at else None,
                 "approval_stage": h.approval_stage,
@@ -102,6 +107,7 @@ async def get_expense_rejection_history(
                 "user_name": f"{u.name} {u.surname}" if u else None,
                 "user_role": h.user_role,
                 "report_id": h.report_id,
+                "report_name": r.reason if (r and r.reason and r.reason.strip()) else f"Report #{h.report_id}" if r else None,
             }
 
         return {"items": [to_dict(r) for r in rows], "total": len(rows)}
@@ -1335,6 +1341,16 @@ async def reject_expense(
         expense.status = ExpenseStatus.REJECTED
         expense.rejection_reason = action_data.rejection_reason
         expense.updated_at = datetime.utcnow()
+
+        # Save rejection history
+        db.add(ExpenseRejectionHistory(
+            expense_id=expense.id,
+            report_id=report.id,
+            user_id=current_user.id,
+            user_role=current_user.profile.value if current_user.profile else "unknown",
+            rejection_reason=action_data.rejection_reason,
+            approval_stage=report.status.value
+        ))
 
         # Check if all expenses in the report are now processed
         all_expenses = report.expenses

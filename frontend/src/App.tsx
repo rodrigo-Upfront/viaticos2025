@@ -50,6 +50,8 @@ function App() {
         <LanguageProvider>
           <AuthProvider>
             <Router>
+              {/* DEV HOT RELOAD TEST: If you see v1.0.2 here, frontend live reload works */}
+              <div style={{display:'none'}}>dev-version:v1.0.1</div>
               <Routes>
                 <Route path="/login" element={<LoginPage />} />
                 <Route

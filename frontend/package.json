@@ -63,5 +63,6 @@
   "proxy": "http://backend:8000",
   "devDependencies": {
     "@types/uuid": "^10.0.0"
-  }
+  },
+  "devChanged": 1
 }
