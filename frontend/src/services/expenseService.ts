@@ -20,7 +20,7 @@ export interface Expense {
   document_number: string;
   taxable?: string;
   document_file?: string;
-  comments?: string;
+  comments: string;
   rejection_reason?: string;
   status: string;
   created_at: string;
@@ -47,7 +47,7 @@ export interface ExpenseCreate {
   document_number: string;
   taxable?: string;
   document_file?: string;
-  comments?: string;
+  comments: string;
 }
 
 export interface ExpenseUpdate {
@@ -63,7 +63,7 @@ export interface ExpenseUpdate {
   document_number?: string;
   taxable?: string;
   document_file?: string;
-  comments?: string;
+  comments: string;
 }
 
 export interface ExpenseListResponse {
@@ -75,7 +75,7 @@ export interface ExpenseListResponse {
 
 export interface ExpenseStatusUpdate {
   status: string;
-  comments?: string;
+  comments: string;
 }
 
 export class ExpenseService {

@@ -65,7 +65,7 @@ interface Expense {
   document_number: string;
   taxable: 'Si' | 'No';
   document_file?: string;
-  comments?: string;
+  comments: string;
   status: 'pending' | 'in_process' | 'approved' | 'rejected';
   rejection_reason?: string;
   updated_at?: string;

@@ -349,9 +349,6 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
         <Button onClick={onClose} color="primary">
 {t('common.close')}
         </Button>
-        <Button variant="outlined" color="primary">
-{t('common.print')}
-        </Button>
         {expense.document_file && (
           <Button 
             variant="contained" 

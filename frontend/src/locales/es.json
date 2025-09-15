@@ -95,6 +95,17 @@
     "remove": "Quitar",
     "history": "Historial"
   },
+  "validation": {
+    "required": "Este campo es requerido",
+    "categoryRequired": "La categoría es requerida",
+    "reportRequired": "El reporte de gastos de viaje es requerido",
+    "purposeRequired": "El propósito es requerido",
+    "supplierRequiredBoleta": "El nombre del proveedor es requerido para Boleta",
+    "supplierRequiredFactura": "El proveedor es requerido para Factura",
+    "amountRequired": "El monto debe ser mayor a 0",
+    "documentNumberRequired": "El número de documento es requerido",
+    "commentsRequired": "Los comentarios son requeridos"
+  },
   "approvals": {
     "pendingApprovals": "Aprobaciones Pendientes",
     "prepaymentsPending": "Anticipos Pendientes",

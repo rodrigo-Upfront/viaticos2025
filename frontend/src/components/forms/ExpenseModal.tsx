@@ -46,7 +46,7 @@ interface Expense {
   document_number: string;
   taxable: 'Si' | 'No';
   document_file?: string;
-  comments?: string;
+  comments: string;
   status: 'pending' | 'in_process' | 'approved' | 'rejected';
 }
 
@@ -587,7 +587,9 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
       newErrors.document_number = 'Document number is required';
     }
 
-
+    if (!formData.comments?.trim()) {
+      newErrors.comments = 'Comments are required';
+    }
 
     // Update errors state
     setErrors(newErrors);
@@ -837,10 +839,13 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
             label={t('common.comments')}
             value={formData.comments}
             onChange={handleChange('comments')}
+            error={!!errors.comments}
+            helperText={errors.comments}
             margin="normal"
             multiline
             rows={3}
             placeholder="Additional comments about this expense..."
+            required
           />
 
           <Box sx={{ mt: 2 }}>
