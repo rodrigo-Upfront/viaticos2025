@@ -1,0 +1,63 @@
+version: '3.3'
+
+# QA/Testing Environment with Hot Reload for Frontend
+# Backend uses rebuilds for safety, Frontend uses bind mounts for speed
+
+services:
+  database:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: viaticos
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres123@database:5432/viaticos
+      SECRET_KEY: your-super-secret-key-change-in-production-2024
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+    depends_on:
+      - database
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    # Backend: Still uses builds for safety (API changes need rebuilds)
+
+  frontend:
+    image: node:18-alpine
+    working_dir: /app
+    environment:
+      REACT_APP_API_BASE_URL: http://161.35.39.205/api
+      CHOKIDAR_USEPOLLING: true
+      CI: true
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    volumes:
+      - ./frontend:/app  # BIND MOUNT - instant UI changes!
+      - frontend_deps:/app/node_modules
+    command: >
+      sh -c "
+        echo 'Installing dependencies...' &&
+        npm install &&
+        echo 'Building production build with watch...' &&
+        npm run build &&
+        echo 'Starting nginx to serve built files...' &&
+        npx serve -s build -l 3000
+      "
+    # Frontend: Hot reload for instant UI testing
+
+volumes:
+  postgres_data:
+  frontend_deps:

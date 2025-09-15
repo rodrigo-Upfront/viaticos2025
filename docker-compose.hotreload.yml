@@ -1,0 +1,66 @@
+version: '3.3'
+
+# QA Hot Reload Environment
+# Changes from qa-deploy branch are reflected instantly (no rebuilds)
+
+services:
+  database:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: viaticos
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    restart: unless-stopped
+
+  backend:
+    image: python:3.11-slim
+    working_dir: /app
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres123@database:5432/viaticos
+      SECRET_KEY: your-super-secret-key-change-in-production-2024
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+    depends_on:
+      - database
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    volumes:
+      - ./backend:/app  # BIND MOUNT - live code changes
+      - /app/storage    # Persistent storage
+    command: >
+      bash -c "
+        apt-get update && 
+        apt-get install -y gcc libpq-dev curl && 
+        pip install -r requirements.txt &&
+        mkdir -p /app/storage/uploads /app/storage/exports &&
+        uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+      "
+
+  frontend:
+    image: node:18-alpine
+    working_dir: /app
+    environment:
+      REACT_APP_API_BASE_URL: http://161.35.39.205/api
+      CHOKIDAR_USEPOLLING: true
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    volumes:
+      - ./frontend:/app           # BIND MOUNT - live code changes
+      - /app/node_modules         # Exclude node_modules from bind mount
+    command: >
+      sh -c "
+        npm install &&
+        npm run build &&
+        npx serve -s build -l 3000
+      "
+
+volumes:
+  postgres_data:
