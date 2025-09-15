@@ -311,14 +311,24 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
         // Store travel dates for validation
         fetchTravelDatesForReport(reportId);
         
+        // Determine country and currency from report (inherited from prepayment or set manually)
+        const countryName = reportDetails.prepayment_destination || reportDetails.reimbursement_country || 'Country not available';
+        const currencyCode = reportDetails.currency || 'Currency not available';
+        
+        // Find the country ID from the countries list
+        const matchingCountry = countries.find(c => c.name === countryName);
+        const countryId = matchingCountry ? matchingCountry.id : 1; // Default to first country if not found
+        
         setFormData(prev => ({
           ...prev,
           travel_expense_report_id: reportId,
           travel_expense_report: selectedReport?.displayName || '',
-          country: reportDetails.prepayment_destination || 'Country not found',
-          currency: reportDetails.currency || 'Currency not found'
+          country_id: countryId,
+          country: countryName,
+          currency: currencyCode
         }));
       } catch (error) {
+        console.error('Error loading report details:', error);
         setFormData(prev => ({
           ...prev,
           travel_expense_report_id: reportId,
