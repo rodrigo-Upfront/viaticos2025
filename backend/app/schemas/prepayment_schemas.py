@@ -4,7 +4,7 @@ Pydantic models for prepayment data validation and serialization
 """
 
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from datetime import datetime, date
 from decimal import Decimal
 
@@ -17,7 +17,7 @@ class PrepaymentBase(BaseModel):
     end_date: date = Field(..., description="End date of travel")
     currency_id: int = Field(..., description="Currency ID")
     amount: Decimal = Field(..., gt=0, description="Prepayment amount")
-    justification_file: Optional[str] = Field(None, max_length=500, description="Justification file path")
+    justification_files: Optional[List[Dict[str, Any]]] = Field(None, description="List of justification files: [{'filename': '...', 'original_name': '...', 'file_path': '...'}]")
     comment: Optional[str] = Field(None, description="Additional comments")
     rejection_reason: Optional[str] = Field(None, description="Rejection reason (set when rejected)")
 
@@ -35,7 +35,7 @@ class PrepaymentUpdate(PrepaymentBase):
     end_date: Optional[date] = Field(None)
     currency_id: Optional[int] = Field(None)
     amount: Optional[Decimal] = Field(None, gt=0)
-    justification_file: Optional[str] = Field(None, max_length=500)
+    justification_files: Optional[List[Dict[str, Any]]] = Field(None)
     comment: Optional[str] = Field(None)
     rejection_reason: Optional[str] = Field(None)
 
@@ -67,7 +67,7 @@ class PrepaymentResponse(PrepaymentBase):
             end_date=obj.end_date,
             currency_id=obj.currency_id,
             amount=obj.amount,
-            justification_file=obj.justification_file,
+            justification_files=obj.justification_files,
             comment=obj.comment,
             rejection_reason=getattr(obj, 'rejection_reason', None),
             status=obj.status.value if obj.status else "pending",

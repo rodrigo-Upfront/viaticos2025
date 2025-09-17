@@ -15,7 +15,7 @@ export interface Prepayment {
   currency_code?: string;
   currency_name?: string;
   amount: string;
-  justification_file?: string;
+  justification_files?: Array<{filename: string, original_name: string, file_path: string}>;
   comment?: string;
   status: string;
   requesting_user_id: number;
@@ -32,7 +32,7 @@ export interface PrepaymentCreate {
   end_date: string;
   currency_id: number;
   amount: number;
-  justification_file?: string;
+  justification_files?: Array<{filename: string, original_name: string, file_path: string}>;
   comment?: string;
 }
 
@@ -43,7 +43,7 @@ export interface PrepaymentUpdate {
   end_date?: string;
   currency_id?: number;
   amount?: number;
-  justification_file?: string;
+  justification_files?: Array<{filename: string, original_name: string, file_path: string}>;
   comment?: string;
 }
 
@@ -144,6 +144,33 @@ export class PrepaymentService {
    */
   async deletePrepayment(id: number): Promise<void> {
     await apiClient.delete(`${this.basePath}/${id}`);
+  }
+
+  /**
+   * Upload multiple files for a prepayment (replaces existing files)
+   */
+  async uploadMultipleFiles(id: number, files: File[]): Promise<{ message: string, files: Array<{filename: string, original_name: string, file_path: string}> }> {
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append('files', file);
+    });
+    
+    const response = await apiClient.post(`${this.basePath}/${id}/upload-multiple-files`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  }
+
+  /**
+   * Download a specific file from a prepayment
+   */
+  async downloadFile(prepaymentId: number, filename: string): Promise<Blob> {
+    const response = await apiClient.get(`${this.basePath}/${prepaymentId}/download/${filename}`, {
+      responseType: 'blob',
+    });
+    return response.data;
   }
 }
 

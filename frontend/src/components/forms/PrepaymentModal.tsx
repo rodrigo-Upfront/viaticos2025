@@ -36,7 +36,7 @@ interface Prepayment {
   currency_id?: number;
   comment: string;
   rejection_reason?: string;
-  justification_file?: string;
+  justification_files?: Array<{filename: string, original_name: string, file_path: string}>;
   status: string;
 }
 
@@ -48,7 +48,7 @@ interface Country {
 interface PrepaymentModalProps {
   open: boolean;
   onClose: () => void;
-  onSave: (prepayment: Prepayment, file?: File) => Promise<void>;
+  onSave: (prepayment: Prepayment, files?: File[]) => Promise<void>;
   prepayment?: Prepayment;
   mode: 'create' | 'edit';
   countries: Country[];
@@ -78,20 +78,20 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
     currency_id: undefined,
     comment: '',
     rejection_reason: undefined,
-    justification_file: '',
+    justification_files: [],
     status: 'pending'
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [fileUploading, setFileUploading] = useState(false);
-  const [hasNewFile, setHasNewFile] = useState(false); // Track if user selected a new file
+  const [hasNewFiles, setHasNewFiles] = useState(false); // Track if user selected new files
 
   useEffect(() => {
     if (prepayment && mode === 'edit') {
       setFormData(prepayment);
-      // Don't set selectedFile for existing files - only for newly selected ones
-      setSelectedFile(null);
-      setHasNewFile(false);
+      // Don't set selectedFiles for existing files - only for newly selected ones
+      setSelectedFiles([]);
+      setHasNewFiles(false);
     } else {
       setFormData({
         reason: '',
@@ -104,11 +104,11 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
         currency_id: undefined,
         comment: '',
         rejection_reason: undefined,
-        justification_file: '',
+        justification_files: [],
         status: 'pending'
       });
-      setSelectedFile(null);
-      setHasNewFile(false);
+      setSelectedFiles([]);
+      setHasNewFiles(false);
     }
     setErrors({});
   }, [prepayment, mode, open]);
@@ -176,20 +176,34 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
     }
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // Clear previous file errors
+  const handleMultipleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    
+    if (files.length === 0) return;
+
+    // Clear previous file errors
+    setErrors(prev => ({
+      ...prev,
+      justification_files: ''
+    }));
+
+    // Validate number of files (max 5)
+    if (files.length > 5) {
       setErrors(prev => ({
         ...prev,
-        justification_file: ''
+        justification_files: `Maximum 5 files allowed (selected ${files.length})`
       }));
+      event.target.value = ''; // Clear the input
+      return;
+    }
 
+    // Validate each file
+    for (const file of files) {
       // File size validation (10MB = 10 * 1024 * 1024 bytes)
       if (file.size > 10 * 1024 * 1024) {
         setErrors(prev => ({
           ...prev,
-          justification_file: t('validation.fileSizeLimit')
+          justification_files: `File "${file.name}" exceeds 10MB limit`
         }));
         event.target.value = ''; // Clear the input
         return;
@@ -200,25 +214,22 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
         'application/pdf',
         'image/jpeg',
         'image/jpg', 
-        'image/png',
-        'image/gif',
-        'image/bmp',
-        'image/webp'
+        'image/png'
       ];
       
       if (!allowedTypes.includes(file.type)) {
         setErrors(prev => ({
           ...prev,
-          justification_file: t('validation.fileTypeInvalid')
+          justification_files: `File "${file.name}" type not allowed. Only PDF and images allowed.`
         }));
         event.target.value = ''; // Clear the input
         return;
       }
-
-      setSelectedFile(file);
-      setHasNewFile(true); // Mark that user selected a new file
-      // Don't update justification_file in formData yet - will be set after upload
     }
+
+    // All files are valid, set them
+    setSelectedFiles(files);
+    setHasNewFiles(true);
   };
 
   const uploadFile = async (prepaymentId: number, file: File): Promise<string> => {
@@ -333,9 +344,9 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
           amount: parseFloat(formData.amount as string) || 0
         };
         
-        // Only pass the file if it's a new file (not when editing existing prepayment without new file)
-        const fileToUpload = hasNewFile && selectedFile ? selectedFile : undefined;
-        await onSave(prepaymentData, fileToUpload);
+        // Only pass the files if they are new files (not when editing existing prepayment without new files)
+        const filesToUpload = hasNewFiles && selectedFiles.length > 0 ? selectedFiles : undefined;
+        await onSave(prepaymentData, filesToUpload);
         onClose();
       } catch (error) {
         console.error('Failed to save prepayment:', error);
@@ -354,11 +365,12 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
       amount: '',
       currency: 'USD',
       comment: '',
-      justification_file: '',
+      justification_files: [],
       status: 'pending'
     });
     setErrors({});
-    setSelectedFile(null);
+    setSelectedFiles([]);
+    setHasNewFiles(false);
     onClose();
   };
 
@@ -487,74 +499,91 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
                 variant="outlined"
                 component="label"
                 startIcon={<InputAdornment position="start">📎</InputAdornment>}
-                color={errors.justification_file ? 'error' : 'primary'}
+                color={errors.justification_files ? 'error' : 'primary'}
               >
-{t('expenses.chooseFile')}
+{selectedFiles.length > 0 ? `${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''} selected` : 'Choose Files (max 5)'}
                 <input
                   type="file"
+                  multiple
                   hidden
-                  accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp,.webp"
-                  onChange={handleFileChange}
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={handleMultipleFileChange}
                 />
               </Button>
               
               {/* Show file validation error */}
-              {errors.justification_file && (
+              {errors.justification_files && (
                 <Typography variant="caption" color="error" sx={{ ml: 1 }}>
-                  {errors.justification_file}
+                  {errors.justification_files}
                 </Typography>
               )}
               
-              {/* Show existing file from prepayment (when editing) */}
-              {mode === 'edit' && prepayment?.justification_file && (
-                <Box 
-                  display="flex" 
-                  alignItems="center" 
-                  sx={{ 
-                    cursor: 'pointer', 
-                    p: 1, 
-                    border: 1, 
-                    borderColor: 'divider', 
-                    borderRadius: 1,
-                    width: '100%',
-                    '&:hover': { 
-                      bgcolor: 'action.hover',
-                      borderColor: 'primary.main'
-                    }
-                  }}
-                  onClick={() => handleFileDownload(prepayment.justification_file!)}
-                >
-                  <DocumentIcon sx={{ mr: 1, color: 'primary.main' }} />
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="body2" color="primary" sx={{ fontWeight: 'medium' }}>
-                      {prepayment.justification_file}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Existing file • Click to download
-                    </Typography>
-                  </Box>
-                  <IconButton 
-                    size="small" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleFileDownload(prepayment.justification_file!);
-                    }}
-                  >
-                    <DownloadIcon fontSize="small" />
-                  </IconButton>
+              {/* Show existing files from prepayment (when editing) */}
+              {mode === 'edit' && prepayment?.justification_files && prepayment.justification_files.length > 0 && (
+                <Box sx={{ mt: 1 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    Existing files ({prepayment.justification_files.length}):
+                  </Typography>
+                  {prepayment.justification_files.map((file, index) => (
+                    <Box 
+                      key={index}
+                      display="flex" 
+                      alignItems="center" 
+                      sx={{ 
+                        cursor: 'pointer', 
+                        p: 1, 
+                        border: 1, 
+                        borderColor: 'divider', 
+                        borderRadius: 1,
+                        width: '100%',
+                        mb: index < prepayment.justification_files!.length - 1 ? 1 : 0,
+                        '&:hover': { 
+                          bgcolor: 'action.hover',
+                          borderColor: 'primary.main'
+                        }
+                      }}
+                      onClick={() => handleFileDownload(file.filename)}
+                    >
+                      <DocumentIcon sx={{ mr: 1, color: 'primary.main' }} />
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="body2" color="primary" sx={{ fontWeight: 'medium' }}>
+                          {file.original_name || file.filename}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Existing file {index + 1} • Click to download
+                        </Typography>
+                      </Box>
+                      <IconButton 
+                        size="small" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleFileDownload(file.filename);
+                        }}
+                      >
+                        <DownloadIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  ))}
                 </Box>
               )}
               
-              {/* Show newly selected file */}
-              {selectedFile && hasNewFile && (
-                <Box display="flex" alignItems="center" sx={{ mt: 1 }}>
-                  <DocumentIcon sx={{ mr: 1, color: 'success.main' }} />
-                  <Typography variant="body2" color="success.main" sx={{ fontWeight: 'medium' }}>
-                    {selectedFile.name}
+              {/* Show newly selected files */}
+              {selectedFiles.length > 0 && hasNewFiles && (
+                <Box sx={{ mt: 1 }}>
+                  <Typography variant="body2" color="success.main" sx={{ fontWeight: 'medium', mb: 1 }}>
+                    {selectedFiles.length} file{selectedFiles.length > 1 ? 's' : ''} selected:
                   </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
-                    (New file selected)
-                  </Typography>
+                  {selectedFiles.map((file, index) => (
+                    <Box key={index} display="flex" alignItems="center" sx={{ mt: 0.5 }}>
+                      <DocumentIcon sx={{ mr: 1, color: 'success.main' }} />
+                      <Typography variant="body2" color="success.main">
+                        {file.name}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                        ({(file.size / 1024 / 1024).toFixed(1)} MB)
+                      </Typography>
+                    </Box>
+                  ))}
                 </Box>
               )}
             </Box>

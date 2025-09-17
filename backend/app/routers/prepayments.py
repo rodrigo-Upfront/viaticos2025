@@ -502,15 +502,22 @@ async def download_prepayment_file(
             detail="Not enough permissions to download this file"
         )
     
-    # Verify the file matches the prepayment's justification file
-    if prepayment.justification_file != file_name:
+    # Verify the file exists in the prepayment's justification files
+    found_file = None
+    if prepayment.justification_files:
+        for file_info in prepayment.justification_files:
+            if file_info.get('filename') == file_name:
+                found_file = file_info
+                break
+    
+    if not found_file:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="File not found for this prepayment"
         )
     
-    # Construct file path (assuming files are stored in storage/uploads/prepayments/)
-    file_path = os.path.join("storage", "uploads", "prepayments", file_name)
+    # Use stored file path if available, otherwise construct default path
+    file_path = found_file.get('file_path') or os.path.join("storage", "uploads", "prepayments", file_name)
     
     if not os.path.exists(file_path):
         raise HTTPException(
@@ -581,8 +588,12 @@ async def upload_prepayment_file(
         with open(file_path, "wb") as buffer:
             buffer.write(file_content)
         
-        # Update prepayment with new file
-        prepayment.justification_file = unique_filename
+        # For backwards compatibility, update justification_files as single file array
+        prepayment.justification_files = [{
+            'filename': unique_filename,
+            'original_name': file.filename,
+            'file_path': file_path
+        }]
         prepayment.updated_at = datetime.utcnow()
         db.commit()
         
@@ -601,5 +612,113 @@ async def upload_prepayment_file(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to upload file: {str(e)}"
+        )
+
+
+@router.post("/{prepayment_id}/upload-multiple-files")
+async def upload_multiple_prepayment_files(
+    prepayment_id: int,
+    files: List[UploadFile] = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Upload multiple justification files for a prepayment (max 5 files, 10MB each)"""
+    
+    # Validate number of files
+    if len(files) > 5:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Maximum 5 files allowed"
+        )
+    
+    # Get the prepayment
+    prepayment = db.query(Prepayment).filter(Prepayment.id == prepayment_id).first()
+    
+    if not prepayment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Prepayment not found"
+        )
+    
+    # Check permissions - users can only upload files for their own prepayments, or admin can upload any
+    if not (current_user.is_superuser or prepayment.requesting_user_id == current_user.id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions to upload files for this prepayment"
+        )
+    
+    # Validate each file
+    allowed_extensions = {'.pdf', '.jpg', '.jpeg', '.png'}
+    max_size = 10 * 1024 * 1024  # 10MB
+    file_data = []
+    
+    for file in files:
+        # Validate file type
+        file_extension = os.path.splitext(file.filename or '')[1].lower()
+        if file_extension not in allowed_extensions:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"File type not allowed for '{file.filename}'. Allowed types: {', '.join(allowed_extensions)}"
+            )
+        
+        # Read and validate file size
+        file_content = await file.read()
+        if len(file_content) > max_size:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail=f"File '{file.filename}' is too large. Maximum size is 10MB"
+            )
+        
+        file_data.append({
+            'content': file_content,
+            'filename': file.filename,
+            'extension': file_extension
+        })
+    
+    try:
+        # Create upload directory
+        upload_dir = "storage/uploads/prepayments"
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        # Save all files and build file info array
+        uploaded_files = []
+        saved_file_paths = []  # Track for cleanup on error
+        
+        for file_info in file_data:
+            # Generate unique filename to avoid conflicts
+            unique_filename = f"{uuid.uuid4()}_{file_info['filename']}"
+            file_path = os.path.join(upload_dir, unique_filename)
+            
+            # Save file to disk
+            with open(file_path, "wb") as buffer:
+                buffer.write(file_info['content'])
+            
+            saved_file_paths.append(file_path)
+            uploaded_files.append({
+                'filename': unique_filename,
+                'original_name': file_info['filename'],
+                'file_path': file_path
+            })
+        
+        # Update prepayment with new files (replace existing files)
+        prepayment.justification_files = uploaded_files
+        prepayment.updated_at = datetime.utcnow()
+        db.commit()
+        
+        return {
+            "message": f"Successfully uploaded {len(uploaded_files)} files",
+            "files": uploaded_files
+        }
+        
+    except Exception as e:
+        # Clean up files if database update fails
+        for file_path in saved_file_paths:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to upload files: {str(e)}"
         )
 

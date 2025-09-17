@@ -31,7 +31,7 @@ interface Prepayment {
   amount: string | number;
   currency: string;
   comment: string;
-  justification_file?: string;
+  justification_files?: Array<{filename: string, original_name: string, file_path: string}>;
   status: string;
   rejection_reason?: string;
 }
@@ -259,39 +259,42 @@ const PrepaymentViewModal: React.FC<PrepaymentViewModalProps> = ({ open, onClose
             </Grid>
           )}
 
-          {/* Justification File */}
-          {prepayment.justification_file && (
+          {/* Justification Files */}
+          {prepayment.justification_files && prepayment.justification_files.length > 0 && (
             <Grid item xs={12}>
               <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
-                {t('prepayments.justificationFile')}
+                {t('prepayments.justificationFile')} ({prepayment.justification_files.length} file{prepayment.justification_files.length > 1 ? 's' : ''})
               </Typography>
-              <Box 
-                display="flex" 
-                alignItems="center" 
-                sx={{ 
-                  cursor: 'pointer', 
-                  p: 1.5, 
-                  border: 1, 
-                  borderColor: 'divider', 
-                  borderRadius: 1,
-                  mb: 1.5,
-                  '&:hover': { 
-                    bgcolor: 'action.hover',
-                    borderColor: 'primary.main'
-                  }
-                }}
-                onClick={() => handleFileDownload(prepayment.justification_file!)}
-              >
-                <DocumentIcon sx={{ mr: 2, color: 'primary.main', fontSize: 30 }} />
-                <Box>
-                  <Typography variant="body1" color="primary" sx={{ fontWeight: 'medium' }}>
-                    {prepayment.justification_file}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Click to download • Justification attachment
-                  </Typography>
+              {prepayment.justification_files.map((file, index) => (
+                <Box 
+                  key={index}
+                  display="flex" 
+                  alignItems="center" 
+                  sx={{ 
+                    cursor: 'pointer', 
+                    p: 1.5, 
+                    border: 1, 
+                    borderColor: 'divider', 
+                    borderRadius: 1,
+                    mb: index < prepayment.justification_files!.length - 1 ? 1 : 1.5,
+                    '&:hover': { 
+                      bgcolor: 'action.hover',
+                      borderColor: 'primary.main'
+                    }
+                  }}
+                  onClick={() => handleFileDownload(file.filename)}
+                >
+                  <DocumentIcon sx={{ mr: 2, color: 'primary.main', fontSize: 30 }} />
+                  <Box>
+                    <Typography variant="body1" color="primary" sx={{ fontWeight: 'medium' }}>
+                      {file.original_name || file.filename}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Click to download • Justification attachment {index + 1}
+                    </Typography>
+                  </Box>
                 </Box>
-              </Box>
+              ))}
             </Grid>
           )}
 
@@ -334,15 +337,6 @@ const PrepaymentViewModal: React.FC<PrepaymentViewModalProps> = ({ open, onClose
         <Button onClick={onClose} color="primary">
           {t('common.close')}
         </Button>
-        {prepayment.justification_file && (
-          <Button 
-            variant="contained" 
-            color="primary"
-            onClick={() => handleFileDownload(prepayment.justification_file!)}
-          >
-            {t('common.downloadFile')}
-          </Button>
-        )}
       </DialogActions>
       
       <EntityHistoryModal

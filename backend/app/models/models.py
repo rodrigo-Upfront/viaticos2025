@@ -201,7 +201,7 @@ class Prepayment(Base):
     end_date = Column(Date, nullable=False)
     currency_id = Column(Integer, ForeignKey("currencies.id"), nullable=False)
     amount = Column(Numeric(12, 2), nullable=False)
-    justification_file = Column(String(500), nullable=True)
+    justification_files = Column(JSON, nullable=True)  # Array of file objects: [{"filename": "...", "original_name": "...", "file_path": "..."}]
     comment = Column(Text, nullable=True)
     # Reason provided when a prepayment was rejected in the approval flow
     rejection_reason = Column(Text, nullable=True)

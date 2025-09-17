@@ -376,7 +376,7 @@ const ApprovalsPage: React.FC = () => {
           amount: parseFloat(prepaymentData.amount),
           currency: prepaymentData.currency_code || prepaymentData.currency_name || 'USD',
           comment: prepaymentData.comment || '', // Use real comment from API
-          justification_file: prepaymentData.justification_file || null, // Use real file from API
+          justification_files: prepaymentData.justification_files || [], // Use real files from API
           status: prepaymentData.status || 'pending',
           rejection_reason: prepaymentData.rejection_reason
         };

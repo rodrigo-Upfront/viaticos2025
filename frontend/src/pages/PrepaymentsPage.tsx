@@ -52,7 +52,7 @@ interface Prepayment {
   currency: string;
   currency_id?: number;
   comment: string;
-  justification_file?: string;
+  justification_files?: Array<{filename: string, original_name: string, file_path: string}>;
   status: string;
   rejection_reason?: string;
   created_at?: string;
@@ -198,7 +198,7 @@ const PrepaymentsPage: React.FC = () => {
       currency: apiPrepayment.currency_code || '',
       currency_id: (apiPrepayment as any).currency_id,
       comment: apiPrepayment.comment || '',
-      justification_file: apiPrepayment.justification_file,
+      justification_files: apiPrepayment.justification_files,
       status: apiPrepayment.status,
       rejection_reason: (apiPrepayment as any).rejection_reason,
       created_at: apiPrepayment.created_at,
@@ -216,7 +216,7 @@ const PrepaymentsPage: React.FC = () => {
       amount: typeof frontendPrepayment.amount === 'string' ? parseFloat(frontendPrepayment.amount) || 0 : frontendPrepayment.amount,
       currency_id: currencyId as number,
       comment: frontendPrepayment.comment,
-      justification_file: frontendPrepayment.justification_file,
+      justification_files: frontendPrepayment.justification_files,
     };
   };
 
@@ -404,7 +404,7 @@ const PrepaymentsPage: React.FC = () => {
     });
   };
 
-  const handleSave = async (prepaymentData: Prepayment, file?: File) => {
+  const handleSave = async (prepaymentData: Prepayment, files?: File[]) => {
     try {
       setLoading(prev => ({ ...prev, action: true }));
       
@@ -414,9 +414,9 @@ const PrepaymentsPage: React.FC = () => {
         const apiData = mapFrontendToApi(prepaymentData);
         savedPrepayment = await prepaymentService.createPrepayment(apiData);
         
-        // Upload file if provided
-        if (file && savedPrepayment.id) {
-          await uploadFile(savedPrepayment.id, file);
+        // Upload files if provided
+        if (files && files.length > 0 && savedPrepayment.id) {
+          await prepaymentService.uploadMultipleFiles(savedPrepayment.id, files);
           // Refetch the prepayment to get updated file info
           savedPrepayment = await prepaymentService.getPrepayment(savedPrepayment.id);
         }
@@ -432,9 +432,9 @@ const PrepaymentsPage: React.FC = () => {
         const apiData = mapFrontendToApi(prepaymentData);
         savedPrepayment = await prepaymentService.updatePrepayment(prepaymentData.id, apiData);
         
-        // Upload file if provided
-        if (file) {
-          await uploadFile(prepaymentData.id, file);
+        // Upload files if provided
+        if (files && files.length > 0) {
+          await prepaymentService.uploadMultipleFiles(prepaymentData.id, files);
           // Refetch the prepayment to get updated file info
           savedPrepayment = await prepaymentService.getPrepayment(prepaymentData.id);
         }
