@@ -440,7 +440,7 @@ const Dashboard: React.FC = () => {
         {/* Enhanced Stats Cards */}
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
-            title="Solicitudes Pendientes de Aprobación"
+            title={t('dashboard.pendingPrepayments')}
             value={stats?.prepayments_pending || 0}
             icon={<Payment />}
             bgColor="#f8f6ff"
@@ -453,7 +453,7 @@ const Dashboard: React.FC = () => {
         
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
-            title="Informes Pendientes de Rendición"
+            title={t('dashboard.pendingExpenseReports')}
             value={`${getCurrencyDisplay()} ${(stats?.expense_reports_pending_amount || 0).toLocaleString()}.00`}
             icon={<Receipt />}
             bgColor="#fef7f7"
@@ -466,7 +466,7 @@ const Dashboard: React.FC = () => {
         
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
-            title="Gastos Pendientes de Aprobación"
+            title={t('dashboard.pendingExpenses')}
             value={`${getCurrencyDisplay()} ${(stats?.expenses_pending_amount || 0).toLocaleString()}.00`}
             icon={<PendingActions />}
             bgColor="#fefbf3"
@@ -479,7 +479,7 @@ const Dashboard: React.FC = () => {
         
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
-            title="Gastos Aprobados"
+            title={t('dashboard.approvedExpenses')}
             value={`${getCurrencyDisplay()} ${(stats?.expenses_approved_amount || 0).toLocaleString()}.00`}
             icon={<CheckCircle />}
             bgColor="#f7fdf9"
@@ -494,7 +494,7 @@ const Dashboard: React.FC = () => {
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 3, height: 400, borderRadius: 4 }}>
             <Typography variant="h6" gutterBottom fontWeight="bold">
-              Gastos Mensuales
+              {t('dashboard.monthlyExpenses')}
             </Typography>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={monthlyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
@@ -579,7 +579,7 @@ const Dashboard: React.FC = () => {
                 height={300}
                 sx={{ color: '#666', fontStyle: 'italic' }}
               >
-                No hay datos de gastos por categoría
+{t('dashboard.noCategoryData')}
               </Box>
             )}
           </Paper>
@@ -589,7 +589,7 @@ const Dashboard: React.FC = () => {
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 3, height: 400, borderRadius: 4 }}>
             <Typography variant="h6" gutterBottom fontWeight="bold">
-              Solicitudes de Viaje Recientes
+              {t('dashboard.recentPrepayments')}
             </Typography>
             <TableContainer sx={{ maxHeight: 300 }}>
               <Table size="small">
@@ -624,7 +624,7 @@ const Dashboard: React.FC = () => {
                   {recentPrepayments.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={4} align="center" sx={{ color: '#666', fontStyle: 'italic' }}>
-                        No hay solicitudes recientes
+{t('dashboard.noRecentPrepayments')}
                       </TableCell>
                     </TableRow>
                   )}
@@ -668,7 +668,7 @@ const Dashboard: React.FC = () => {
                   {recentExpenses.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={4} align="center" sx={{ color: '#666', fontStyle: 'italic' }}>
-                        No hay gastos recientes
+{t('dashboard.noRecentExpenses')}
                       </TableCell>
                     </TableRow>
                   )}

@@ -48,7 +48,11 @@
     "filterByCountry": "Filtrar por País",
     "filterByCurrency": "Filtrar por Moneda",
     "allCountries": "Todos los Países",
-    "allCurrencies": "Todas las Monedas"
+    "allCurrencies": "Todas las Monedas",
+    "recentPrepayments": "Anticipos Recientes",
+    "noRecentPrepayments": "No hay anticipos recientes",
+    "noRecentExpenses": "No hay gastos recientes",
+    "noCategoryData": "No hay datos de categoría disponibles"
   },
   "common": {
     "save": "Guardar",

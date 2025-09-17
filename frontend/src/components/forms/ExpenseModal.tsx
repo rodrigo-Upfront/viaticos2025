@@ -42,7 +42,7 @@ interface Expense {
   country_id: number;
   country: string; // For display
   currency: string;
-  amount: number;
+  amount: string | number;
   document_number: string;
   taxable: 'Si' | 'No';
   document_file?: string;
@@ -111,7 +111,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
     country_id: 1,
     country: 'Peru',
     currency: 'PEN',
-    amount: 0,
+    amount: '',
     document_number: '',
     taxable: 'No',
     document_file: '',
@@ -198,7 +198,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
         country_id: 1,
         country: 'Select a travel expense report',
         currency: '',
-        amount: 0,
+        amount: '',
         document_number: '',
         taxable: 'No',
         document_file: '',
@@ -212,7 +212,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
   }, [expense, mode, open]);
 
   const handleChange = (field: keyof Expense) => (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = field === 'amount' ? parseFloat(event.target.value) || 0 : event.target.value;
+    const value = event.target.value;
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -347,16 +347,6 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
     }
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      setFormData(prev => ({
-        ...prev,
-        document_file: file.name
-      }));
-    }
-  };
 
   const uploadFile = async (expenseId: number, file: File): Promise<string> => {
     setFileUploading(true);
@@ -466,7 +456,8 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
       newErrors.expense_date = dateError;
     }
 
-    if (formData.amount <= 0) {
+    const amountValue = typeof formData.amount === 'string' ? parseFloat(formData.amount) || 0 : formData.amount;
+    if (!formData.amount || amountValue <= 0) {
       newErrors.amount = 'Amount must be greater than 0';
     }
 
@@ -494,11 +485,12 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
       }
 
       // Check for alert
+      const amountValue = typeof formData.amount === 'string' ? parseFloat(formData.amount) || 0 : formData.amount;
       const alertResponse = await categoryAlertService.checkExpenseAlert(
         formData.category_id,
         formData.country_id,
         currencyId,
-        formData.amount
+        amountValue
       );
 
       if (alertResponse.has_alert && alertResponse.exceeds_alert) {
@@ -508,7 +500,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
         
         setAlertDialog({
           open: true,
-          expenseAmount: formData.amount,
+          expenseAmount: amountValue,
           alertAmount: alertResponse.alert_amount || 0,
           categoryName,
           countryName,
@@ -528,7 +520,12 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
   const proceedWithSave = () => {
     console.log('Proceeding with save');
-    onSave(formData, selectedFile || undefined);
+    // Convert amount to number before saving
+    const expenseData = {
+      ...formData,
+      amount: typeof formData.amount === 'string' ? parseFloat(formData.amount) || 0 : formData.amount
+    };
+    onSave(expenseData, selectedFile || undefined);
     onClose();
   };
 
@@ -539,6 +536,49 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
   const handleAlertCancel = () => {
     setAlertDialog(prev => ({ ...prev, open: false }));
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Clear previous file errors
+      setErrors(prev => ({
+        ...prev,
+        document_file: ''
+      }));
+
+      // File size validation (10MB = 10 * 1024 * 1024 bytes)
+      if (file.size > 10 * 1024 * 1024) {
+        setErrors(prev => ({
+          ...prev,
+          document_file: t('validation.fileSizeLimit')
+        }));
+        event.target.value = ''; // Clear the input
+        return;
+      }
+
+      // File type validation (PDF and images only)
+      const allowedTypes = [
+        'application/pdf',
+        'image/jpeg',
+        'image/jpg', 
+        'image/png',
+        'image/gif',
+        'image/bmp',
+        'image/webp'
+      ];
+      
+      if (!allowedTypes.includes(file.type)) {
+        setErrors(prev => ({
+          ...prev,
+          document_file: t('validation.fileTypeInvalid')
+        }));
+        event.target.value = ''; // Clear the input
+        return;
+      }
+
+      setSelectedFile(file);
+    }
   };
 
   const handleSubmit = () => {
@@ -579,7 +619,8 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
       newErrors.expense_date = dateError;
     }
 
-    if (formData.amount <= 0) {
+    const amountValue = typeof formData.amount === 'string' ? parseFloat(formData.amount) || 0 : formData.amount;
+    if (!formData.amount || amountValue <= 0) {
       newErrors.amount = 'Amount must be greater than 0';
     }
 
@@ -619,7 +660,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
       country_id: 1,
       country: 'Select a travel expense report',
       currency: '',
-      amount: 0,
+      amount: '',
       document_number: '',
       taxable: 'No',
       document_file: '',
@@ -850,20 +891,31 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
           <Box sx={{ mt: 2 }}>
             <InputLabel sx={{ mb: 1 }}>{t('expenses.documentFile')}</InputLabel>
+            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+              {t('validation.fileMaxSize')}
+            </Typography>
             <Box sx={{ display: 'flex', gap: 2, flexDirection: 'column', alignItems: 'flex-start' }}>
               <Button
                 variant="outlined"
                 component="label"
                 startIcon={<InputAdornment position="start">📎</InputAdornment>}
+                color={errors.document_file ? 'error' : 'primary'}
               >
 {t('expenses.chooseFile')}
                 <input
                   type="file"
                   hidden
-                  accept=".pdf,.jpg,.jpeg,.png"
+                  accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp,.webp"
                   onChange={handleFileChange}
                 />
               </Button>
+              
+              {/* Show file validation error */}
+              {errors.document_file && (
+                <Typography variant="caption" color="error" sx={{ ml: 1 }}>
+                  {errors.document_file}
+                </Typography>
+              )}
               
               {/* Show existing file from expense (when editing) */}
               {mode === 'edit' && expense?.document_file && (

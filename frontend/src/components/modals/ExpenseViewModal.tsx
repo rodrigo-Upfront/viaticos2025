@@ -57,7 +57,7 @@ interface Expense {
   country_name?: string;
   currency: string;
   currency_code?: string;
-  amount: number;
+  amount: string | number;
   document_number: string;
   taxable: 'Si' | 'No' | 'SI' | 'NO';
   document_file?: string;

@@ -501,22 +501,6 @@ const ReportsPage: React.FC = () => {
 
 
 
-  const handleExportAll = () => {
-    // Placeholder for export all functionality
-    setSnackbar({
-      open: true,
-      message: 'Export All functionality not yet implemented. In production, this would generate an Excel/CSV file with all approved expense reports.',
-      severity: 'info'
-    });
-    
-    // Simulate file download preparation
-    setTimeout(() => {
-      const link = document.createElement('a');
-      link.href = '#'; // This would be the actual file URL from backend
-      link.download = `expense-reports-all-${new Date().toISOString().split('T')[0]}.xlsx`;
-      link.click();
-    }, 1000);
-  };
 
   const handleGenerateReport = () => {
     // Placeholder for generate report functionality
@@ -583,14 +567,6 @@ const ReportsPage: React.FC = () => {
             sx={{ mr: 2 }}
           >
 {t('reports.createReimbursement')}
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<DownloadIcon />}
-            onClick={handleExportAll}
-            sx={{ mr: 2 }}
-          >
-{t('reports.exportAll')}
           </Button>
           <Button
             variant="contained"
@@ -773,6 +749,7 @@ const ReportsPage: React.FC = () => {
         <Table>
           <TableHead>
             <TableRow>
+              <TableCell>ID</TableCell>
               <TableCell>{t('tables.type')}</TableCell>
               <TableCell>{t('reports.reason')}</TableCell>
               <TableCell>{t('reports.reportDate')}</TableCell>
@@ -786,7 +763,7 @@ const ReportsPage: React.FC = () => {
           <TableBody>
             {loading.reports ? (
               <TableRow>
-                <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
                   <CircularProgress />
                   <Typography variant="body2" sx={{ mt: 1 }}>
                     Loading expense reports...
@@ -795,7 +772,7 @@ const ReportsPage: React.FC = () => {
               </TableRow>
             ) : filteredReports.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
                   <Typography variant="body2" color="text.secondary">
                     No expense reports found
                   </Typography>
@@ -804,6 +781,7 @@ const ReportsPage: React.FC = () => {
             ) : (
               filteredReports.map((report) => (
                 <TableRow key={report.id}>
+                  <TableCell>{report.id}</TableCell>
                   <TableCell>
                     <Chip
                       label={getReportTypeLabel(report.report_type)}

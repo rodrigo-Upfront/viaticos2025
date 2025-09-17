@@ -61,7 +61,7 @@ interface Expense {
   country_id: number;
   country: string;
   currency: string;
-  amount: number;
+  amount: string | number;
   document_number: string;
   taxable: 'Si' | 'No';
   document_file?: string;
@@ -319,7 +319,7 @@ const ExpensesPage: React.FC = () => {
       expense_date: frontendExpense.expense_date,
       // For reimbursement, send explicit currency; for report-linked it's ignored by backend
       currency_id: currency ? currency.id : undefined as any,
-      amount: frontendExpense.amount,
+      amount: typeof frontendExpense.amount === 'string' ? parseFloat(frontendExpense.amount) || 0 : frontendExpense.amount,
       document_number: frontendExpense.document_number,
       taxable: frontendExpense.taxable,
       document_file: frontendExpense.document_file,
