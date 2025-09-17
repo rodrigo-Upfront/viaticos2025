@@ -78,15 +78,33 @@ async def get_dashboard_stats(
             reports_query = reports_query.filter(Prepayment.currency_id == currency_id)
     
     # Calculate stats
-    prepayments_pending = prepayments_query.filter(Prepayment.status == RequestStatus.PENDING).count()
     
-    # Pending expense reports amount (sum of expenses in pending reports)
-    # Avoid duplicate table alias by ensuring only one join to Prepayment is present
+    # Pending prepayments - include all pending statuses
+    pending_prepayment_statuses = [
+        RequestStatus.PENDING,
+        RequestStatus.SUPERVISOR_PENDING, 
+        RequestStatus.ACCOUNTING_PENDING,
+        RequestStatus.TREASURY_PENDING
+    ]
+    pending_prepayments = prepayments_query.filter(Prepayment.status.in_(pending_prepayment_statuses)).all()
+    prepayments_pending_count = len(pending_prepayments)
+    prepayments_pending_amount = sum(float(prep.amount or 0) for prep in pending_prepayments)
+    
+    # Pending expense reports - include all pending statuses
+    pending_report_statuses = [
+        RequestStatus.PENDING,
+        RequestStatus.SUPERVISOR_PENDING,
+        RequestStatus.ACCOUNTING_PENDING, 
+        RequestStatus.TREASURY_PENDING,
+        RequestStatus.FUNDS_RETURN_PENDING,
+        RequestStatus.REVIEW_RETURN
+    ]
     pending_reports = (
         reports_query
-        .filter(TravelExpenseReport.status == RequestStatus.PENDING)
+        .filter(TravelExpenseReport.status.in_(pending_report_statuses))
         .all()
     )
+    expense_reports_pending_count = len(pending_reports)
     expense_reports_pending_amount = 0
     for report in pending_reports:
         if report.expenses:
@@ -109,7 +127,9 @@ async def get_dashboard_stats(
     )
     
     result = {
-        "prepayments_pending": prepayments_pending,
+        "prepayments_pending_count": prepayments_pending_count,
+        "prepayments_pending_amount": float(prepayments_pending_amount),
+        "expense_reports_pending_count": expense_reports_pending_count,
         "expense_reports_pending_amount": float(expense_reports_pending_amount),
         "expenses_pending_amount": float(expenses_pending_amount),
         "expenses_approved_amount": float(expenses_approved_amount),
@@ -121,6 +141,146 @@ async def get_dashboard_stats(
         result["currency"] = currency_info
     
     return result
+
+
+@router.get("/available-countries")
+async def get_available_countries(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get countries where the current user has data (prepayments, reports, or expenses)"""
+    
+    # For superusers, get all countries that have any data in the system
+    if current_user.is_superuser:
+        # Get countries from prepayments
+        prepayment_countries = (
+            db.query(Country)
+            .join(Prepayment, Country.id == Prepayment.destination_country_id)
+            .distinct()
+        )
+        
+        # Get countries from expenses  
+        expense_countries = (
+            db.query(Country)
+            .join(Expense, Country.id == Expense.country_id)
+            .distinct()
+        )
+        
+        # Combine and get unique countries
+        all_countries = set()
+        for country in prepayment_countries.all():
+            all_countries.add((country.id, country.name))
+        for country in expense_countries.all():
+            all_countries.add((country.id, country.name))
+        
+        countries = [{"id": id, "name": name} for id, name in sorted(all_countries, key=lambda x: x[1])]
+        
+    else:
+        # For regular users, get countries where they have data
+        # Get countries from user's prepayments
+        prepayment_countries = (
+            db.query(Country)
+            .join(Prepayment, Country.id == Prepayment.destination_country_id)
+            .filter(Prepayment.requesting_user_id == current_user.id)
+            .distinct()
+        )
+        
+        # Get countries from user's expenses (both report-based and standalone)
+        expense_countries = (
+            db.query(Country)
+            .join(Expense, Country.id == Expense.country_id)
+            .filter(
+                ((Expense.travel_expense_report_id.isnot(None)) & 
+                 (Expense.travel_expense_report.has(TravelExpenseReport.requesting_user_id == current_user.id))) |
+                ((Expense.travel_expense_report_id.is_(None)) & 
+                 (Expense.created_by_user_id == current_user.id))
+            )
+            .distinct()
+        )
+        
+        # Combine and get unique countries
+        user_countries = set()
+        for country in prepayment_countries.all():
+            user_countries.add((country.id, country.name))
+        for country in expense_countries.all():
+            user_countries.add((country.id, country.name))
+        
+        countries = [{"id": id, "name": name} for id, name in sorted(user_countries, key=lambda x: x[1])]
+    
+    return {"countries": countries}
+
+
+@router.get("/available-currencies")
+async def get_available_currencies(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get currencies where the current user has data (prepayments, reports, or expenses)"""
+    
+    # For superusers, get all currencies that have any data in the system
+    if current_user.is_superuser:
+        # Get currencies from prepayments
+        prepayment_currencies = (
+            db.query(Currency)
+            .join(Prepayment, Currency.id == Prepayment.currency_id)
+            .distinct()
+        )
+        
+        # Get currencies from expenses
+        expense_currencies = (
+            db.query(Currency)
+            .join(Expense, Currency.id == Expense.currency_id)
+            .distinct()
+        )
+        
+        # Combine and get unique currencies
+        all_currencies = set()
+        for currency in prepayment_currencies.all():
+            all_currencies.add((currency.id, currency.code, currency.name, currency.symbol))
+        for currency in expense_currencies.all():
+            all_currencies.add((currency.id, currency.code, currency.name, currency.symbol))
+        
+        currencies = [
+            {"id": id, "code": code, "name": name, "symbol": symbol} 
+            for id, code, name, symbol in sorted(all_currencies, key=lambda x: x[1])
+        ]
+        
+    else:
+        # For regular users, get currencies where they have data
+        # Get currencies from user's prepayments
+        prepayment_currencies = (
+            db.query(Currency)
+            .join(Prepayment, Currency.id == Prepayment.currency_id)
+            .filter(Prepayment.requesting_user_id == current_user.id)
+            .distinct()
+        )
+        
+        # Get currencies from user's expenses (both report-based and standalone)
+        expense_currencies = (
+            db.query(Currency)
+            .join(Expense, Currency.id == Expense.currency_id)
+            .filter(
+                ((Expense.travel_expense_report_id.isnot(None)) & 
+                 (Expense.travel_expense_report.has(TravelExpenseReport.requesting_user_id == current_user.id))) |
+                ((Expense.travel_expense_report_id.is_(None)) & 
+                 (Expense.created_by_user_id == current_user.id))
+            )
+            .distinct()
+        )
+        
+        # Combine and get unique currencies
+        user_currencies = set()
+        for currency in prepayment_currencies.all():
+            user_currencies.add((currency.id, currency.code, currency.name, currency.symbol))
+        for currency in expense_currencies.all():
+            user_currencies.add((currency.id, currency.code, currency.name, currency.symbol))
+        
+        currencies = [
+            {"id": id, "code": code, "name": name, "symbol": symbol} 
+            for id, code, name, symbol in sorted(user_currencies, key=lambda x: x[1])
+        ]
+    
+    return {"currencies": currencies}
 
 
 @router.get("/monthly-expenses")
@@ -250,6 +410,8 @@ async def get_category_breakdown(
 @router.get("/recent-prepayments")
 async def get_recent_prepayments(
     limit: int = Query(5, description="Number of recent prepayments to return"),
+    country_id: Optional[int] = Query(None, description="Filter by country ID"),
+    currency_id: Optional[int] = Query(None, description="Filter by currency ID"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -260,6 +422,12 @@ async def get_recent_prepayments(
     # Apply user filtering for non-superusers
     if not current_user.is_superuser:
         prepayments_query = prepayments_query.filter(Prepayment.requesting_user_id == current_user.id)
+    
+    # Apply filters
+    if country_id:
+        prepayments_query = prepayments_query.filter(Prepayment.destination_country_id == country_id)
+    if currency_id:
+        prepayments_query = prepayments_query.filter(Prepayment.currency_id == currency_id)
     
     recent_prepayments = (
         prepayments_query
@@ -289,6 +457,8 @@ async def get_recent_prepayments(
 @router.get("/recent-expenses")
 async def get_recent_expenses(
     limit: int = Query(5, description="Number of recent expenses to return"),
+    country_id: Optional[int] = Query(None, description="Filter by country ID"),
+    currency_id: Optional[int] = Query(None, description="Filter by currency ID"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -304,6 +474,12 @@ async def get_recent_expenses(
             ((Expense.travel_expense_report_id.is_(None)) & 
              (Expense.created_by_user_id == current_user.id))
         )
+    
+    # Apply filters
+    if country_id:
+        expenses_query = expenses_query.filter(Expense.country_id == country_id)
+    if currency_id:
+        expenses_query = expenses_query.filter(Expense.currency_id == currency_id)
     
     recent_expenses = (
         expenses_query

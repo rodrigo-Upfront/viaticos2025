@@ -80,7 +80,9 @@ const DASHBOARD_STATUS_LABELS: Record<string, { en: string; es: string }> = {
 };
 
 interface DashboardStats {
-  prepayments_pending: number;
+  prepayments_pending_count: number;
+  prepayments_pending_amount: number;
+  expense_reports_pending_count: number;
   expense_reports_pending_amount: number;
   expenses_pending_amount: number;
   expenses_approved_amount: number;
@@ -141,11 +143,11 @@ const Dashboard: React.FC = () => {
     if (!stats) return { prepayments: 0, reports: 0, pending: 0, approved: 0 };
     
     // Calculate progress as percentage relative to some baseline
-    const totalPrepayments = stats.prepayments_pending + 10; // Assume some baseline
+    const totalPrepayments = stats.prepayments_pending_count + 10; // Assume some baseline
     const totalAmount = stats.expenses_pending_amount + stats.expenses_approved_amount;
     
     return {
-      prepayments: Math.min(90, (stats.prepayments_pending / Math.max(1, totalPrepayments)) * 100),
+      prepayments: Math.min(90, (stats.prepayments_pending_count / Math.max(1, totalPrepayments)) * 100),
       reports: Math.min(90, (stats.expense_reports_pending_amount / Math.max(1000, totalAmount)) * 100),
       pending: Math.min(90, (stats.expenses_pending_amount / Math.max(1000, totalAmount)) * 100),
       approved: Math.min(100, (stats.expenses_approved_amount / Math.max(1000, totalAmount)) * 100)
@@ -172,19 +174,23 @@ const Dashboard: React.FC = () => {
 
   const loadCountries = async () => {
     try {
-      const countriesData = await countryService.getCountries();
-      setCountries(countriesData);
+      // Load only countries where user has data
+      const response = await apiClient.get('/dashboard/available-countries');
+      setCountries(response.data.countries);
     } catch (error) {
-      console.error('Error loading countries:', error);
+      console.error('Error loading available countries:', error);
+      setCountries([]);
     }
   };
 
   const loadCurrencies = async () => {
     try {
-      const data = await currencyService.getCurrencies();
-      setCurrencies(data);
+      // Load only currencies where user has data
+      const response = await apiClient.get('/dashboard/available-currencies');
+      setCurrencies(response.data.currencies);
     } catch (error) {
-      console.error('Error loading currencies:', error);
+      console.error('Error loading available currencies:', error);
+      setCurrencies([]);
     }
   };
 
@@ -202,7 +208,9 @@ const Dashboard: React.FC = () => {
       console.error('Error fetching dashboard stats:', error);
       // Set default values for demo
       setStats({
-        prepayments_pending: 0,
+        prepayments_pending_count: 0,
+        prepayments_pending_amount: 0,
+        expense_reports_pending_count: 0,
         expense_reports_pending_amount: 0,
         expenses_pending_amount: 0,
         expenses_approved_amount: 0,
@@ -247,9 +255,14 @@ const Dashboard: React.FC = () => {
   const fetchRecentData = async () => {
     try {
       console.log('Fetching recent data...');
+      const params: string[] = [];
+      if (selectedCountry) params.push(`country_id=${selectedCountry}`);
+      if (selectedCurrency) params.push(`currency_id=${selectedCurrency}`);
+      const qs = params.length ? `?${params.join('&')}` : '';
+      
       const [prepaymentsResponse, expensesResponse] = await Promise.all([
-        apiClient.get('/dashboard/recent-prepayments'),
-        apiClient.get('/dashboard/recent-expenses')
+        apiClient.get(`/dashboard/recent-prepayments${qs}`),
+        apiClient.get(`/dashboard/recent-expenses${qs}`)
       ]);
       console.log('Recent prepayments response:', prepaymentsResponse.data);
       console.log('Recent expenses response:', expensesResponse.data);
@@ -441,7 +454,7 @@ const Dashboard: React.FC = () => {
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title={t('dashboard.pendingPrepayments')}
-            value={stats?.prepayments_pending || 0}
+            value={`${stats?.prepayments_pending_count || 0} / ${getCurrencyDisplay()} ${(stats?.prepayments_pending_amount || 0).toLocaleString()}`}
             icon={<Payment />}
             bgColor="#f8f6ff"
             barColor="#6f42c1"
@@ -454,7 +467,7 @@ const Dashboard: React.FC = () => {
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title={t('dashboard.pendingExpenseReports')}
-            value={`${getCurrencyDisplay()} ${(stats?.expense_reports_pending_amount || 0).toLocaleString()}.00`}
+            value={`${stats?.expense_reports_pending_count || 0} / ${getCurrencyDisplay()} ${(stats?.expense_reports_pending_amount || 0).toLocaleString()}`}
             icon={<Receipt />}
             bgColor="#fef7f7"
             barColor="#e74c3c"
