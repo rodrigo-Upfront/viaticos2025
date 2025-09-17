@@ -55,6 +55,7 @@ interface Prepayment {
   justification_file?: string;
   status: string;
   rejection_reason?: string;
+  created_at?: string;
 }
 
 interface Country {
@@ -168,10 +169,11 @@ const PrepaymentsPage: React.FC = () => {
       // The actual filtering by userId happens in loadPrepayments()
     }
 
-    // Sort by start date descending (newest first)
-    const sortedFiltered = filtered.sort((a, b) => 
-      new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
-    );
+    // Sort by creation date descending (newest first)
+    const sortedFiltered = filtered.sort((a, b) => {
+      if (!a.created_at || !b.created_at) return 0;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
     
     setFilteredPrepayments(sortedFiltered);
   }, [prepayments, searchFilters, canFilterByUser]);
@@ -199,6 +201,7 @@ const PrepaymentsPage: React.FC = () => {
       justification_file: apiPrepayment.justification_file,
       status: apiPrepayment.status,
       rejection_reason: (apiPrepayment as any).rejection_reason,
+      created_at: apiPrepayment.created_at,
     };
   };
 
@@ -226,10 +229,11 @@ const PrepaymentsPage: React.FC = () => {
         ...(canFilterByUser && searchFilters.userId ? { user_id: searchFilters.userId as number } : {} as any),
       } as any);
       const mappedPrepayments = response.prepayments.map(mapApiToFrontend);
-      // Sort by start date descending (newest first)
-      const sortedPrepayments = mappedPrepayments.sort((a, b) => 
-        new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
-      );
+      // Sort by creation date descending (newest first)
+      const sortedPrepayments = mappedPrepayments.sort((a, b) => {
+        if (!a.created_at || !b.created_at) return 0;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
       setPrepayments(sortedPrepayments);
     } catch (error) {
       console.error('Failed to load prepayments:', error);
