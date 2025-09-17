@@ -48,7 +48,7 @@ interface Prepayment {
   destination: string;
   startDate: string;
   endDate: string;
-  amount: number;
+  amount: string | number;
   currency: string;
   currency_id?: number;
   comment: string;
@@ -210,7 +210,7 @@ const PrepaymentsPage: React.FC = () => {
       destination_country_id: frontendPrepayment.destination_country_id,
       start_date: frontendPrepayment.startDate,
       end_date: frontendPrepayment.endDate,
-      amount: frontendPrepayment.amount,
+      amount: typeof frontendPrepayment.amount === 'string' ? parseFloat(frontendPrepayment.amount) || 0 : frontendPrepayment.amount,
       currency_id: currencyId as number,
       comment: frontendPrepayment.comment,
       justification_file: frontendPrepayment.justification_file,

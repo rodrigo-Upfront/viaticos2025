@@ -31,7 +31,7 @@ interface Prepayment {
   destination: string; // For display purposes
   startDate: string;
   endDate: string;
-  amount: number;
+  amount: string | number;
   currency: string;
   currency_id?: number;
   comment: string;
@@ -73,7 +73,7 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
     destination: '',
     startDate: '',
     endDate: '',
-    amount: 0,
+    amount: '',
     currency: 'USD',
     currency_id: undefined,
     comment: '',
@@ -99,7 +99,7 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
         destination: '',
         startDate: '',
         endDate: '',
-        amount: 0,
+        amount: '',
         currency: 'USD',
         currency_id: undefined,
         comment: '',
@@ -119,7 +119,7 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
   }, [open]);
 
   const handleChange = (field: keyof Prepayment) => (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = field === 'amount' ? parseFloat(event.target.value) || 0 : event.target.value;
+    const value = event.target.value;
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -179,6 +179,42 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      // Clear previous file errors
+      setErrors(prev => ({
+        ...prev,
+        justification_file: ''
+      }));
+
+      // File size validation (10MB = 10 * 1024 * 1024 bytes)
+      if (file.size > 10 * 1024 * 1024) {
+        setErrors(prev => ({
+          ...prev,
+          justification_file: t('validation.fileSizeLimit')
+        }));
+        event.target.value = ''; // Clear the input
+        return;
+      }
+
+      // File type validation (PDF and images only)
+      const allowedTypes = [
+        'application/pdf',
+        'image/jpeg',
+        'image/jpg', 
+        'image/png',
+        'image/gif',
+        'image/bmp',
+        'image/webp'
+      ];
+      
+      if (!allowedTypes.includes(file.type)) {
+        setErrors(prev => ({
+          ...prev,
+          justification_file: t('validation.fileTypeInvalid')
+        }));
+        event.target.value = ''; // Clear the input
+        return;
+      }
+
       setSelectedFile(file);
       setHasNewFile(true); // Mark that user selected a new file
       // Don't update justification_file in formData yet - will be set after upload
@@ -271,12 +307,17 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
       newErrors.endDate = 'End date must be on or after start date';
     }
 
-    if (formData.amount <= 0) {
+    const amountValue = typeof formData.amount === 'string' ? parseFloat(formData.amount) || 0 : formData.amount;
+    if (!formData.amount || amountValue <= 0) {
       newErrors.amount = 'Amount must be greater than 0';
     }
 
     if (!formData.currency) {
       newErrors.currency = 'Currency is required';
+    }
+
+    if (!formData.comment?.trim()) {
+      newErrors.comment = t('validation.commentsRequired');
     }
 
     setErrors(newErrors);
@@ -286,9 +327,15 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
   const handleSubmit = async () => {
     if (validateForm()) {
       try {
+        // Convert amount to number before sending
+        const prepaymentData = {
+          ...formData,
+          amount: parseFloat(formData.amount as string) || 0
+        };
+        
         // Only pass the file if it's a new file (not when editing existing prepayment without new file)
         const fileToUpload = hasNewFile && selectedFile ? selectedFile : undefined;
-        await onSave(formData, fileToUpload);
+        await onSave(prepaymentData, fileToUpload);
         onClose();
       } catch (error) {
         console.error('Failed to save prepayment:', error);
@@ -304,7 +351,7 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
       destination: '',
       startDate: '',
       endDate: '',
-      amount: 0,
+      amount: '',
       currency: 'USD',
       comment: '',
       justification_file: '',
@@ -421,28 +468,42 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
             label={t('common.comments')}
             value={formData.comment}
             onChange={handleChange('comment')}
+            error={!!errors.comment}
+            helperText={errors.comment}
             margin="normal"
             multiline
             rows={3}
             placeholder="Additional comments or notes about this prepayment request..."
+            required
           />
 
           <Box sx={{ mt: 2 }}>
             <InputLabel sx={{ mb: 1 }}>{t('prepaymentModule.justificationFile')}</InputLabel>
+            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+              {t('validation.fileMaxSize')}
+            </Typography>
             <Box sx={{ display: 'flex', gap: 2, flexDirection: 'column', alignItems: 'flex-start' }}>
               <Button
                 variant="outlined"
                 component="label"
                 startIcon={<InputAdornment position="start">📎</InputAdornment>}
+                color={errors.justification_file ? 'error' : 'primary'}
               >
 {t('expenses.chooseFile')}
                 <input
                   type="file"
                   hidden
-                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                  accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp,.webp"
                   onChange={handleFileChange}
                 />
               </Button>
+              
+              {/* Show file validation error */}
+              {errors.justification_file && (
+                <Typography variant="caption" color="error" sx={{ ml: 1 }}>
+                  {errors.justification_file}
+                </Typography>
+              )}
               
               {/* Show existing file from prepayment (when editing) */}
               {mode === 'edit' && prepayment?.justification_file && (

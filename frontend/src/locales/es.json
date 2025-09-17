@@ -104,7 +104,10 @@
     "supplierRequiredFactura": "El proveedor es requerido para Factura",
     "amountRequired": "El monto debe ser mayor a 0",
     "documentNumberRequired": "El número de documento es requerido",
-    "commentsRequired": "Los comentarios son requeridos"
+    "commentsRequired": "Los comentarios son requeridos",
+    "fileSizeLimit": "El archivo debe ser menor a 10MB",
+    "fileTypeInvalid": "Solo se permiten archivos PDF e imágenes (JPEG, PNG, GIF, BMP, WebP)",
+    "fileMaxSize": "Tamaño máximo de archivo: 10MB. Formatos permitidos: PDF, JPEG, PNG, GIF, BMP, WebP"
   },
   "approvals": {
     "pendingApprovals": "Aprobaciones Pendientes",

@@ -28,7 +28,7 @@ interface Prepayment {
   destination: string;
   startDate: string;
   endDate: string;
-  amount: number;
+  amount: string | number;
   currency: string;
   comment: string;
   justification_file?: string;
@@ -333,9 +333,6 @@ const PrepaymentViewModal: React.FC<PrepaymentViewModalProps> = ({ open, onClose
         )}
         <Button onClick={onClose} color="primary">
           {t('common.close')}
-        </Button>
-        <Button variant="outlined" color="primary">
-          {t('common.print')}
         </Button>
         {prepayment.justification_file && (
           <Button 
