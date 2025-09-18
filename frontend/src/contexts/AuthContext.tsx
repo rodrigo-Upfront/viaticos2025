@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import authService, { LoginResult } from '../services/authService';
-import mfaService from '../services/mfaService';
+import { AuthService } from '../services/authService';
 import ForcePasswordChangeModal from '../components/forms/ForcePasswordChangeModal';
 import MFALoginModal from '../components/forms/MFALoginModal';
+import ForcedMFASetupModal from '../components/forms/ForcedMFASetupModal';
 
 interface User {
   id: number;
@@ -44,6 +45,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [showMFAModal, setShowMFAModal] = useState(false);
   const [mfaToken, setMfaToken] = useState<string>('');
   const [mfaMessage, setMfaMessage] = useState<string>('');
+  const [showForcedMFASetupModal, setShowForcedMFASetupModal] = useState(false);
+  const [setupToken, setSetupToken] = useState<string>('');
+  const [setupMessage, setSetupMessage] = useState<string>('');
 
   useEffect(() => {
     // Check if user is already logged in
@@ -75,8 +79,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const response: LoginResult = await authService.login(email, password);
       
-      // Check if MFA is required
-      if ('requires_mfa' in response && response.requires_mfa === true) {
+      // Check if MFA setup is required (forced by admin)
+      if (AuthService.requiresMFASetup(response)) {
+        setSetupToken(response.setup_token);
+        setSetupMessage(response.message);
+        setShowForcedMFASetupModal(true);
+        return;
+      }
+      
+      // Check if MFA verification is required
+      if (AuthService.requiresMFA(response)) {
         setMfaToken(response.mfa_token);
         setMfaMessage(response.message);
         setShowMFAModal(true);
@@ -84,7 +96,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       
       // Complete login flow
-      if ('access_token' in response) {
+      if (AuthService.isCompleteLogin(response)) {
         setUser(response.user);
         localStorage.setItem('access_token', response.access_token);
         localStorage.setItem('refresh_token', response.refresh_token);
@@ -107,6 +119,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setShowMFAModal(false);
     setMfaToken('');
     setMfaMessage('');
+    setShowForcedMFASetupModal(false);
+    setSetupToken('');
+    setSetupMessage('');
     authService.logout();
   };
 
@@ -128,6 +143,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setShowMFAModal(false);
     setMfaToken('');
     setMfaMessage('');
+  };
+
+  const handleForcedMFASetupComplete = (accessToken: string, refreshToken: string, userData: User) => {
+    setUser(userData);
+    localStorage.setItem('access_token', accessToken);
+    localStorage.setItem('refresh_token', refreshToken);
+    setShowForcedMFASetupModal(false);
+    setSetupToken('');
+    setSetupMessage('');
+    
+    // Check if password change is required
+    if (userData.force_password_change) {
+      setShowPasswordChangeModal(true);
+    }
+  };
+
+  const handleForcedMFASetupError = (error: string) => {
+    console.error('Forced MFA setup error:', error);
+    // Could show a toast/snackbar here
+    alert('MFA Setup Error: ' + error);
   };
 
   const handlePasswordChanged = () => {
@@ -163,6 +198,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         message={mfaMessage}
         onComplete={handleMFAComplete}
         onCancel={handleMFACancel}
+      />
+      
+      {/* Forced MFA Setup Modal */}
+      <ForcedMFASetupModal
+        open={showForcedMFASetupModal}
+        setupToken={setupToken}
+        message={setupMessage}
+        onComplete={handleForcedMFASetupComplete}
+        onError={handleForcedMFASetupError}
       />
       
       {/* Force Password Change Modal */}

@@ -177,6 +177,8 @@ const UsersPage: React.FC = () => {
     open: false,
     title: '',
     message: '',
+    confirmText: 'Confirm',
+    severity: 'warning' as 'error' | 'warning' | 'info',
     onConfirm: () => {}
   });
 
@@ -214,6 +216,8 @@ const UsersPage: React.FC = () => {
       open: true,
       title: 'Delete User',
       message: `Are you sure you want to delete "${user.name} ${user.surname}"? This action cannot be undone.`,
+      confirmText: 'Delete',
+      severity: 'error',
       onConfirm: async () => {
         if (!user.id) return;
         
@@ -257,6 +261,8 @@ const UsersPage: React.FC = () => {
       open: true,
       title: t('users.forceMFATitle'),
       message: t('users.forceMFAMessage', { name: `${user.name} ${user.surname}` }),
+      confirmText: t('common.confirm'),
+      severity: 'warning',
       onConfirm: async () => {
         if (!user.id) return;
         
@@ -293,6 +299,8 @@ const UsersPage: React.FC = () => {
       open: true,
       title: t('users.adminDisableMFATitle'),
       message: t('users.adminDisableMFAMessage', { name: `${user.name} ${user.surname}` }),
+      confirmText: t('users.adminDisableMFA'),
+      severity: 'error',
       onConfirm: async () => {
         if (!user.id) return;
         
@@ -583,8 +591,8 @@ const UsersPage: React.FC = () => {
         onConfirm={confirmDialog.onConfirm}
         title={confirmDialog.title}
         message={confirmDialog.message}
-        severity="error"
-        confirmText="Delete"
+        severity={confirmDialog.severity}
+        confirmText={confirmDialog.confirmText}
       />
 
       {/* Admin Password Update Modal */}

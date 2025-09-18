@@ -59,6 +59,13 @@ class MFALoginResponse(BaseModel):
     message: str = Field(..., description="Instructions for next step")
 
 
+class MFASetupRequiredResponse(BaseModel):
+    """Response when user must set up MFA before proceeding"""
+    requires_mfa_setup: bool = Field(True, description="Indicates MFA setup is required")
+    setup_token: str = Field(..., description="Temporary token for MFA setup")
+    message: str = Field(..., description="Instructions for MFA setup requirement")
+
+
 class MFACompleteLoginResponse(BaseModel):
     """Response after successful MFA verification"""
     access_token: str = Field(..., description="JWT access token")

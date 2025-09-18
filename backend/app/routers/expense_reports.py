@@ -271,8 +271,15 @@ async def get_expense_report(
                 report.requesting_user and report.requesting_user.supervisor_id == current_user.id):
                 can_approve = True
             
-            # Accounting can approve reports in ACCOUNTING_PENDING stage  
-            elif (report.status == RequestStatus.ACCOUNTING_PENDING and
+            # Accounting can view reports in accounting-related stages  
+            elif (report.status in [RequestStatus.ACCOUNTING_PENDING, 
+                                    RequestStatus.APPROVED_EXPENSES,
+                                    RequestStatus.TREASURY_PENDING,
+                                    RequestStatus.APPROVED_FOR_REIMBURSEMENT,
+                                    RequestStatus.FUNDS_RETURN_PENDING,
+                                    RequestStatus.REVIEW_RETURN,
+                                    RequestStatus.APPROVED_REPAID,
+                                    RequestStatus.APPROVED_RETURNED_FUNDS] and
                   current_user.profile == UserProfile.ACCOUNTING):
                 can_approve = True
             

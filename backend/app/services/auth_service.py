@@ -72,6 +72,14 @@ class AuthService:
         encoded_jwt = jwt.encode(data, self.secret_key, algorithm=self.algorithm)
         return encoded_jwt
     
+    def create_setup_token(self, user_id: int) -> str:
+        """Create a temporary MFA setup token"""
+        data = {"sub": str(user_id), "type": "mfa_setup"}
+        expire = datetime.utcnow() + timedelta(minutes=30)  # 30-minute expiration for setup
+        data.update({"exp": expire})
+        encoded_jwt = jwt.encode(data, self.secret_key, algorithm=self.algorithm)
+        return encoded_jwt
+    
     def verify_mfa_token(self, token: str) -> Dict[str, Any]:
         """Verify an MFA token and return payload"""
         payload = self.verify_token(token)

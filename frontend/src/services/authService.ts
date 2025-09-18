@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { MFALoginResponse, MFACompleteLoginResponse } from './mfaService';
+import { MFALoginResponse, MFASetupRequiredResponse } from './mfaService';
 
 interface LoginResponse {
   access_token: string;
@@ -18,8 +18,8 @@ interface LoginResponse {
   };
 }
 
-// Union type for login response - can be either complete login or MFA challenge
-type LoginResult = LoginResponse | MFALoginResponse;
+// Union type for login response - can be either complete login, MFA challenge, or MFA setup required
+type LoginResult = LoginResponse | MFALoginResponse | MFASetupRequiredResponse;
 
 interface User {
   id: number;
@@ -32,7 +32,7 @@ interface User {
   force_password_change: boolean;
 }
 
-class AuthService {
+export class AuthService {
   private baseURL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api';
 
   async login(email: string, password: string): Promise<LoginResult> {
@@ -46,6 +46,11 @@ class AuthService {
   // Helper function to check if response requires MFA
   static requiresMFA(response: LoginResult): response is MFALoginResponse {
     return 'requires_mfa' in response && response.requires_mfa === true;
+  }
+
+  // Helper function to check if response requires MFA setup
+  static requiresMFASetup(response: LoginResult): response is MFASetupRequiredResponse {
+    return 'requires_mfa_setup' in response && response.requires_mfa_setup === true;
   }
 
   // Helper function to check if response is complete login

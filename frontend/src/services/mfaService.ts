@@ -40,6 +40,12 @@ interface MFABackupCodesResponse {
   message: string;
 }
 
+interface MFASetupRequiredResponse {
+  requires_mfa_setup: boolean;
+  setup_token: string;
+  message: string;
+}
+
 class MFAService {
   private baseURL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api';
 
@@ -102,6 +108,25 @@ class MFAService {
     });
     return response.data;
   }
+
+  // Methods for forced MFA setup (when admin requires MFA)
+  async initiateForcedSetup(setupToken: string): Promise<MFASetupResponse> {
+    const response = await axios.post(`${this.baseURL}/mfa/setup/initiate`, {}, {
+      params: { setup_token: setupToken }
+    });
+    return response.data;
+  }
+
+  async completeForcedSetup(setupToken: string, secret: string, backupCodes: string[], code: string): Promise<MFACompleteLoginResponse> {
+    const response = await axios.post(`${this.baseURL}/mfa/setup/complete`, {
+      secret,
+      backup_codes: backupCodes,
+      token: code
+    }, {
+      params: { setup_token: setupToken }
+    });
+    return response.data;
+  }
 }
 
 const mfaService = new MFAService();
@@ -111,5 +136,6 @@ export type {
   MFACompleteLoginResponse, 
   MFASetupResponse, 
   MFAStatusResponse, 
-  MFABackupCodesResponse 
+  MFABackupCodesResponse,
+  MFASetupRequiredResponse
 };

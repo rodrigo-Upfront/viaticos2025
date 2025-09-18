@@ -18,7 +18,7 @@ from app.schemas.auth_schemas import (
     ChangePasswordRequest, UserInfo
 )
 from app.schemas.mfa_schemas import (
-    MFALoginResponse, MFAVerifyRequest, MFACompleteLoginResponse
+    MFALoginResponse, MFAVerifyRequest, MFACompleteLoginResponse, MFASetupRequiredResponse
 )
 from app.services.mfa_service import MFAService
 
@@ -28,7 +28,7 @@ auth_service = AuthService()
 mfa_service = MFAService()
 
 
-@router.post("/login", response_model=Union[LoginResponse, MFALoginResponse])
+@router.post("/login", response_model=Union[LoginResponse, MFALoginResponse, MFASetupRequiredResponse])
 async def login(
     login_data: LoginRequest,
     db: Session = Depends(get_db)
@@ -44,6 +44,17 @@ async def login(
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid email or password"
+            )
+        
+        # Check if MFA is required by admin but not yet set up
+        if user.mfa_required_by_admin and not user.mfa_enabled:
+            # User must set up MFA before proceeding
+            setup_token = auth_service.create_setup_token(user.id)
+            
+            return MFASetupRequiredResponse(
+                requires_mfa_setup=True,
+                setup_token=setup_token,
+                message="Your administrator has required you to set up Multi-Factor Authentication. You must complete MFA setup before you can access the system."
             )
         
         # Check if user has MFA enabled
