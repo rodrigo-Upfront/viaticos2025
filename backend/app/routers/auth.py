@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Union
 
 from app.database.connection import get_db
 from app.models.models import User
@@ -17,19 +17,25 @@ from app.schemas.auth_schemas import (
     LoginRequest, LoginResponse, TokenResponse, 
     ChangePasswordRequest, UserInfo
 )
+from app.schemas.mfa_schemas import (
+    MFALoginResponse, MFAVerifyRequest, MFACompleteLoginResponse
+)
+from app.services.mfa_service import MFAService
 
 router = APIRouter()
 security = HTTPBearer()
 auth_service = AuthService()
+mfa_service = MFAService()
 
 
-@router.post("/login", response_model=LoginResponse)
+@router.post("/login", response_model=Union[LoginResponse, MFALoginResponse])
 async def login(
     login_data: LoginRequest,
     db: Session = Depends(get_db)
 ):
     """
-    User login endpoint
+    User login endpoint - Step 1: Email/Password validation
+    Returns either final tokens (if MFA disabled) or MFA challenge (if MFA enabled)
     """
     try:
         # Authenticate user
@@ -40,7 +46,18 @@ async def login(
                 detail="Invalid email or password"
             )
         
-        # Generate tokens
+        # Check if user has MFA enabled
+        if user.mfa_enabled and user.mfa_secret:
+            # Create temporary MFA token for verification
+            mfa_token = auth_service.create_mfa_token(user.id)
+            
+            return MFALoginResponse(
+                requires_mfa=True,
+                mfa_token=mfa_token,
+                message="Please enter your authenticator code or backup code to complete login"
+            )
+        
+        # No MFA required - proceed with normal login
         access_token = auth_service.create_access_token(
             data={"sub": str(user.id), "email": user.email}
         )
@@ -75,6 +92,71 @@ async def login(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Login failed: {str(e)}"
+        )
+
+
+@router.post("/mfa/verify", response_model=MFACompleteLoginResponse)
+async def verify_mfa(
+    mfa_data: MFAVerifyRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    MFA verification endpoint - Step 2: Verify TOTP/backup code
+    """
+    try:
+        # Verify MFA token
+        payload = auth_service.verify_mfa_token(mfa_data.mfa_token)
+        user_id = int(payload.get("sub"))
+        
+        # Get user
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid user"
+            )
+        
+        # Verify MFA code
+        if not mfa_service.verify_user_mfa(db, user_id, mfa_data.code):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid verification code"
+            )
+        
+        # MFA verified successfully - generate final tokens
+        access_token = auth_service.create_access_token(
+            data={"sub": str(user.id), "email": user.email}
+        )
+        refresh_token = auth_service.create_refresh_token(
+            data={"sub": str(user.id)}
+        )
+        
+        return MFACompleteLoginResponse(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            token_type="bearer",
+            expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            user={
+                "id": user.id,
+                "email": user.email,
+                "name": user.name,
+                "surname": user.surname,
+                "profile": user.profile,
+                "is_superuser": user.is_superuser,
+                "is_approver": user.is_approver,
+                "force_password_change": user.force_password_change
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        print(f"MFA verification error: {str(e)}")
+        print(f"Traceback: {traceback.format_exc()}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"MFA verification failed: {str(e)}"
         )
 
 

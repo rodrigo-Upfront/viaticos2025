@@ -16,7 +16,7 @@ from app.database.connection import engine, get_db
 from app.models import models
 from app.routers import (
     auth, users, countries, categories, suppliers, currencies,
-    prepayments, expense_reports, expenses, approvals, dashboard, category_alerts
+    prepayments, expense_reports, expenses, approvals, dashboard, category_alerts, mfa
 )
 from app.core.config import settings
 from sqlalchemy import text
@@ -303,6 +303,7 @@ app.include_router(expenses.router, prefix="/api/expenses", tags=["Expenses"])
 app.include_router(approvals.router, prefix="/api/approvals", tags=["Approvals"])
 app.include_router(dashboard.router, prefix="/api/dashboard", tags=["Dashboard"])
 app.include_router(category_alerts.router, prefix="/api", tags=["Category Alerts"])
+app.include_router(mfa.router, prefix="/api/mfa", tags=["Multi-Factor Authentication"])
 
 
 @app.get("/")

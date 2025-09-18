@@ -100,6 +100,13 @@ class User(Base):
     is_superuser = Column(Boolean, default=False, nullable=False)
     is_approver = Column(Boolean, default=False, nullable=False)
     force_password_change = Column(Boolean, default=True, nullable=False)
+    
+    # MFA (Multi-Factor Authentication) fields
+    mfa_enabled = Column(Boolean, default=False, nullable=False)
+    mfa_secret = Column(String(255), nullable=True)  # TOTP secret (encrypted)
+    backup_codes = Column(JSON, nullable=True)  # Array of backup codes (hashed)
+    mfa_last_used = Column(DateTime(timezone=True), nullable=True)  # Prevent replay attacks
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     

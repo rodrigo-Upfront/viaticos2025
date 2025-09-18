@@ -64,6 +64,25 @@ class AuthService:
         encoded_jwt = jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
         return encoded_jwt
     
+    def create_mfa_token(self, user_id: int) -> str:
+        """Create a temporary MFA verification token"""
+        data = {"sub": str(user_id), "type": "mfa"}
+        expire = datetime.utcnow() + timedelta(minutes=5)  # 5-minute expiration
+        data.update({"exp": expire})
+        encoded_jwt = jwt.encode(data, self.secret_key, algorithm=self.algorithm)
+        return encoded_jwt
+    
+    def verify_mfa_token(self, token: str) -> Dict[str, Any]:
+        """Verify an MFA token and return payload"""
+        payload = self.verify_token(token)
+        if payload.get("type") != "mfa":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token type",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        return payload
+    
     def verify_token(self, token: str) -> Dict[str, Any]:
         """Verify and decode a token"""
         try:
