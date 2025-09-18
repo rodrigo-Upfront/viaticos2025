@@ -93,6 +93,7 @@ class User(Base):
     password = Column(String(255), nullable=False)  # Hashed password
     sap_code = Column(String(50), nullable=False)
     country_id = Column(Integer, ForeignKey("countries.id"), nullable=False)
+    location_id = Column(Integer, ForeignKey("locations.id"), nullable=True)
     cost_center = Column(String(100), nullable=False)
     credit_card_number = Column(String(20), nullable=True)
     supervisor_id = Column(Integer, ForeignKey("users.id"), nullable=True)
@@ -113,6 +114,7 @@ class User(Base):
     
     # Relationships
     country = relationship("Country", back_populates="users")
+    location = relationship("Location")
     supervisor = relationship("User", remote_side=[id], back_populates="subordinates")
     subordinates = relationship("User", back_populates="supervisor")
     prepayments = relationship("Prepayment", back_populates="requesting_user")
@@ -184,6 +186,38 @@ class CategoryCountryAlert(Base):
     
     # Unique constraint
     __table_args__ = (UniqueConstraint('category_id', 'country_id', 'currency_id', name='_category_country_currency_alert_uc'),)
+
+
+class Location(Base):
+    __tablename__ = "locations"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    sap_code = Column(String(50), nullable=False, unique=True)
+    cost_center = Column(String(100), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    location_currencies = relationship("LocationCurrency", back_populates="location", cascade="all, delete-orphan")
+
+
+class LocationCurrency(Base):
+    __tablename__ = "location_currencies"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    location_id = Column(Integer, ForeignKey("locations.id"), nullable=False)
+    currency_id = Column(Integer, ForeignKey("currencies.id"), nullable=False)
+    account = Column(String(255), nullable=False)  # Account field for this location-currency combination
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    location = relationship("Location", back_populates="location_currencies")
+    currency = relationship("Currency")
+    
+    # Unique constraint - one account per location-currency pair
+    __table_args__ = (UniqueConstraint('location_id', 'currency_id', name='_location_currency_uc'),)
 
 
 class FacturaSupplier(Base):

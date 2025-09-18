@@ -4,12 +4,12 @@ Handles user management operations
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from datetime import datetime
 
 from app.database.connection import get_db
-from app.models.models import User, Country
+from app.models.models import User, Country, Location
 from app.services.auth_service import AuthService, get_current_user, get_current_superuser
 from app.schemas.user_schemas import (
     UserCreate, UserUpdate, UserResponse, UserList
@@ -52,8 +52,12 @@ async def get_users(
     # Get total count
     total = query.count()
     
-    # Apply pagination
-    users = query.offset(skip).limit(limit).all()
+    # Apply pagination and load related data
+    users = query.options(
+        joinedload(User.country),
+        joinedload(User.location),
+        joinedload(User.supervisor)
+    ).offset(skip).limit(limit).all()
     
     return UserList(
         users=[UserResponse.from_orm(user) for user in users],
@@ -89,6 +93,15 @@ async def create_user(
                 detail="Invalid country ID"
             )
         
+        # Check if location exists (if provided)
+        if user_data.location_id:
+            location = db.query(Location).filter(Location.id == user_data.location_id).first()
+            if not location:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid location ID"
+                )
+        
         # Check supervisor if provided
         if user_data.supervisor_id:
             supervisor = db.query(User).filter(User.id == user_data.supervisor_id).first()
@@ -109,6 +122,7 @@ async def create_user(
             password=hashed_password,
             sap_code=user_data.sap_code,
             country_id=user_data.country_id,
+            location_id=user_data.location_id,
             cost_center=user_data.cost_center,
             credit_card_number=user_data.credit_card_number,
             supervisor_id=user_data.supervisor_id,
@@ -150,7 +164,11 @@ async def get_user(
             detail="Not enough permissions"
         )
     
-    user = db.query(User).filter(User.id == user_id).first()
+    user = db.query(User).options(
+        joinedload(User.country),
+        joinedload(User.location),
+        joinedload(User.supervisor)
+    ).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -207,6 +225,15 @@ async def update_user(
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Invalid country ID"
+                )
+        
+        # Check location if being updated
+        if "location_id" in update_data and update_data["location_id"]:
+            location = db.query(Location).filter(Location.id == update_data["location_id"]).first()
+            if not location:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid location ID"
                 )
         
         # Check supervisor if being updated

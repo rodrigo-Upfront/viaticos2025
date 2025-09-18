@@ -35,6 +35,7 @@ import ConfirmDialog from '../components/forms/ConfirmDialog';
 import AdminPasswordUpdateModal from '../components/forms/AdminPasswordUpdateModal';
 import { userService, User as ApiUser } from '../services/userService';
 import { countryService, Country as ApiCountry } from '../services/countryService';
+import { locationService, Location as ApiLocation } from '../services/locationService';
 
 interface User {
   id?: number;
@@ -45,6 +46,8 @@ interface User {
   sap_code: string;
   country_id: number;
   country?: string;
+  location_id?: number;
+  location?: string;
   cost_center: string;
   credit_card_number?: string;
   supervisor_id?: number;
@@ -62,6 +65,11 @@ interface Country {
   name: string;
 }
 
+interface Location {
+  id: number;
+  name: string;
+}
+
 const UsersPage: React.FC = () => {
   const { t } = useTranslation();
 
@@ -69,22 +77,26 @@ const UsersPage: React.FC = () => {
   const [loading, setLoading] = useState({
     users: true,
     countries: true,
+    locations: true,
     action: false,
   });
 
   // Data state
   const [countries, setCountries] = useState<Country[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
   const [users, setUsers] = useState<User[]>([]);
 
   // Load data on component mount
   useEffect(() => {
     loadUsers();
     loadCountries();
+    loadLocations();
   }, []);
 
   // Helper function to map API user to frontend format
   const mapApiToFrontend = (apiUser: ApiUser): User => {
     const country = countries.find(c => c.id === apiUser.country_id);
+    const location = locations.find(l => l.id === apiUser.location_id);
     const supervisor = users.find(u => u.id === apiUser.supervisor_id);
     
     return {
@@ -95,6 +107,8 @@ const UsersPage: React.FC = () => {
       sap_code: apiUser.sap_code,
       country_id: apiUser.country_id,
       country: country?.name || apiUser.country_name,
+      location_id: apiUser.location_id,
+      location: location?.name || apiUser.location_name,
       cost_center: apiUser.cost_center,
       credit_card_number: apiUser.credit_card_number,
       supervisor_id: apiUser.supervisor_id,
@@ -116,6 +130,7 @@ const UsersPage: React.FC = () => {
       password: frontendUser.password || '',
       sap_code: frontendUser.sap_code,
       country_id: frontendUser.country_id,
+      location_id: frontendUser.location_id,
       cost_center: frontendUser.cost_center,
       credit_card_number: frontendUser.credit_card_number,
       supervisor_id: frontendUser.supervisor_id && frontendUser.supervisor_id > 0 ? frontendUser.supervisor_id : null,
@@ -159,6 +174,23 @@ const UsersPage: React.FC = () => {
       console.error('Failed to load countries:', error);
     } finally {
       setLoading(prev => ({ ...prev, countries: false }));
+    }
+  };
+
+  // Load locations from API
+  const loadLocations = async () => {
+    try {
+      setLoading(prev => ({ ...prev, locations: true }));
+      const response = await locationService.getLocations();
+      const mappedLocations = response.locations.map((location: ApiLocation) => ({
+        id: location.id,
+        name: location.name,
+      }));
+      setLocations(mappedLocations);
+    } catch (error) {
+      console.error('Failed to load locations:', error);
+    } finally {
+      setLoading(prev => ({ ...prev, locations: false }));
     }
   };
 
@@ -580,6 +612,7 @@ const UsersPage: React.FC = () => {
         user={modal.user}
         mode={modal.mode}
         countries={countries}
+        locations={locations}
         users={users}
         loading={loading.action}
       />

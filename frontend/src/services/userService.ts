@@ -12,6 +12,7 @@ export interface User {
   surname: string;
   sap_code: string;
   country_id: number;
+  location_id?: number;
   cost_center: string;
   credit_card_number?: string;
   supervisor_id?: number;
@@ -24,6 +25,7 @@ export interface User {
   created_at: string;
   updated_at: string;
   country_name?: string;
+  location_name?: string;
   supervisor_name?: string;
 }
 
@@ -34,6 +36,7 @@ export interface UserCreate {
   password: string;
   sap_code: string;
   country_id: number;
+  location_id?: number;
   cost_center: string;
   credit_card_number?: string;
   supervisor_id?: number | null;
@@ -50,6 +53,7 @@ export interface UserUpdate {
   password?: string;
   sap_code?: string;
   country_id?: number;
+  location_id?: number;
   cost_center?: string;
   credit_card_number?: string;
   supervisor_id?: number | null;

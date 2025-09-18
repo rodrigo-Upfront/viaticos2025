@@ -17,6 +17,7 @@ class UserBase(BaseModel):
     surname: str = Field(..., min_length=1, max_length=100, description="User surname")
     sap_code: str = Field(..., min_length=1, max_length=50, description="SAP code")
     country_id: int = Field(..., description="Country ID")
+    location_id: Optional[int] = Field(None, description="Location ID")
     cost_center: str = Field(..., min_length=1, max_length=100, description="Cost center")
     credit_card_number: Optional[str] = Field(None, max_length=20, description="Credit card number")
     supervisor_id: Optional[int] = Field(None, description="Supervisor user ID")
@@ -44,6 +45,7 @@ class UserUpdate(BaseModel):
     surname: Optional[str] = Field(None, min_length=1, max_length=100, description="User surname")
     sap_code: Optional[str] = Field(None, min_length=1, max_length=50, description="SAP code")
     country_id: Optional[int] = Field(None, description="Country ID")
+    location_id: Optional[int] = Field(None, description="Location ID")
     cost_center: Optional[str] = Field(None, min_length=1, max_length=100, description="Cost center")
     credit_card_number: Optional[str] = Field(None, max_length=20, description="Credit card number")
     supervisor_id: Optional[int] = Field(None, description="Supervisor user ID")
@@ -61,6 +63,7 @@ class UserResponse(BaseModel):
     surname: str = Field(..., description="User surname")
     sap_code: str = Field(..., description="SAP code")
     country_id: int = Field(..., description="Country ID")
+    location_id: Optional[int] = Field(None, description="Location ID")
     cost_center: str = Field(..., description="Cost center")
     credit_card_number: Optional[str] = Field(None, description="Credit card number")
     supervisor_id: Optional[int] = Field(None, description="Supervisor user ID")
@@ -75,6 +78,7 @@ class UserResponse(BaseModel):
     
     # Related data
     country_name: Optional[str] = Field(None, description="Country name")
+    location_name: Optional[str] = Field(None, description="Location name")
     supervisor_name: Optional[str] = Field(None, description="Supervisor full name")
     
     class Config:
@@ -90,6 +94,7 @@ class UserResponse(BaseModel):
             "surname": user.surname,
             "sap_code": user.sap_code,
             "country_id": user.country_id,
+            "location_id": user.location_id,
             "cost_center": user.cost_center,
             "credit_card_number": user.credit_card_number,
             "supervisor_id": user.supervisor_id,
@@ -106,6 +111,9 @@ class UserResponse(BaseModel):
         # Add related data if available
         if hasattr(user, 'country') and user.country:
             data["country_name"] = user.country.name
+        
+        if hasattr(user, 'location') and user.location:
+            data["location_name"] = user.location.name
         
         if hasattr(user, 'supervisor') and user.supervisor:
             data["supervisor_name"] = f"{user.supervisor.name} {user.supervisor.surname}"

@@ -30,6 +30,8 @@ import {
   AttachMoney as CurrencyIcon,
   NotificationsActive as AlertIcon,
   Security as SecurityIcon,
+  LocationOn as LocationIcon,
+  AccountBalance as AccountIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import CountryModal from '../components/forms/CountryModal';
@@ -38,11 +40,14 @@ import SupplierModal from '../components/forms/SupplierModal';
 import CurrencyModal from '../components/forms/CurrencyModal';
 import CategoryAlertsModal from '../components/forms/CategoryAlertsModal';
 import MFASettingsModal from '../components/forms/MFASettingsModal';
+import LocationModal from '../components/forms/LocationModal';
+import LocationCurrencyModal from '../components/forms/LocationCurrencyModal';
 import ConfirmDialog from '../components/forms/ConfirmDialog';
 import { supplierService, Supplier as ApiSupplier } from '../services/supplierService';
 import { categoryService, Category as ApiCategory } from '../services/categoryService';
 import { countryService, Country as ApiCountry } from '../services/countryService';
 import { currencyService, Currency as ApiCurrency } from '../services/currencyService';
+import { locationService, Location as ApiLocation } from '../services/locationService';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -90,6 +95,13 @@ interface Currency {
   symbol?: string;
 }
 
+interface Location {
+  id?: number;
+  name: string;
+  sap_code: string;
+  cost_center: string;
+}
+
 const SettingsPage: React.FC = () => {
   const { t } = useTranslation();
   const [tabValue, setTabValue] = useState(0);
@@ -100,6 +112,7 @@ const SettingsPage: React.FC = () => {
     categories: true,
     suppliers: true,
     currencies: true,
+    locations: true,
   });
 
   // Countries state
@@ -117,6 +130,15 @@ const SettingsPage: React.FC = () => {
   // Currencies state
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [currencyModal, setCurrencyModal] = useState({ open: false, mode: 'create' as 'create' | 'edit', currency: undefined as Currency | undefined });
+
+  // Locations state
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [locationModal, setLocationModal] = useState({ open: false, mode: 'create' as 'create' | 'edit', location: undefined as Location | undefined });
+  const [locationCurrencyModal, setLocationCurrencyModal] = useState({ 
+    open: false, 
+    locationId: 0, 
+    locationName: '' 
+  });
 
   // Category alerts state
   const [categoryAlertsModal, setCategoryAlertsModal] = useState({ 
@@ -149,6 +171,7 @@ const SettingsPage: React.FC = () => {
     loadCategories();
     loadSuppliers();
     loadCurrencies();
+    loadLocations();
   }, []);
 
   const loadCountries = async () => {
@@ -238,6 +261,29 @@ const SettingsPage: React.FC = () => {
       });
     } finally {
       setLoading(prev => ({ ...prev, currencies: false }));
+    }
+  };
+
+  const loadLocations = async () => {
+    try {
+      setLoading(prev => ({ ...prev, locations: true }));
+      const response = await locationService.getLocations();
+      const mappedLocations = response.locations.map((location: ApiLocation) => ({
+        id: location.id,
+        name: location.name,
+        sap_code: location.sap_code,
+        cost_center: location.cost_center
+      }));
+      setLocations(mappedLocations);
+    } catch (error) {
+      console.error('Failed to load locations:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to load locations',
+        severity: 'error'
+      });
+    } finally {
+      setLoading(prev => ({ ...prev, locations: false }));
     }
   };
 
@@ -587,6 +633,102 @@ const SettingsPage: React.FC = () => {
     }
   };
 
+  // Location CRUD operations
+  const handleCreateLocation = () => {
+    setLocationModal({ open: true, mode: 'create', location: undefined });
+  };
+
+  const handleEditLocation = (location: Location) => {
+    setLocationModal({ open: true, mode: 'edit', location });
+  };
+
+  const handleDeleteLocation = (location: Location) => {
+    setConfirmDialog({
+      open: true,
+      title: 'Delete Location',
+      message: `Are you sure you want to delete "${location.name}"? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          if (location.id) {
+            await locationService.deleteLocation(location.id);
+            setLocations(prev => prev.filter(l => l.id !== location.id));
+            setSnackbar({
+              open: true,
+              message: `Location "${location.name}" deleted successfully`,
+              severity: 'success'
+            });
+          }
+        } catch (error) {
+          console.error('Error deleting location:', error);
+          setSnackbar({
+            open: true,
+            message: `Failed to delete location "${location.name}"`,
+            severity: 'error'
+          });
+        }
+      }
+    });
+  };
+
+  const handleSaveLocation = async (locationData: Location) => {
+    try {
+      if (locationModal.mode === 'create') {
+        const apiData = {
+          name: locationData.name,
+          sap_code: locationData.sap_code,
+          cost_center: locationData.cost_center
+        };
+        const newLocation = await locationService.createLocation(apiData);
+        const mappedLocation = {
+          id: newLocation.id,
+          name: newLocation.name,
+          sap_code: newLocation.sap_code,
+          cost_center: newLocation.cost_center
+        };
+        setLocations(prev => [...prev, mappedLocation]);
+        setSnackbar({
+          open: true,
+          message: `Location "${locationData.name}" created successfully`,
+          severity: 'success'
+        });
+      } else if (locationData.id) {
+        const apiData = {
+          name: locationData.name,
+          sap_code: locationData.sap_code,
+          cost_center: locationData.cost_center
+        };
+        const updatedLocation = await locationService.updateLocation(locationData.id, apiData);
+        const mappedLocation = {
+          id: updatedLocation.id,
+          name: updatedLocation.name,
+          sap_code: updatedLocation.sap_code,
+          cost_center: updatedLocation.cost_center
+        };
+        setLocations(prev => prev.map(l => l.id === locationData.id ? mappedLocation : l));
+        setSnackbar({
+          open: true,
+          message: `Location "${locationData.name}" updated successfully`,
+          severity: 'success'
+        });
+      }
+    } catch (error: any) {
+      console.error('Failed to save location:', error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.detail || `Failed to save location "${locationData.name}"`,
+        severity: 'error'
+      });
+    }
+  };
+
+  const handleManageLocationCurrencies = (location: Location) => {
+    setLocationCurrencyModal({
+      open: true,
+      locationId: location.id!,
+      locationName: location.name
+    });
+  };
+
   return (
     <Box>
       <Typography variant="h4" gutterBottom>
@@ -600,6 +742,7 @@ const SettingsPage: React.FC = () => {
             <Tab icon={<CategoryIcon />} label={t('configuration.expenseCategories')} />
             <Tab icon={<SupplierIcon />} label={t('configuration.suppliers')} />
             <Tab icon={<CurrencyIcon />} label={t('configuration.currencies')} />
+            <Tab icon={<LocationIcon />} label={t('configuration.locations')} />
             <Tab icon={<SecurityIcon />} label={t('mfa.settings.title')} />
           </Tabs>
         </Box>
@@ -817,6 +960,69 @@ const SettingsPage: React.FC = () => {
 
         <TabPanel value={tabValue} index={4}>
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+            <Typography variant="h6">{t('configuration.locationsManagement')}</Typography>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleCreateLocation}
+            >
+              {t('configuration.addLocation')}
+            </Button>
+          </Box>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>{t('tables.id')}</TableCell>
+                  <TableCell>{t('users.name')}</TableCell>
+                  <TableCell>{t('configuration.sapCode')}</TableCell>
+                  <TableCell>{t('configuration.costCenter')}</TableCell>
+                  <TableCell>{t('configuration.manageCurrencies')}</TableCell>
+                  <TableCell>{t('common.actions')}</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {locations.map((location) => (
+                  <TableRow key={location.id}>
+                    <TableCell>{location.id}</TableCell>
+                    <TableCell>{location.name}</TableCell>
+                    <TableCell>{location.sap_code}</TableCell>
+                    <TableCell>{location.cost_center}</TableCell>
+                    <TableCell>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleManageLocationCurrencies(location)}
+                        color="primary"
+                        title={t('configuration.manageCurrencies')}
+                      >
+                        <AccountIcon />
+                      </IconButton>
+                    </TableCell>
+                    <TableCell>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleEditLocation(location)}
+                        color="primary"
+                      >
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => handleDeleteLocation(location)}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </TabPanel>
+
+        <TabPanel value={tabValue} index={5}>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
             <Typography variant="h6">{t('mfa.settings.title')}</Typography>
           </Box>
           
@@ -897,6 +1103,23 @@ const SettingsPage: React.FC = () => {
       <MFASettingsModal
         open={mfaSettingsModal}
         onClose={() => setMfaSettingsModal(false)}
+      />
+
+      {/* Location Modal */}
+      <LocationModal
+        open={locationModal.open}
+        onClose={() => setLocationModal({ open: false, mode: 'create', location: undefined })}
+        onSave={handleSaveLocation}
+        location={locationModal.location}
+        mode={locationModal.mode}
+      />
+
+      {/* Location Currency Modal */}
+      <LocationCurrencyModal
+        open={locationCurrencyModal.open}
+        onClose={() => setLocationCurrencyModal({ open: false, locationId: 0, locationName: '' })}
+        locationId={locationCurrencyModal.locationId}
+        locationName={locationCurrencyModal.locationName}
       />
 
       {/* Confirmation Dialog */}

@@ -26,6 +26,8 @@ interface User {
   sap_code: string;
   country_id: number;
   country?: string; // For display
+  location_id?: number;
+  location?: string; // For display
   cost_center: string;
   credit_card_number?: string;
   supervisor_id?: number;
@@ -41,6 +43,11 @@ interface Country {
   name: string;
 }
 
+interface Location {
+  id: number;
+  name: string;
+}
+
 interface UserModalProps {
   open: boolean;
   onClose: () => void;
@@ -48,6 +55,7 @@ interface UserModalProps {
   user?: User;
   mode: 'create' | 'edit';
   countries: Country[];
+  locations: Location[];
   users: User[]; // For supervisor dropdown
   loading?: boolean;
 }
@@ -59,6 +67,7 @@ const UserModal: React.FC<UserModalProps> = ({
   user,
   mode,
   countries,
+  locations,
   users,
   loading = false
 }) => {
@@ -71,6 +80,8 @@ const UserModal: React.FC<UserModalProps> = ({
     sap_code: '',
     country_id: 0,
     country: '',
+    location_id: undefined,
+    location: '',
     cost_center: '',
     credit_card_number: '',
     supervisor_id: undefined,
@@ -94,6 +105,8 @@ const UserModal: React.FC<UserModalProps> = ({
         sap_code: '',
         country_id: 0,
         country: '',
+        location_id: undefined,
+        location: '',
         cost_center: '',
         credit_card_number: '',
         supervisor_id: undefined,
@@ -148,6 +161,16 @@ const UserModal: React.FC<UserModalProps> = ({
         country_id: ''
       }));
     }
+  };
+
+  const handleLocationChange = (event: any) => {
+    const locationId = event.target.value;
+    const selectedLocation = locations.find(l => l.id === locationId);
+    setFormData(prev => ({
+      ...prev,
+      location_id: locationId || undefined,
+      location: selectedLocation?.name || ''
+    }));
   };
 
   const handleSupervisorChange = (event: any) => {
@@ -231,6 +254,8 @@ const UserModal: React.FC<UserModalProps> = ({
       sap_code: '',
       country_id: 0,
       country: '',
+      location_id: undefined,
+      location: '',
       cost_center: '',
       credit_card_number: '',
       supervisor_id: undefined,
@@ -343,6 +368,26 @@ const UserModal: React.FC<UserModalProps> = ({
                 )}
               </FormControl>
             </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Location</InputLabel>
+                <Select
+                  value={formData.location_id || ''}
+                  onChange={handleLocationChange}
+                  label="Location"
+                >
+                  <MenuItem value="">
+                    <em>Select a location (optional)</em>
+                  </MenuItem>
+                  {locations.map((location) => (
+                    <MenuItem key={location.id} value={location.id}>
+                      {location.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth required>
                 <InputLabel>Profile</InputLabel>
