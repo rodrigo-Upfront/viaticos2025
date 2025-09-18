@@ -29,6 +29,7 @@ import {
   Business as SupplierIcon,
   AttachMoney as CurrencyIcon,
   NotificationsActive as AlertIcon,
+  Security as SecurityIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import CountryModal from '../components/forms/CountryModal';
@@ -36,6 +37,7 @@ import CategoryModal from '../components/forms/CategoryModal';
 import SupplierModal from '../components/forms/SupplierModal';
 import CurrencyModal from '../components/forms/CurrencyModal';
 import CategoryAlertsModal from '../components/forms/CategoryAlertsModal';
+import MFASettingsModal from '../components/forms/MFASettingsModal';
 import ConfirmDialog from '../components/forms/ConfirmDialog';
 import { supplierService, Supplier as ApiSupplier } from '../services/supplierService';
 import { categoryService, Category as ApiCategory } from '../services/categoryService';
@@ -122,6 +124,9 @@ const SettingsPage: React.FC = () => {
     categoryId: 0, 
     categoryName: '' 
   });
+
+  // MFA settings state
+  const [mfaSettingsModal, setMfaSettingsModal] = useState(false);
 
   // Confirmation dialog state
   const [confirmDialog, setConfirmDialog] = useState({
@@ -595,6 +600,7 @@ const SettingsPage: React.FC = () => {
             <Tab icon={<CategoryIcon />} label={t('configuration.expenseCategories')} />
             <Tab icon={<SupplierIcon />} label={t('configuration.suppliers')} />
             <Tab icon={<CurrencyIcon />} label={t('configuration.currencies')} />
+            <Tab icon={<SecurityIcon />} label={t('mfa.settings.title')} />
           </Tabs>
         </Box>
 
@@ -808,6 +814,39 @@ const SettingsPage: React.FC = () => {
             </Table>
           </TableContainer>
         </TabPanel>
+
+        <TabPanel value={tabValue} index={4}>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+            <Typography variant="h6">{t('mfa.settings.title')}</Typography>
+          </Box>
+          
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={8}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    {t('mfa.settings.title')}
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary" paragraph>
+                    {t('mfa.settings.description')}
+                  </Typography>
+                  <Typography variant="body2">
+                    {t('mfa.settings.benefits')}
+                  </Typography>
+                </CardContent>
+                <CardActions>
+                  <Button
+                    variant="contained"
+                    startIcon={<SecurityIcon />}
+                    onClick={() => setMfaSettingsModal(true)}
+                  >
+                    {t('mfa.settings.manage')}
+                  </Button>
+                </CardActions>
+              </Card>
+            </Grid>
+          </Grid>
+        </TabPanel>
       </Paper>
 
       {/* Country Modal */}
@@ -852,6 +891,12 @@ const SettingsPage: React.FC = () => {
         onClose={() => setCategoryAlertsModal({ open: false, categoryId: 0, categoryName: '' })}
         categoryId={categoryAlertsModal.categoryId}
         categoryName={categoryAlertsModal.categoryName}
+      />
+
+      {/* MFA Settings Modal */}
+      <MFASettingsModal
+        open={mfaSettingsModal}
+        onClose={() => setMfaSettingsModal(false)}
       />
 
       {/* Confirmation Dialog */}
