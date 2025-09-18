@@ -106,6 +106,7 @@ class User(Base):
     mfa_secret = Column(String(255), nullable=True)  # TOTP secret (encrypted)
     backup_codes = Column(JSON, nullable=True)  # Array of backup codes (hashed)
     mfa_last_used = Column(DateTime(timezone=True), nullable=True)  # Prevent replay attacks
+    mfa_required_by_admin = Column(Boolean, default=False, nullable=False)  # Admin-forced MFA requirement
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

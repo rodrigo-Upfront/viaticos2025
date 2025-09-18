@@ -19,6 +19,8 @@ export interface User {
   is_superuser: boolean;
   is_approver: boolean;
   force_password_change: boolean;
+  mfa_enabled?: boolean;
+  mfa_required_by_admin?: boolean;
   created_at: string;
   updated_at: string;
   country_name?: string;

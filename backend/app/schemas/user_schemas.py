@@ -68,6 +68,8 @@ class UserResponse(BaseModel):
     is_superuser: bool = Field(..., description="Superuser flag")
     is_approver: bool = Field(..., description="Approver flag")
     force_password_change: bool = Field(..., description="Force password change flag")
+    mfa_enabled: bool = Field(default=False, description="MFA enabled flag")
+    mfa_required_by_admin: bool = Field(default=False, description="MFA required by admin flag")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: Optional[datetime] = Field(None, description="Last update timestamp")
     

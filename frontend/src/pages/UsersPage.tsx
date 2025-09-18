@@ -24,6 +24,8 @@ import {
   SupervisorAccount as SupervisorIcon,
   Person as PersonIcon,
   Lock as LockIcon,
+  Security as SecurityIcon,
+  Shield as ShieldIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import UserModal from '../components/forms/UserModal';
@@ -49,6 +51,8 @@ interface User {
   is_superuser: boolean;
   is_approver: boolean;
   force_password_change: boolean;
+  mfa_enabled?: boolean;
+  mfa_required_by_admin?: boolean;
 }
 
 interface Country {
@@ -97,6 +101,8 @@ const UsersPage: React.FC = () => {
       is_superuser: apiUser.is_superuser,
       is_approver: apiUser.is_approver,
       force_password_change: apiUser.force_password_change,
+      mfa_enabled: apiUser.mfa_enabled || false,
+      mfa_required_by_admin: apiUser.mfa_required_by_admin || false,
     };
   };
 
@@ -330,13 +336,14 @@ const UsersPage: React.FC = () => {
               <TableCell>{t('users.costCenter')}</TableCell>
               <TableCell>{t('users.supervisor')}</TableCell>
               <TableCell>{t('users.permissions')}</TableCell>
+              <TableCell>{t('users.mfaStatus')}</TableCell>
               <TableCell>{t('common.actions')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {loading.users ? (
               <TableRow>
-                <TableCell colSpan={10} align="center" sx={{ py: 4 }}>
+                <TableCell colSpan={11} align="center" sx={{ py: 4 }}>
                   <CircularProgress />
                   <Typography variant="body2" sx={{ mt: 1 }}>
                     Loading users...
@@ -345,7 +352,7 @@ const UsersPage: React.FC = () => {
               </TableRow>
             ) : users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} align="center" sx={{ py: 4 }}>
+                <TableCell colSpan={11} align="center" sx={{ py: 4 }}>
                   <Typography variant="body2" color="text.secondary">
                     No users found
                   </Typography>
@@ -389,6 +396,31 @@ const UsersPage: React.FC = () => {
                       )}
                       {user.force_password_change && (
                         <Chip label="Must Change PWD" color="warning" size="small" />
+                      )}
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Box display="flex" alignItems="center" gap={1}>
+                      {user.mfa_required_by_admin ? (
+                        <Chip 
+                          label={t('users.mfaRequired')} 
+                          color="warning" 
+                          size="small"
+                          icon={<ShieldIcon />}
+                        />
+                      ) : user.mfa_enabled ? (
+                        <Chip 
+                          label={t('users.mfaEnabled')} 
+                          color="success" 
+                          size="small"
+                          icon={<SecurityIcon />}
+                        />
+                      ) : (
+                        <Chip 
+                          label={t('users.mfaDisabled')} 
+                          color="default" 
+                          size="small"
+                        />
                       )}
                     </Box>
                   </TableCell>

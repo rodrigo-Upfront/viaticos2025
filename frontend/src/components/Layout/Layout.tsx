@@ -354,7 +354,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <ListItemIcon>
                 <Security fontSize="small" />
               </ListItemIcon>
-              {t('mfa.settings.title')}
+              {t('mfa.settings.menuLabel')}
             </MenuItem>
             <MenuItem onClick={handleLogout}>
               <ListItemIcon>

@@ -60,6 +60,7 @@
     },
     "settings": {
       "title": "Configuración de Seguridad",
+      "menuLabel": "Habilitar/Deshabilitar MFA",
       "description": "La Autenticación Multifactor (MFA) agrega una capa adicional de seguridad a su cuenta al requerir un segundo paso de verificación durante el inicio de sesión.",
       "benefits": "Beneficios: Protege contra acceso no autorizado, reduce el riesgo de compromiso de cuenta y cumple con los requisitos de seguridad.",
       "manage": "Administrar MFA",
@@ -337,7 +338,11 @@
     "update": "ACTUALIZAR",
     "accounting": "Contabilidad",
     "treasury": "Tesorería",
-    "manager": "Gerente"
+    "manager": "Gerente",
+    "mfaStatus": "Estado MFA",
+    "mfaEnabled": "Habilitado",
+    "mfaDisabled": "Deshabilitado",
+    "mfaRequired": "Requerido"
   },
   "configuration": {
     "title": "Configuración",

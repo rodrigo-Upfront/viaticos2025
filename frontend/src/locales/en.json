@@ -60,6 +60,7 @@
     },
     "settings": {
       "title": "Security Settings",
+      "menuLabel": "Enable/Disable MFA",
       "description": "Multi-Factor Authentication (MFA) adds an extra layer of security to your account by requiring a second verification step during login.",
       "benefits": "Benefits: Protects against unauthorized access, reduces risk of account compromise, and meets security compliance requirements.",
       "manage": "Manage MFA",
@@ -323,7 +324,11 @@
     "update": "UPDATE",
     "accounting": "Accounting",
     "treasury": "Treasury",
-    "manager": "Manager"
+    "manager": "Manager",
+    "mfaStatus": "MFA Status",
+    "mfaEnabled": "Enabled",
+    "mfaDisabled": "Disabled",
+    "mfaRequired": "Required"
   },
   "configuration": {
     "title": "Configuration",
