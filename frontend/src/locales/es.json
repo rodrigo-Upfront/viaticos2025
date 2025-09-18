@@ -342,7 +342,17 @@
     "mfaStatus": "Estado MFA",
     "mfaEnabled": "Habilitado",
     "mfaDisabled": "Deshabilitado",
-    "mfaRequired": "Requerido"
+    "mfaRequired": "Requerido",
+    "forceMFA": "Forzar MFA",
+    "adminDisableMFA": "Deshabilitar MFA",
+    "forceMFATitle": "Forzar Requerimiento MFA",
+    "forceMFAMessage": "Esto requerirá que {{name}} configure MFA en su próximo inicio de sesión. No podrá deshabilitarlo. ¿Está seguro?",
+    "forceMFASuccess": "Requerimiento MFA habilitado para {{name}}",
+    "forceMFAError": "Error al forzar requerimiento MFA",
+    "adminDisableMFATitle": "Deshabilitar MFA del Usuario",
+    "adminDisableMFAMessage": "Esto deshabilitará completamente MFA para {{name}}, incluyendo la eliminación de su configuración actual y códigos de respaldo. ¿Está seguro?",
+    "adminDisableMFASuccess": "MFA deshabilitado para {{name}}",
+    "adminDisableMFAError": "Error al deshabilitar MFA"
   },
   "configuration": {
     "title": "Configuración",

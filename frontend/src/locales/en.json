@@ -328,7 +328,17 @@
     "mfaStatus": "MFA Status",
     "mfaEnabled": "Enabled",
     "mfaDisabled": "Disabled",
-    "mfaRequired": "Required"
+    "mfaRequired": "Required",
+    "forceMFA": "Force MFA",
+    "adminDisableMFA": "Disable MFA",
+    "forceMFATitle": "Force MFA Requirement",
+    "forceMFAMessage": "This will require {{name}} to set up MFA on their next login. They will not be able to disable it. Are you sure?",
+    "forceMFASuccess": "MFA requirement enabled for {{name}}",
+    "forceMFAError": "Failed to force MFA requirement",
+    "adminDisableMFATitle": "Disable User MFA",
+    "adminDisableMFAMessage": "This will completely disable MFA for {{name}}, including removing their current setup and backup codes. Are you sure?",
+    "adminDisableMFASuccess": "MFA disabled for {{name}}",
+    "adminDisableMFAError": "Failed to disable MFA"
   },
   "configuration": {
     "title": "Configuration",

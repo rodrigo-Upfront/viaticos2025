@@ -26,6 +26,8 @@ import {
   Lock as LockIcon,
   Security as SecurityIcon,
   Shield as ShieldIcon,
+  GppGood as ForceMFAIcon,
+  SecurityUpdate as DisableMFAIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import UserModal from '../components/forms/UserModal';
@@ -250,6 +252,82 @@ const UsersPage: React.FC = () => {
     });
   };
 
+  const handleForceMFA = (user: User) => {
+    setConfirmDialog({
+      open: true,
+      title: t('users.forceMFATitle'),
+      message: t('users.forceMFAMessage', { name: `${user.name} ${user.surname}` }),
+      onConfirm: async () => {
+        if (!user.id) return;
+        
+        try {
+          setLoading(prev => ({ ...prev, action: true }));
+          await userService.forceMFA(user.id);
+          
+          // Update user in local state
+          setUsers(prev => prev.map(u => 
+            u.id === user.id ? { ...u, mfa_required_by_admin: true } : u
+          ));
+          
+          setSnackbar({
+            open: true,
+            message: t('users.forceMFASuccess', { name: `${user.name} ${user.surname}` }),
+            severity: 'success'
+          });
+        } catch (error) {
+          console.error('Failed to force MFA for user:', error);
+          setSnackbar({
+            open: true,
+            message: t('users.forceMFAError'),
+            severity: 'error'
+          });
+        } finally {
+          setLoading(prev => ({ ...prev, action: false }));
+        }
+      }
+    });
+  };
+
+  const handleAdminDisableMFA = (user: User) => {
+    setConfirmDialog({
+      open: true,
+      title: t('users.adminDisableMFATitle'),
+      message: t('users.adminDisableMFAMessage', { name: `${user.name} ${user.surname}` }),
+      onConfirm: async () => {
+        if (!user.id) return;
+        
+        try {
+          setLoading(prev => ({ ...prev, action: true }));
+          await userService.adminDisableMFA(user.id);
+          
+          // Update user in local state
+          setUsers(prev => prev.map(u => 
+            u.id === user.id ? { 
+              ...u, 
+              mfa_enabled: false, 
+              mfa_required_by_admin: false 
+            } : u
+          ));
+          
+          setSnackbar({
+            open: true,
+            message: t('users.adminDisableMFASuccess', { name: `${user.name} ${user.surname}` }),
+            severity: 'success'
+          });
+        } catch (error) {
+          console.error('Failed to disable MFA for user:', error);
+          setSnackbar({
+            open: true,
+            message: t('users.adminDisableMFAError'),
+            severity: 'error'
+          });
+        } finally {
+          setLoading(prev => ({ ...prev, action: false }));
+        }
+      }
+    });
+  };
+
   const handleSave = async (userData: User) => {
     try {
       setLoading(prev => ({ ...prev, action: true }));
@@ -442,6 +520,32 @@ const UsersPage: React.FC = () => {
                     >
                       <LockIcon />
                     </IconButton>
+                    
+                    {/* MFA Admin Actions */}
+                    {!user.mfa_required_by_admin && !user.mfa_enabled && (
+                      <IconButton
+                        size="small"
+                        onClick={() => handleForceMFA(user)}
+                        color="info"
+                        disabled={loading.action}
+                        title={t('users.forceMFA')}
+                      >
+                        <ForceMFAIcon />
+                      </IconButton>
+                    )}
+                    
+                    {(user.mfa_enabled || user.mfa_required_by_admin) && (
+                      <IconButton
+                        size="small"
+                        onClick={() => handleAdminDisableMFA(user)}
+                        color="secondary"
+                        disabled={loading.action}
+                        title={t('users.adminDisableMFA')}
+                      >
+                        <DisableMFAIcon />
+                      </IconButton>
+                    )}
+                    
                     {!user.is_superuser && (
                       <IconButton
                         size="small"

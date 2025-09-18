@@ -119,6 +119,22 @@ export class UserService {
   async deleteUser(id: number): Promise<void> {
     await apiClient.delete(`${this.basePath}/${id}`);
   }
+
+  /**
+   * Force MFA for user (admin only)
+   */
+  async forceMFA(userId: number): Promise<{message: string; user_id: number; mfa_required_by_admin: boolean}> {
+    const response = await apiClient.post(`${this.basePath}/${userId}/force-mfa`);
+    return response.data;
+  }
+
+  /**
+   * Admin disable MFA for user (admin only)
+   */
+  async adminDisableMFA(userId: number): Promise<{message: string; user_id: number; mfa_enabled: boolean; mfa_required_by_admin: boolean}> {
+    const response = await apiClient.delete(`${this.basePath}/${userId}/mfa`);
+    return response.data;
+  }
 }
 
 // Export singleton instance

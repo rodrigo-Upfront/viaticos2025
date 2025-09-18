@@ -367,3 +367,97 @@ async def admin_update_user_password(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update user password: {str(e)}"
         )
+
+
+@router.post("/{user_id}/force-mfa")
+async def force_user_mfa(
+    user_id: int,
+    current_user: User = Depends(get_current_superuser),
+    db: Session = Depends(get_db)
+):
+    """
+    Force MFA requirement for a specific user (superuser only)
+    User will be required to set up MFA on next login and cannot disable it
+    """
+    try:
+        # Find the target user
+        target_user = db.query(User).filter(User.id == user_id).first()
+        if not target_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        # Prevent forcing MFA on superusers (optional business rule)
+        # if target_user.is_superuser:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_400_BAD_REQUEST,
+        #         detail="Cannot force MFA on superuser accounts"
+        #     )
+        
+        # Set MFA as required by admin
+        target_user.mfa_required_by_admin = True
+        target_user.updated_at = datetime.utcnow()
+        
+        db.commit()
+        
+        return {
+            "message": f"MFA requirement enabled for user {target_user.email}",
+            "user_id": user_id,
+            "mfa_required_by_admin": True
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to force MFA for user: {str(e)}"
+        )
+
+
+@router.delete("/{user_id}/mfa")
+async def admin_disable_user_mfa(
+    user_id: int,
+    current_user: User = Depends(get_current_superuser),
+    db: Session = Depends(get_db)
+):
+    """
+    Admin disable MFA for a specific user (superuser only)
+    Removes MFA requirement and disables current MFA setup
+    """
+    try:
+        # Find the target user
+        target_user = db.query(User).filter(User.id == user_id).first()
+        if not target_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        # Disable MFA completely
+        target_user.mfa_enabled = False
+        target_user.mfa_required_by_admin = False
+        target_user.mfa_secret = None
+        target_user.backup_codes = None
+        target_user.mfa_last_used = None
+        target_user.updated_at = datetime.utcnow()
+        
+        db.commit()
+        
+        return {
+            "message": f"MFA disabled for user {target_user.email}",
+            "user_id": user_id,
+            "mfa_enabled": False,
+            "mfa_required_by_admin": False
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to disable MFA for user: {str(e)}"
+        )
