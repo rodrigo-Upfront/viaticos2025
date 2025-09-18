@@ -97,6 +97,8 @@ class UserResponse(BaseModel):
             "is_superuser": user.is_superuser,
             "is_approver": user.is_approver,
             "force_password_change": user.force_password_change,
+            "mfa_enabled": user.mfa_enabled,
+            "mfa_required_by_admin": user.mfa_required_by_admin,
             "created_at": user.created_at,
             "updated_at": user.updated_at,
         }
