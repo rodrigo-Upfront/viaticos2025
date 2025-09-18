@@ -31,6 +31,7 @@ import {
   Approval,
   Language,
   Lock,
+  Security,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -40,6 +41,7 @@ import { prepaymentService } from '../../services/prepaymentService';
 import { expenseService } from '../../services/expenseService';
 import { reportService } from '../../services/reportService';
 import PasswordChangeModal from '../forms/PasswordChangeModal';
+import MFASettingsModal from '../forms/MFASettingsModal';
 
 const drawerWidth = 260;
 const collapsedDrawerWidth = 72;
@@ -59,6 +61,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [langAnchorEl, setLangAnchorEl] = useState<null | HTMLElement>(null);
   const [passwordChangeOpen, setPasswordChangeOpen] = useState(false);
+  const [mfaSettingsOpen, setMfaSettingsOpen] = useState(false);
   
   const [counts, setCounts] = useState<{ prepayments: number; expenses: number; reports: number }>({ prepayments: 0, expenses: 0, reports: 0 });
 
@@ -123,6 +126,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const handlePasswordChange = () => {
     setPasswordChangeOpen(true);
+    handleClose();
+  };
+
+  const handleMFASettings = () => {
+    setMfaSettingsOpen(true);
     handleClose();
   };
 
@@ -342,6 +350,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </ListItemIcon>
               Change Password
             </MenuItem>
+            <MenuItem onClick={handleMFASettings}>
+              <ListItemIcon>
+                <Security fontSize="small" />
+              </ListItemIcon>
+              {t('mfa.settings.title')}
+            </MenuItem>
             <MenuItem onClick={handleLogout}>
               <ListItemIcon>
                 <Logout fontSize="small" />
@@ -356,6 +370,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         open={passwordChangeOpen}
         onClose={() => setPasswordChangeOpen(false)}
         onSuccess={handlePasswordChangeSuccess}
+      />
+      
+      <MFASettingsModal
+        open={mfaSettingsOpen}
+        onClose={() => setMfaSettingsOpen(false)}
       />
       <Box component="nav" sx={{ width: { sm: desktopOpen ? drawerWidth : collapsedDrawerWidth }, flexShrink: { sm: 0 } }}>
         <Drawer
