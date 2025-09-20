@@ -137,6 +137,7 @@
     "status": "Status",
     "uncategorized": "Uncategorized",
     "actions": "Actions",
+    "confirmDelete": "Are you sure you want to delete",
     "category": "Category",
     "quantity": "Quantity",
     "description": "Description",
@@ -349,6 +350,7 @@
     "suppliers": "SUPPLIERS",
     "currencies": "CURRENCIES",
     "locations": "LOCATIONS",
+    "taxes": "TAXES",
     "countriesManagement": "Countries Management",
     "expenseCategoriesManagement": "Expense Categories Management",
     "suppliersManagement": "Factura Suppliers Management",
@@ -383,6 +385,27 @@
     "noCurrenciesAssociated": "No currencies associated with this location yet.",
     "allCurrenciesAssociated": "All available currencies are already associated with this location."
   },
+  "taxes": {
+    "title": "Taxes",
+    "taxesManagement": "Tax Management",
+    "addTax": "ADD TAX",
+    "editTax": "Edit Tax",
+    "code": "Code",
+    "codigo": "Código",
+    "regime": "Regime",
+    "regimen": "Régimen",
+    "taxNote": "Taxes are used for taxable invoices (FACTURA with taxable = Yes).",
+    "codePlaceholder": "e.g., IGV, ISC, IVAP",
+    "regimePlaceholder": "e.g., General Sales Tax - 18%",
+    "codeRequired": "Tax code is required",
+    "regimeRequired": "Tax regime is required",
+    "noTaxesFound": "No taxes found",
+    "deleteTaxConfirm": "Are you sure you want to delete this tax?",
+    "taxDeletedSuccess": "Tax deleted successfully",
+    "taxCreatedSuccess": "Tax created successfully",
+    "taxUpdatedSuccess": "Tax updated successfully",
+    "selectTax": "Select a tax"
+  },
   "expenses": {
     "title": "Expenses",
     "createExpense": "CREATE EXPENSE",
@@ -397,8 +420,10 @@
     "travelExpenseReport": "Travel Expense Report",
     "expenseCategory": "Expense Category",
     "selectCategory": "Select a category",
-    "purpose": "Purpose",
+    "purpose": "Expense Details",
     "supplierName": "Supplier Name",
+    "supplierTaxName": "Supplier Tax Name / RUC",
+    "tax": "Tax",
     "expenseDate": "Expense Date",
     "documentNumber": "Document Number",
     "documentFile": "Document File (Optional)",
@@ -411,6 +436,7 @@
     "financialInformation": "Financial Information",
     "taxable": "Taxable",
     "boletaSupplier": "Boleta Supplier",
+    "facturaSupplier": "Invoice Supplier",
     "createMultipleExpenses": "Create Multiple Expenses",
     "selectReport": "Select Report",
     "enterExpenses": "Enter Expenses",
@@ -482,6 +508,9 @@
     "historyFrom": "From",
     "historyTo": "To",
     "historyComments": "Comments"
+  },
+  "suppliers": {
+    "taxName": "Tax Name / RUC"
   }
 }
 

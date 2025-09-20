@@ -137,6 +137,7 @@
     "status": "Estado",
     "uncategorized": "Sin Categoría",
     "actions": "Acciones",
+    "confirmDelete": "¿Está seguro que desea eliminar",
     "category": "Categoría",
     "quantity": "Cantidad",
     "description": "Descripción",
@@ -363,6 +364,7 @@
     "suppliers": "PROVEEDORES",
     "currencies": "MONEDAS",
     "locations": "UBICACIONES",
+    "taxes": "IMPUESTOS",
     "countriesManagement": "Gestión de Países",
     "expenseCategoriesManagement": "Gestión de Categorías de Gastos",
     "suppliersManagement": "Gestión de Proveedores de Factura",
@@ -397,6 +399,27 @@
     "noCurrenciesAssociated": "Aún no hay monedas asociadas con esta ubicación.",
     "allCurrenciesAssociated": "Todas las monedas disponibles ya están asociadas con esta ubicación."
   },
+  "taxes": {
+    "title": "Impuestos",
+    "taxesManagement": "Gestión de Impuestos",
+    "addTax": "AGREGAR IMPUESTO",
+    "editTax": "Editar Impuesto",
+    "code": "Código",
+    "codigo": "Código",
+    "regime": "Régimen",
+    "regimen": "Régimen",
+    "taxNote": "Los impuestos se utilizan para facturas gravables (FACTURA con gravable = Sí).",
+    "codePlaceholder": "ej., IGV, ISC, IVAP",
+    "regimePlaceholder": "ej., Impuesto General a las Ventas - 18%",
+    "codeRequired": "El código del impuesto es requerido",
+    "regimeRequired": "El régimen del impuesto es requerido",
+    "noTaxesFound": "No se encontraron impuestos",
+    "deleteTaxConfirm": "¿Está seguro que desea eliminar este impuesto?",
+    "taxDeletedSuccess": "Impuesto eliminado exitosamente",
+    "taxCreatedSuccess": "Impuesto creado exitosamente",
+    "taxUpdatedSuccess": "Impuesto actualizado exitosamente",
+    "selectTax": "Seleccionar un impuesto"
+  },
   "expenses": {
     "title": "Gastos",
     "createExpense": "CREAR GASTO",
@@ -411,8 +434,10 @@
     "travelExpenseReport": "Reporte de Gastos de Viaje",
     "expenseCategory": "Categoría de Gasto",
     "selectCategory": "Seleccionar una categoría",
-    "purpose": "Propósito",
+    "purpose": "Detalle de Gasto",
     "supplierName": "Nombre del Proveedor",
+    "supplierTaxName": "Nombre Fiscal del Proveedor / RUC",
+    "tax": "Impuesto",
     "expenseDate": "Fecha del Gasto",
     "documentNumber": "Número de Documento",
     "documentFile": "Archivo de Documento (Opcional)",
@@ -425,6 +450,7 @@
     "financialInformation": "Información Financiera",
     "taxable": "Sujeto a Impuesto",
     "boletaSupplier": "Proveedor Boleta",
+    "facturaSupplier": "Proveedor - Factura",
     "createMultipleExpenses": "Crear Múltiples Gastos",
     "selectReport": "Seleccionar Reporte",
     "enterExpenses": "Ingresar Gastos",
@@ -496,6 +522,9 @@
     "historyFrom": "De",
     "historyTo": "A",
     "historyComments": "Comentarios"
+  },
+  "suppliers": {
+    "taxName": "Nombre Fiscal / RUC"
   }
 }
 

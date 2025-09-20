@@ -12,6 +12,7 @@ import {
 interface Supplier {
   id?: number;
   name: string;
+  tax_name: string;
   sapCode: string;
 }
 
@@ -32,6 +33,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
 }) => {
   const [formData, setFormData] = useState<Supplier>({
     name: '',
+    tax_name: '',
     sapCode: ''
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -40,16 +42,27 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
     if (supplier && mode === 'edit') {
       setFormData(supplier);
     } else {
-      setFormData({ name: '', sapCode: '' });
+      setFormData({ name: '', tax_name: '', sapCode: '' });
     }
     setErrors({});
   }, [supplier, mode, open]);
 
   const handleChange = (field: keyof Supplier) => (event: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: event.target.value
-    }));
+    const value = event.target.value;
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        [field]: value
+      };
+      
+      // Auto-populate tax_name with name if tax_name is empty and we're changing name
+      if (field === 'name' && !prev.tax_name) {
+        newData.tax_name = value;
+      }
+      
+      return newData;
+    });
+    
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({
@@ -64,6 +77,10 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
 
     if (!formData.name.trim()) {
       newErrors.name = 'Supplier name is required';
+    }
+
+    if (!formData.tax_name.trim()) {
+      newErrors.tax_name = 'Supplier Tax Name / RUC is required';
     }
 
     if (!formData.sapCode.trim()) {
@@ -82,7 +99,7 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
   };
 
   const handleClose = () => {
-    setFormData({ name: '', sapCode: '' });
+    setFormData({ name: '', tax_name: '', sapCode: '' });
     setErrors({});
     onClose();
   };
@@ -104,6 +121,18 @@ const SupplierModal: React.FC<SupplierModalProps> = ({
             margin="normal"
             required
             placeholder="e.g., Restaurant Lima, Hotel Santiago"
+          />
+          
+          <TextField
+            fullWidth
+            label="Supplier Tax Name / RUC"
+            value={formData.tax_name}
+            onChange={handleChange('tax_name')}
+            error={!!errors.tax_name}
+            helperText={errors.tax_name || 'Tax identification name (auto-populated from supplier name)'}
+            margin="normal"
+            required
+            placeholder="e.g., Restaurant Lima S.A.C., RUC: 20123456789"
           />
           
           <TextField

@@ -8,6 +8,7 @@ import apiClient from './apiClient';
 export interface Supplier {
   id: number;
   name: string;
+  tax_name: string;
   sap_code: string;
   created_at: string;
   updated_at: string;
@@ -15,11 +16,13 @@ export interface Supplier {
 
 export interface SupplierCreate {
   name: string;
+  tax_name: string;
   sap_code: string;
 }
 
 export interface SupplierUpdate {
   name?: string;
+  tax_name?: string;
   sap_code?: string;
 }
 

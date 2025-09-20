@@ -225,12 +225,26 @@ class FacturaSupplier(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(200), nullable=False)
+    tax_name = Column(String(200), nullable=False)  # Supplier Tax Name / RUC
     sap_code = Column(String(50), unique=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
     # Relationships
     expenses = relationship("Expense", back_populates="factura_supplier")
+
+
+class Tax(Base):
+    __tablename__ = "taxes"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    code = Column(String(50), unique=True, nullable=False)  # Tax Code / Código
+    regime = Column(String(200), nullable=False)  # Tax Regime / Régimen
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    expenses = relationship("Expense", back_populates="tax")
 
 
 class Prepayment(Base):
@@ -307,8 +321,8 @@ class Expense(Base):
     amount = Column(Numeric(12, 2), nullable=False)
     document_number = Column(String(100), nullable=False)
     taxable = Column(SQLEnum(TaxableOption), default=TaxableOption.NO, nullable=True)
+    tax_id = Column(Integer, ForeignKey("taxes.id"), nullable=True)  # Tax for taxable invoices
     document_file = Column(String(500), nullable=True)
-    comments = Column(Text, nullable=True)
     rejection_reason = Column(String(300), nullable=True)
     status = Column(SQLEnum(ExpenseStatus), default=ExpenseStatus.PENDING, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -319,6 +333,7 @@ class Expense(Base):
     category = relationship("ExpenseCategory", back_populates="expenses")
     travel_expense_report = relationship("TravelExpenseReport", back_populates="expenses")
     factura_supplier = relationship("FacturaSupplier", back_populates="expenses")
+    tax = relationship("Tax", back_populates="expenses")
     country = relationship("Country", back_populates="expenses")
     currency = relationship("Currency", back_populates="expenses")
     # Optional: creator for standalone reimbursements

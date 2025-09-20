@@ -23,8 +23,8 @@ class ExpenseBase(BaseModel):
     amount: Decimal = Field(..., gt=0, description="Expense amount")
     document_number: str = Field(..., min_length=1, max_length=100, description="Document number")
     taxable: Optional[str] = Field("No", description="Taxable option (Si/No)")
+    tax_id: Optional[int] = Field(None, description="Tax ID for taxable invoices")
     document_file: Optional[str] = Field(None, max_length=500, description="Document file path")
-    comments: Optional[str] = Field(None, description="Additional comments")
     rejection_reason: Optional[str] = Field(None, max_length=300, description="Rejection reason")
 
 
@@ -49,8 +49,8 @@ class ExpenseUpdate(ExpenseBase):
     amount: Optional[Decimal] = Field(None, gt=0)
     document_number: Optional[str] = Field(None, min_length=1, max_length=100)
     taxable: Optional[str] = Field(None)
+    tax_id: Optional[int] = Field(None)
     document_file: Optional[str] = Field(None, max_length=500)
-    comments: Optional[str] = Field(None)
     rejection_reason: Optional[str] = Field(None, max_length=300)
 
 
@@ -68,6 +68,9 @@ class ExpenseResponse(ExpenseBase):
     currency_name: Optional[str] = None
     currency_code: Optional[str] = None
     factura_supplier_name: Optional[str] = None
+    factura_supplier_tax_name: Optional[str] = None
+    tax_code: Optional[str] = None
+    tax_regime: Optional[str] = None
     travel_expense_report_name: Optional[str] = None
     travel_expense_report_status: Optional[str] = None
 
@@ -90,8 +93,8 @@ class ExpenseResponse(ExpenseBase):
             amount=obj.amount,
             document_number=obj.document_number,
             taxable=obj.taxable.value if obj.taxable else "No",
+            tax_id=obj.tax_id,
             document_file=obj.document_file,
-            comments=obj.comments,
             rejection_reason=obj.rejection_reason,
             status=obj.status.value if obj.status else "pending",
             created_at=obj.created_at,
@@ -101,6 +104,9 @@ class ExpenseResponse(ExpenseBase):
             currency_name=obj.currency.name if obj.currency else None,
             currency_code=obj.currency.code if obj.currency else None,
             factura_supplier_name=obj.factura_supplier.name if obj.factura_supplier else None,
+            factura_supplier_tax_name=obj.factura_supplier.tax_name if obj.factura_supplier else None,
+            tax_code=obj.tax.code if obj.tax else None,
+            tax_regime=obj.tax.regime if obj.tax else None,
             travel_expense_report_name=(
                 obj.travel_expense_report.prepayment.reason if obj.travel_expense_report and obj.travel_expense_report.prepayment 
                 else obj.travel_expense_report.reason if obj.travel_expense_report and hasattr(obj.travel_expense_report, 'reason') and obj.travel_expense_report.reason

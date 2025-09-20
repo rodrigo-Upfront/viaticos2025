@@ -64,8 +64,10 @@ interface Expense {
   amount: string | number;
   document_number: string;
   taxable: 'Si' | 'No';
+  tax_id?: number;
+  tax_code?: string;
+  tax_regime?: string;
   document_file?: string;
-  comments: string;
   status: 'pending' | 'in_process' | 'approved' | 'rejected';
   rejection_reason?: string;
   updated_at?: string;
@@ -88,6 +90,7 @@ interface Category {
 interface Supplier {
   id: number;
   name: string;
+  tax_name: string;
   sapCode: string;
 }
 
@@ -298,8 +301,10 @@ const ExpensesPage: React.FC = () => {
       amount: parseFloat(apiExpense.amount),
       document_number: apiExpense.document_number,
       taxable: apiExpense.taxable as 'Si' | 'No',
+      tax_id: apiExpense.tax_id,
+      tax_code: apiExpense.tax_code,
+      tax_regime: apiExpense.tax_regime,
       document_file: apiExpense.document_file,
-      comments: apiExpense.comments,
       status: apiExpense.status.toLowerCase() as 'pending' | 'in_process' | 'approved' | 'rejected',
       rejection_reason: apiExpense.rejection_reason,
       updated_at: apiExpense.updated_at,
@@ -322,8 +327,8 @@ const ExpensesPage: React.FC = () => {
       amount: typeof frontendExpense.amount === 'string' ? parseFloat(frontendExpense.amount) || 0 : frontendExpense.amount,
       document_number: frontendExpense.document_number,
       taxable: frontendExpense.taxable,
+      tax_id: frontendExpense.tax_id,
       document_file: frontendExpense.document_file,
-      comments: frontendExpense.comments,
       ...(isReimbursement ? { country_id: frontendExpense.country_id } : {})
     } as unknown as ExpenseCreate;
   };
@@ -376,6 +381,7 @@ const ExpensesPage: React.FC = () => {
       const mappedSuppliers = response.suppliers.map((sup: ApiSupplier) => ({
         id: sup.id,
         name: sup.name,
+        tax_name: sup.tax_name,
         sapCode: sup.sap_code
       }));
       setSuppliers(mappedSuppliers);

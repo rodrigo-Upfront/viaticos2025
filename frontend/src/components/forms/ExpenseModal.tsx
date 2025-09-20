@@ -16,6 +16,7 @@ import {
   FormControlLabel,
   Switch,
   IconButton,
+  Autocomplete,
 } from '@mui/material';
 import {
   Download as DownloadIcon,
@@ -25,6 +26,7 @@ import { useTranslation } from 'react-i18next';
 import apiClient from '../../services/apiClient';
 import { Currency } from '../../services/currencyService';
 import { categoryAlertService } from '../../services/categoryAlertService';
+import { taxService, Tax } from '../../services/taxService';
 import ExpenseAlertDialog from './ExpenseAlertDialog';
 
 interface Expense {
@@ -45,8 +47,9 @@ interface Expense {
   amount: string | number;
   document_number: string;
   taxable: 'Si' | 'No';
+  tax_id?: number;
+  tax?: string; // For display
   document_file?: string;
-  comments: string;
   status: 'pending' | 'in_process' | 'approved' | 'rejected';
 }
 
@@ -66,6 +69,7 @@ interface Category {
 interface Supplier {
   id: number;
   name: string;
+  tax_name: string;
   sapCode: string;
 }
 
@@ -97,6 +101,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
   loading = false
 }) => {
   const { t } = useTranslation();
+  const [taxes, setTaxes] = useState<Tax[]>([]);
   const [formData, setFormData] = useState<Expense>({
     category_id: 0,
     category: '',
@@ -114,8 +119,9 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
     amount: '',
     document_number: '',
     taxable: 'No',
+    tax_id: undefined,
+    tax: '',
     document_file: '',
-    comments: '',
     status: 'pending',
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -139,6 +145,19 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
     alertMessage: ''
   });
   const [fileUploading, setFileUploading] = useState(false);
+
+  // Load taxes on component mount
+  useEffect(() => {
+    const loadTaxes = async () => {
+      try {
+        const response = await taxService.getTaxes();
+        setTaxes(response.taxes);
+      } catch (error) {
+        console.error('Failed to load taxes:', error);
+      }
+    };
+    loadTaxes();
+  }, []);
 
   const fetchTravelDatesForReport = async (reportId: number) => {
     console.log('Fetching travel dates for report:', reportId);
@@ -202,7 +221,6 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
         document_number: '',
         taxable: 'No',
         document_file: '',
-        comments: '',
         status: 'pending',
       });
       setTravelDates({}); // Clear travel dates for new expense
@@ -628,9 +646,6 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
       newErrors.document_number = 'Document number is required';
     }
 
-    if (!formData.comments?.trim()) {
-      newErrors.comments = 'Comments are required';
-    }
 
     // Update errors state
     setErrors(newErrors);
@@ -664,7 +679,6 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
       document_number: '',
       taxable: 'No',
       document_file: '',
-      comments: '',
       status: 'pending',
     });
     setErrors({});
@@ -763,34 +777,68 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
           {formData.document_type === 'Factura' && (
             <>
-              <FormControl fullWidth margin="normal" error={!!errors.factura_supplier_id} required>
-                <InputLabel>Factura Supplier</InputLabel>
-                <Select
-                  value={formData.factura_supplier_id}
-                  onChange={handleSupplierChange}
-                  label="Factura Supplier"
-                >
-                  <MenuItem value={0}>
-                    <em>Select a supplier</em>
-                  </MenuItem>
-                  {suppliers.map((supplier) => (
-                    <MenuItem key={supplier.id} value={supplier.id}>
-                      {supplier.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-                {errors.factura_supplier_id && (
-                  <Box sx={{ color: 'error.main', fontSize: '0.75rem', mt: 0.5, ml: 2 }}>
-                    {errors.factura_supplier_id}
+              <Autocomplete
+                fullWidth
+                options={suppliers}
+                getOptionLabel={(option) => `${option.name} (${option.tax_name})`}
+                value={suppliers.find(s => s.id === formData.factura_supplier_id) || null}
+                onChange={(event, newValue) => {
+                  setFormData(prev => ({
+                    ...prev,
+                    factura_supplier_id: newValue?.id || 0,
+                    factura_supplier: newValue?.name || ''
+                  }));
+                  // Clear error when supplier is selected
+                  if (errors.factura_supplier_id) {
+                    setErrors(prev => ({
+                      ...prev,
+                      factura_supplier_id: ''
+                    }));
+                  }
+                }}
+                filterOptions={(options, { inputValue }) => {
+                  const filtered = options.filter((option) =>
+                    option.name.toLowerCase().includes(inputValue.toLowerCase()) ||
+                    option.tax_name.toLowerCase().includes(inputValue.toLowerCase())
+                  );
+                  return filtered;
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label={t('expenses.supplierName')}
+                    required
+                    error={!!errors.factura_supplier_id}
+                    helperText={errors.factura_supplier_id || 'Search by supplier name or tax name'}
+                    margin="normal"
+                  />
+                )}
+                renderOption={(props, option) => (
+                  <Box component="li" {...props}>
+                    <Box>
+                      <Typography variant="body1">{option.name}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {option.tax_name}
+                      </Typography>
+                    </Box>
                   </Box>
                 )}
-              </FormControl>
+              />
 
               <FormControlLabel
                 control={
                   <Switch
                     checked={formData.taxable === 'Si'}
-                    onChange={(e) => setFormData(prev => ({ ...prev, taxable: e.target.checked ? 'Si' : 'No' }))}
+                    onChange={(e) => {
+                      const isTaxable = e.target.checked;
+                      setFormData(prev => ({
+                        ...prev,
+                        taxable: isTaxable ? 'Si' : 'No',
+                        // Clear tax selection when switching to non-taxable
+                        tax_id: isTaxable ? prev.tax_id : undefined,
+                        tax: isTaxable ? prev.tax : ''
+                      }));
+                    }}
                   />
                 }
                 label={t('expenses.taxable')}
@@ -875,19 +923,33 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
             </FormControl>
           </Box>
 
-          <TextField
-            fullWidth
-            label={t('common.comments')}
-            value={formData.comments}
-            onChange={handleChange('comments')}
-            error={!!errors.comments}
-            helperText={errors.comments}
-            margin="normal"
-            multiline
-            rows={3}
-            placeholder="Additional comments about this expense..."
-            required
-          />
+          {/* Tax selection - only show for taxable invoices */}
+          {formData.document_type === 'Factura' && formData.taxable === 'Si' && (
+            <FormControl fullWidth sx={{ mt: 2 }}>
+              <InputLabel>{t('expenses.tax')}</InputLabel>
+              <Select
+                value={formData.tax_id || ''}
+                onChange={(e) => {
+                  const taxId = e.target.value as number;
+                  const selectedTax = taxes.find(t => t.id === taxId);
+                  setFormData(prev => ({
+                    ...prev,
+                    tax_id: taxId || undefined,
+                    tax: selectedTax ? `${selectedTax.code} - ${selectedTax.regime}` : ''
+                  }));
+                }}
+                label={t('expenses.tax')}
+                required
+              >
+                <MenuItem value=""><em>{t('taxes.selectTax')}</em></MenuItem>
+                {taxes.map((tax) => (
+                  <MenuItem key={tax.id} value={tax.id}>
+                    {tax.code} - {tax.regime}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
 
           <Box sx={{ mt: 2 }}>
             <InputLabel sx={{ mb: 1 }}>{t('expenses.documentFile')}</InputLabel>

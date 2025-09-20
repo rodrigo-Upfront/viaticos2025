@@ -181,7 +181,6 @@ const BulkExpenseContainer: React.FC = () => {
           amount: row.amount,
           document_number: row.document_number || '',
           taxable: row.taxable,
-          comments: row.comments || ''
         };
         
         const createdExpense = await expenseService.createExpense(apiData);
@@ -221,7 +220,6 @@ const BulkExpenseContainer: React.FC = () => {
           amount: row.amount,
           document_number: row.document_number || '',
           taxable: row.taxable,
-          comments: row.comments || ''
         };
         
         const createdExpense = await expenseService.createExpense(apiData);

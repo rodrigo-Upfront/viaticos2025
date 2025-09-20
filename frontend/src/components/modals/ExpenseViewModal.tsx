@@ -60,6 +60,9 @@ interface Expense {
   amount: string | number;
   document_number: string;
   taxable: 'Si' | 'No' | 'SI' | 'NO';
+  tax_id?: number;
+  tax_code?: string;
+  tax_regime?: string;
   document_file?: string;
   comments?: string;
   status: 'pending' | 'in_process' | 'approved' | 'rejected' | 'PENDING' | 'IN_PROCESS' | 'APPROVED' | 'REJECTED';
@@ -235,6 +238,18 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
             </Box>
           </Grid>
 
+          {/* Tax field - only show if taxable and has tax info */}
+          {(expense.taxable === 'SI' || expense.taxable === 'Si') && expense.tax_code && (
+            <Grid item xs={12} sm={6}>
+              <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
+                {t('expenses.tax')}
+              </Typography>
+              <Typography variant="body1" sx={{ mb: 1.5 }}>
+                {expense.tax_code} - {expense.tax_regime}
+              </Typography>
+            </Grid>
+          )}
+
           <Grid item xs={12} sm={6}>
             <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
               {t('expenses.documentType')}
@@ -273,7 +288,7 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
           {(expense.document_type === 'Factura' || expense.document_type === 'FACTURA') && (expense.factura_supplier_name || expense.factura_supplier) && (
             <Grid item xs={12}>
               <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
-                Factura Supplier
+                {t('expenses.facturaSupplier')}
               </Typography>
               <Typography variant="body1" sx={{ mb: 1.5 }}>
                 {expense.factura_supplier_name || expense.factura_supplier}
@@ -327,17 +342,6 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
             </Grid>
           )}
 
-          {/* Comments */}
-          {expense.comments && (
-            <Grid item xs={12}>
-              <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
-                {t('common.comments')}
-              </Typography>
-              <Typography variant="body1" sx={{ mb: 1.5 }}>
-                {expense.comments}
-              </Typography>
-            </Grid>
-          )}
         </Grid>
       </DialogContent>
       <DialogActions>

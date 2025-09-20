@@ -32,6 +32,7 @@ import {
   Security as SecurityIcon,
   LocationOn as LocationIcon,
   AccountBalance as AccountIcon,
+  Receipt as TaxIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import CountryModal from '../components/forms/CountryModal';
@@ -42,12 +43,14 @@ import CategoryAlertsModal from '../components/forms/CategoryAlertsModal';
 import MFASettingsModal from '../components/forms/MFASettingsModal';
 import LocationModal from '../components/forms/LocationModal';
 import LocationCurrencyModal from '../components/forms/LocationCurrencyModal';
+import TaxModal from '../components/forms/TaxModal';
 import ConfirmDialog from '../components/forms/ConfirmDialog';
 import { supplierService, Supplier as ApiSupplier } from '../services/supplierService';
 import { categoryService, Category as ApiCategory } from '../services/categoryService';
 import { countryService, Country as ApiCountry } from '../services/countryService';
 import { currencyService, Currency as ApiCurrency } from '../services/currencyService';
 import { locationService, Location as ApiLocation } from '../services/locationService';
+import { taxService, Tax as ApiTax } from '../services/taxService';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -85,6 +88,7 @@ interface Category {
 interface Supplier {
   id?: number;
   name: string;
+  tax_name: string;
   sapCode: string;
 }
 
@@ -102,6 +106,12 @@ interface Location {
   cost_center: string;
 }
 
+interface Tax {
+  id?: number;
+  code: string;
+  regime: string;
+}
+
 const SettingsPage: React.FC = () => {
   const { t } = useTranslation();
   const [tabValue, setTabValue] = useState(0);
@@ -113,6 +123,7 @@ const SettingsPage: React.FC = () => {
     suppliers: true,
     currencies: true,
     locations: true,
+    taxes: true,
   });
 
   // Countries state
@@ -139,6 +150,10 @@ const SettingsPage: React.FC = () => {
     locationId: 0, 
     locationName: '' 
   });
+
+  // Taxes state
+  const [taxes, setTaxes] = useState<Tax[]>([]);
+  const [taxModal, setTaxModal] = useState({ open: false, mode: 'create' as 'create' | 'edit', tax: undefined as Tax | undefined });
 
   // Category alerts state
   const [categoryAlertsModal, setCategoryAlertsModal] = useState({ 
@@ -172,6 +187,7 @@ const SettingsPage: React.FC = () => {
     loadSuppliers();
     loadCurrencies();
     loadLocations();
+    loadTaxes();
   }, []);
 
   const loadCountries = async () => {
@@ -225,6 +241,7 @@ const SettingsPage: React.FC = () => {
       const mappedSuppliers = response.suppliers.map((sup: ApiSupplier) => ({
         id: sup.id,
         name: sup.name,
+        tax_name: sup.tax_name,
         sapCode: sup.sap_code
       }));
       setSuppliers(mappedSuppliers);
@@ -284,6 +301,28 @@ const SettingsPage: React.FC = () => {
       });
     } finally {
       setLoading(prev => ({ ...prev, locations: false }));
+    }
+  };
+
+  const loadTaxes = async () => {
+    try {
+      setLoading(prev => ({ ...prev, taxes: true }));
+      const response = await taxService.getTaxes();
+      const mappedTaxes = response.taxes.map((tax: ApiTax) => ({
+        id: tax.id,
+        code: tax.code,
+        regime: tax.regime
+      }));
+      setTaxes(mappedTaxes);
+    } catch (error) {
+      console.error('Failed to load taxes:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to load taxes',
+        severity: 'error'
+      });
+    } finally {
+      setLoading(prev => ({ ...prev, taxes: false }));
     }
   };
 
@@ -505,12 +544,14 @@ const SettingsPage: React.FC = () => {
       if (supplierModal.mode === 'create') {
         const apiData = {
           name: supplierData.name,
+          tax_name: supplierData.tax_name,
           sap_code: supplierData.sapCode
         };
         const newSupplier = await supplierService.createSupplier(apiData);
         const mappedSupplier = {
           id: newSupplier.id,
           name: newSupplier.name,
+          tax_name: newSupplier.tax_name,
           sapCode: newSupplier.sap_code
         };
         setSuppliers(prev => [...prev, mappedSupplier]);
@@ -522,12 +563,14 @@ const SettingsPage: React.FC = () => {
       } else if (supplierData.id) {
         const apiData = {
           name: supplierData.name,
+          tax_name: supplierData.tax_name,
           sap_code: supplierData.sapCode
         };
         const updatedSupplier = await supplierService.updateSupplier(supplierData.id, apiData);
         const mappedSupplier = {
           id: updatedSupplier.id,
           name: updatedSupplier.name,
+          tax_name: updatedSupplier.tax_name,
           sapCode: updatedSupplier.sap_code
         };
         setSuppliers(prev => prev.map(s => s.id === supplierData.id ? mappedSupplier : s));
@@ -729,6 +772,91 @@ const SettingsPage: React.FC = () => {
     });
   };
 
+  // Tax CRUD operations
+  const handleCreateTax = () => {
+    setTaxModal({ open: true, mode: 'create', tax: undefined });
+  };
+
+  const handleEditTax = (tax: Tax) => {
+    setTaxModal({ open: true, mode: 'edit', tax });
+  };
+
+  const handleDeleteTax = (tax: Tax) => {
+    setConfirmDialog({
+      open: true,
+      title: t('taxes.deleteTaxConfirm'),
+      message: `${t('common.confirmDelete')} "${tax.code}"?`,
+      onConfirm: async () => {
+        try {
+          if (tax.id) {
+            await taxService.deleteTax(tax.id);
+            setTaxes(prev => prev.filter(t => t.id !== tax.id));
+            setSnackbar({
+              open: true,
+              message: t('taxes.taxDeletedSuccess'),
+              severity: 'success'
+            });
+          }
+        } catch (error) {
+          console.error('Failed to delete tax:', error);
+          setSnackbar({
+            open: true,
+            message: `Failed to delete tax "${tax.code}"`,
+            severity: 'error'
+          });
+        }
+      }
+    });
+  };
+
+  const handleSaveTax = async (taxData: Tax) => {
+    try {
+      if (taxModal.mode === 'create') {
+        const apiData = {
+          code: taxData.code,
+          regime: taxData.regime
+        };
+        const newTax = await taxService.createTax(apiData);
+        const mappedTax = {
+          id: newTax.id,
+          code: newTax.code,
+          regime: newTax.regime
+        };
+        setTaxes(prev => [...prev, mappedTax]);
+        setSnackbar({
+          open: true,
+          message: t('taxes.taxCreatedSuccess'),
+          severity: 'success'
+        });
+      } else if (taxData.id) {
+        const apiData = {
+          code: taxData.code,
+          regime: taxData.regime
+        };
+        const updatedTax = await taxService.updateTax(taxData.id, apiData);
+        const mappedTax = {
+          id: updatedTax.id,
+          code: updatedTax.code,
+          regime: updatedTax.regime
+        };
+        setTaxes(prev => prev.map(t => t.id === taxData.id ? mappedTax : t));
+        setSnackbar({
+          open: true,
+          message: t('taxes.taxUpdatedSuccess'),
+          severity: 'success'
+        });
+      }
+      setTaxModal({ open: false, mode: 'create', tax: undefined });
+    } catch (error) {
+      console.error('Failed to save tax:', error);
+      setSnackbar({
+        open: true,
+        message: `Failed to save tax "${taxData.code}"`,
+        severity: 'error'
+      });
+    }
+  };
+
   return (
     <Box>
       <Typography variant="h4" gutterBottom>
@@ -743,6 +871,7 @@ const SettingsPage: React.FC = () => {
             <Tab icon={<SupplierIcon />} label={t('configuration.suppliers')} />
             <Tab icon={<CurrencyIcon />} label={t('configuration.currencies')} />
             <Tab icon={<LocationIcon />} label={t('configuration.locations')} />
+            <Tab icon={<TaxIcon />} label={t('configuration.taxes')} />
             <Tab icon={<SecurityIcon />} label={t('mfa.settings.title')} />
           </Tabs>
         </Box>
@@ -873,6 +1002,7 @@ const SettingsPage: React.FC = () => {
                 <TableRow>
                   <TableCell>{t('tables.id')}</TableCell>
                   <TableCell>{t('users.name')}</TableCell>
+                  <TableCell>{t('suppliers.taxName')}</TableCell>
                   <TableCell>{t('users.sapCode')}</TableCell>
                   <TableCell>{t('common.actions')}</TableCell>
                 </TableRow>
@@ -882,6 +1012,7 @@ const SettingsPage: React.FC = () => {
                   <TableRow key={supplier.id}>
                     <TableCell>{supplier.id}</TableCell>
                     <TableCell>{supplier.name}</TableCell>
+                    <TableCell>{supplier.tax_name}</TableCell>
                     <TableCell>{supplier.sapCode}</TableCell>
                     <TableCell>
                       <IconButton
@@ -1023,6 +1154,56 @@ const SettingsPage: React.FC = () => {
 
         <TabPanel value={tabValue} index={5}>
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+            <Typography variant="h6">{t('taxes.taxesManagement')}</Typography>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleCreateTax}
+            >
+              {t('taxes.addTax')}
+            </Button>
+          </Box>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>{t('tables.id')}</TableCell>
+                  <TableCell>{t('taxes.code')}</TableCell>
+                  <TableCell>{t('taxes.regime')}</TableCell>
+                  <TableCell>{t('common.actions')}</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {taxes.map((tax) => (
+                  <TableRow key={tax.id}>
+                    <TableCell>{tax.id}</TableCell>
+                    <TableCell>{tax.code}</TableCell>
+                    <TableCell>{tax.regime}</TableCell>
+                    <TableCell>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleEditTax(tax)}
+                        color="primary"
+                      >
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => handleDeleteTax(tax)}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </TabPanel>
+
+        <TabPanel value={tabValue} index={6}>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
             <Typography variant="h6">{t('mfa.settings.title')}</Typography>
           </Box>
           
@@ -1120,6 +1301,15 @@ const SettingsPage: React.FC = () => {
         onClose={() => setLocationCurrencyModal({ open: false, locationId: 0, locationName: '' })}
         locationId={locationCurrencyModal.locationId}
         locationName={locationCurrencyModal.locationName}
+      />
+
+      {/* Tax Modal */}
+      <TaxModal
+        open={taxModal.open}
+        onClose={() => setTaxModal({ open: false, mode: 'create', tax: undefined })}
+        onSave={handleSaveTax}
+        tax={taxModal.tax}
+        mode={taxModal.mode}
       />
 
       {/* Confirmation Dialog */}

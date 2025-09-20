@@ -689,7 +689,6 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                       {showTaxableColumn && (
                         <TableCell sx={{ minWidth: 100 }}>{t('expenses.taxable')}</TableCell>
                       )}
-                      <TableCell sx={{ minWidth: 200 }}>{t('common.comments')}</TableCell>
                       <TableCell sx={{ width: 80, textAlign: 'center' }}>
                         <AttachFileIcon sx={{ fontSize: '1rem', color: 'text.secondary' }} />
                       </TableCell>
@@ -839,19 +838,6 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                             </FormControl>
                           </TableCell>
                         )}
-
-                        {/* Comments */}
-                        <TableCell>
-                          <TextField
-                            size="small"
-                            fullWidth
-                            multiline
-                            rows={1}
-                            value={row.comments}
-                            onChange={(e) => updateRow(row.id, 'comments', e.target.value)}
-                            placeholder={t('expenses.enterComments')}
-                          />
-                        </TableCell>
 
                         {/* File Attachment */}
                         <TableCell>

@@ -83,6 +83,7 @@ async def create_supplier(
         # Create supplier
         db_supplier = FacturaSupplier(
             name=supplier_data.name,
+            tax_name=supplier_data.tax_name,
             sap_code=supplier_data.sap_code
         )
         

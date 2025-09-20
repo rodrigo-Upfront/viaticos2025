@@ -11,6 +11,7 @@ from datetime import datetime
 class SupplierBase(BaseModel):
     """Base supplier schema"""
     name: str = Field(..., min_length=1, max_length=200, description="Supplier name")
+    tax_name: str = Field(..., min_length=1, max_length=200, description="Supplier Tax Name / RUC")
     sap_code: str = Field(..., min_length=1, max_length=50, description="SAP code")
 
 
@@ -22,6 +23,7 @@ class SupplierCreate(SupplierBase):
 class SupplierUpdate(SupplierBase):
     """Schema for updating a supplier"""
     name: Optional[str] = Field(None, min_length=1, max_length=200)
+    tax_name: Optional[str] = Field(None, min_length=1, max_length=200)
     sap_code: Optional[str] = Field(None, min_length=1, max_length=50)
 
 
@@ -39,6 +41,7 @@ class SupplierResponse(SupplierBase):
         return cls(
             id=obj.id,
             name=obj.name,
+            tax_name=obj.tax_name,
             sap_code=obj.sap_code,
             created_at=obj.created_at,
             updated_at=obj.updated_at

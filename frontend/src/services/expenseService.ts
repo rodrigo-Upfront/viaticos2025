@@ -19,8 +19,8 @@ export interface Expense {
   amount: string;
   document_number: string;
   taxable?: string;
+  tax_id?: number;
   document_file?: string;
-  comments: string;
   rejection_reason?: string;
   status: string;
   created_at: string;
@@ -30,6 +30,9 @@ export interface Expense {
   currency_name?: string;
   currency_code?: string;
   factura_supplier_name?: string;
+  factura_supplier_tax_name?: string;
+  tax_code?: string;
+  tax_regime?: string;
   travel_expense_report_name?: string;
   travel_expense_report_status?: string;
 }
@@ -46,8 +49,8 @@ export interface ExpenseCreate {
   amount: number;
   document_number: string;
   taxable?: string;
+  tax_id?: number;
   document_file?: string;
-  comments: string;
 }
 
 export interface ExpenseUpdate {
@@ -62,8 +65,8 @@ export interface ExpenseUpdate {
   amount?: number;
   document_number?: string;
   taxable?: string;
+  tax_id?: number;
   document_file?: string;
-  comments: string;
 }
 
 export interface ExpenseListResponse {
