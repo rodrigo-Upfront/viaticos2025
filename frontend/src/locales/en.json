@@ -511,6 +511,41 @@
   },
   "suppliers": {
     "taxName": "Tax Name / RUC"
+  },
+  "treasury": {
+    "approvalTitle": "Treasury Approval",
+    "enterDepositNumber": "Enter Deposit Number",
+    "downloadSapFile": "Download SAP File",
+    "enterSapRecord": "Enter SAP Record",
+    "step1Title": "Step 1: Deposit Number",
+    "step1Description": "Enter the deposit number to generate the SAP prepayment file.",
+    "step2Title": "Step 2: Download SAP File",
+    "step2Description": "Download the generated SAP file and process it in the SAP system.",
+    "step3Title": "Step 3: SAP Record Number",
+    "step3Description": "After processing the file in SAP, enter the SAP record number to complete the approval.",
+    "depositNumber": "Deposit Number",
+    "depositNumberPlaceholder": "Enter deposit number",
+    "depositNumberHelp": "Maximum 20 characters, alphanumeric",
+    "depositNumberRequired": "Deposit number is required",
+    "depositNumberSuccess": "Deposit number saved and SAP file generated successfully",
+    "depositNumberError": "Failed to save deposit number",
+    "sapRecordNumber": "SAP Record Number",
+    "sapRecordPlaceholder": "Enter SAP record number",
+    "sapRecordHelp": "Maximum 20 characters, alphanumeric",
+    "sapRecordRequired": "SAP record number is required",
+    "sapRecordSuccess": "SAP record number saved successfully",
+    "sapRecordError": "Failed to save SAP record number",
+    "downloadSapFile": "Download SAP File",
+    "downloadInstructions": "Process this file in the SAP system, then proceed to the next step",
+    "downloadSuccess": "SAP file downloaded successfully",
+    "downloadError": "Failed to download SAP file",
+    "generateSapFile": "Generate SAP File",
+    "proceedToSapRecord": "Proceed to SAP Record",
+    "completeApproval": "Complete Approval",
+    "approvalComplete": "Treasury approval completed successfully",
+    "regenerateFile": "Edit deposit number and regenerate file",
+    "editDepositToRegenerate": "You can now edit the deposit number to regenerate the SAP file",
+    "sapFileGenerated": "SAP file generated and ready for download"
   }
 }
 

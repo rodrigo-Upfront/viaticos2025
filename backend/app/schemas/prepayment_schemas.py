@@ -45,6 +45,9 @@ class PrepaymentResponse(PrepaymentBase):
     id: int
     status: str
     requesting_user_id: int
+    deposit_number: Optional[str] = Field(None, description="Treasury deposit number")
+    sap_prepayment_file: Optional[str] = Field(None, description="SAP prepayment file path")
+    sap_record_number: Optional[str] = Field(None, description="SAP record number")
     created_at: datetime
     updated_at: datetime
     
@@ -93,3 +96,24 @@ class PrepaymentStatusUpdate(BaseModel):
     """Schema for updating prepayment status"""
     status: str = Field(..., description="New status")
     comment: Optional[str] = Field(None, description="Status change comment")
+
+
+class TreasuryDepositRequest(BaseModel):
+    """Schema for treasury deposit number input"""
+    deposit_number: str = Field(..., min_length=1, max_length=20, description="Treasury deposit number")
+
+
+class TreasurySAPRecordRequest(BaseModel):
+    """Schema for treasury SAP record number input"""
+    sap_record_number: str = Field(..., min_length=1, max_length=20, description="SAP record number")
+
+
+class TreasuryApprovalResponse(BaseModel):
+    """Schema for treasury approval response"""
+    success: bool
+    message: str
+    prepayment_id: int
+    deposit_number: Optional[str] = None
+    sap_file_path: Optional[str] = None
+    sap_record_number: Optional[str] = None
+    status: str

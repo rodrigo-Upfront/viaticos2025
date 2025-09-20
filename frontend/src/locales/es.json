@@ -525,6 +525,41 @@
   },
   "suppliers": {
     "taxName": "Nombre Fiscal / RUC"
+  },
+  "treasury": {
+    "approvalTitle": "Aprobación de Tesorería",
+    "enterDepositNumber": "Ingresar Número de Depósito",
+    "downloadSapFile": "Descargar Archivo SAP",
+    "enterSapRecord": "Ingresar Registro SAP",
+    "step1Title": "Paso 1: Número de Depósito",
+    "step1Description": "Ingrese el número de depósito para generar el archivo SAP del anticipo.",
+    "step2Title": "Paso 2: Descargar Archivo SAP",
+    "step2Description": "Descargue el archivo SAP generado y procéselo en el sistema SAP.",
+    "step3Title": "Paso 3: Número de Registro SAP",
+    "step3Description": "Después de procesar el archivo en SAP, ingrese el número de registro SAP para completar la aprobación.",
+    "depositNumber": "Número de Depósito",
+    "depositNumberPlaceholder": "Ingrese número de depósito",
+    "depositNumberHelp": "Máximo 20 caracteres, alfanumérico",
+    "depositNumberRequired": "El número de depósito es requerido",
+    "depositNumberSuccess": "Número de depósito guardado y archivo SAP generado exitosamente",
+    "depositNumberError": "Error al guardar el número de depósito",
+    "sapRecordNumber": "Número de Registro SAP",
+    "sapRecordPlaceholder": "Ingrese número de registro SAP",
+    "sapRecordHelp": "Máximo 20 caracteres, alfanumérico",
+    "sapRecordRequired": "El número de registro SAP es requerido",
+    "sapRecordSuccess": "Número de registro SAP guardado exitosamente",
+    "sapRecordError": "Error al guardar el número de registro SAP",
+    "downloadSapFile": "Descargar Archivo SAP",
+    "downloadInstructions": "Procese este archivo en el sistema SAP, luego proceda al siguiente paso",
+    "downloadSuccess": "Archivo SAP descargado exitosamente",
+    "downloadError": "Error al descargar el archivo SAP",
+    "generateSapFile": "Generar Archivo SAP",
+    "proceedToSapRecord": "Proceder al Registro SAP",
+    "completeApproval": "Completar Aprobación",
+    "approvalComplete": "Aprobación de tesorería completada exitosamente",
+    "regenerateFile": "Editar número de depósito y regenerar archivo",
+    "editDepositToRegenerate": "Ahora puede editar el número de depósito para regenerar el archivo SAP",
+    "sapFileGenerated": "Archivo SAP generado y listo para descargar"
   }
 }
 

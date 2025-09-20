@@ -261,6 +261,10 @@ class Prepayment(Base):
     comment = Column(Text, nullable=True)
     # Reason provided when a prepayment was rejected in the approval flow
     rejection_reason = Column(Text, nullable=True)
+    # Treasury approval fields
+    deposit_number = Column(String(20), nullable=True)
+    sap_prepayment_file = Column(String(500), nullable=True)  # File path to SAP file
+    sap_record_number = Column(String(20), nullable=True)
     status = Column(SQLEnum(RequestStatus), default=RequestStatus.PENDING, nullable=False)
     requesting_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

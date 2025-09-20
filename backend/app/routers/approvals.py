@@ -17,7 +17,7 @@ from app.database.connection import get_db
 from app.models.models import (
     User, Approval, Prepayment, TravelExpenseReport, Country, Expense, ExpenseStatus,
     ApprovalStatus, EntityType, RequestStatus, UserProfile, ApprovalHistory, ApprovalAction as HistoryAction,
-    ExpenseRejectionHistory
+    ExpenseRejectionHistory, Location, LocationCurrency
 )
 from app.services.auth_service import AuthService, get_current_user, get_current_approver
 from app.schemas.approval_schemas import (
@@ -27,6 +27,10 @@ from app.schemas.approval_schemas import (
     QuickApprovalAction, ExpenseApprovalAction,
     ExpenseRejectionHistoryResponse, ApprovalHistoryResponse
 )
+from app.schemas.prepayment_schemas import (
+    TreasuryDepositRequest, TreasurySAPRecordRequest, TreasuryApprovalResponse
+)
+from app.services.sap_service import SAPService, SAPFileGenerationError
 
 router = APIRouter()
 auth_service = AuthService()
@@ -436,8 +440,11 @@ async def approve_prepayment(
             if not (current_user.is_approver and current_user.profile == UserProfile.TREASURY):
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized for treasury stage")
             if action_data.action == "approve":
-                next_status = RequestStatus.APPROVED
-                message = "Prepayment approved by treasury"
+                # Treasury approval now requires 2-step process
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST, 
+                    detail="Treasury approval requires deposit number and SAP record number. Use the treasury approval endpoints."
+                )
             else:
                 next_status = RequestStatus.REJECTED
                 message = "Prepayment rejected at treasury stage"
@@ -1582,6 +1589,240 @@ async def download_fund_return_document(
         path=file_path,
         filename=target_file.get('original_name', file_name),
         media_type='application/octet-stream'
+    )
+
+
+# Treasury Approval Enhancement Endpoints
+
+@router.post("/prepayments/{prepayment_id}/treasury/deposit", response_model=TreasuryApprovalResponse)
+async def set_treasury_deposit_number(
+    prepayment_id: int,
+    deposit_data: TreasuryDepositRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Set deposit number and generate SAP file for treasury approval
+    """
+    # Check permissions
+    if not (current_user.is_approver and current_user.profile == UserProfile.TREASURY):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized for treasury operations"
+        )
+    
+    # Get prepayment with relationships
+    prepayment = db.query(Prepayment).options(
+        joinedload(Prepayment.requesting_user).joinedload(User.location).joinedload(Location.location_currencies),
+        joinedload(Prepayment.currency)
+    ).filter(Prepayment.id == prepayment_id).first()
+    
+    if not prepayment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Prepayment not found"
+        )
+    
+    if prepayment.status != RequestStatus.TREASURY_PENDING:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Prepayment is not in treasury pending status"
+        )
+    
+    try:
+        # Delete old SAP file if exists
+        if prepayment.sap_prepayment_file:
+            SAPService.delete_file(prepayment.sap_prepayment_file)
+        
+        # Generate new SAP file
+        sap_file_path = SAPService.generate_prepayment_file(
+            prepayment, 
+            deposit_data.deposit_number, 
+            db
+        )
+        
+        # Update prepayment
+        prepayment.deposit_number = deposit_data.deposit_number
+        prepayment.sap_prepayment_file = sap_file_path
+        prepayment.updated_at = datetime.utcnow()
+        
+        db.commit()
+        
+        return TreasuryApprovalResponse(
+            success=True,
+            message="Deposit number saved and SAP file generated successfully",
+            prepayment_id=prepayment_id,
+            deposit_number=deposit_data.deposit_number,
+            sap_file_path=sap_file_path,
+            sap_record_number=prepayment.sap_record_number,
+            status=prepayment.status.value
+        )
+        
+    except SAPFileGenerationError as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to process deposit number: {str(e)}"
+        )
+
+
+@router.post("/prepayments/{prepayment_id}/treasury/sap-record", response_model=TreasuryApprovalResponse)
+async def set_treasury_sap_record(
+    prepayment_id: int,
+    sap_data: TreasurySAPRecordRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Set SAP record number and complete treasury approval
+    """
+    # Check permissions
+    if not (current_user.is_approver and current_user.profile == UserProfile.TREASURY):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized for treasury operations"
+        )
+    
+    prepayment = db.query(Prepayment).options(
+        joinedload(Prepayment.requesting_user)
+    ).filter(Prepayment.id == prepayment_id).first()
+    
+    if not prepayment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Prepayment not found"
+        )
+    
+    if prepayment.status != RequestStatus.TREASURY_PENDING:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Prepayment is not in treasury pending status"
+        )
+    
+    if not prepayment.deposit_number:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Deposit number must be set before SAP record number"
+        )
+    
+    try:
+        # Update prepayment with SAP record and approve
+        prepayment.sap_record_number = sap_data.sap_record_number
+        prepayment.status = RequestStatus.APPROVED
+        prepayment.updated_at = datetime.utcnow()
+        
+        # Clear rejection reason on approval
+        prepayment.rejection_reason = None
+        
+        # Create approval record
+        approval = Approval(
+            entity_type=EntityType.PREPAYMENT,
+            entity_id=prepayment_id,
+            approver_user_id=current_user.id,
+            status=ApprovalStatus.APPROVED,
+            approval_level=1,
+            approved_at=datetime.utcnow()
+        )
+        db.add(approval)
+        
+        # Create history record
+        db.add(ApprovalHistory(
+            entity_type=EntityType.PREPAYMENT,
+            entity_id=prepayment.id,
+            user_id=current_user.id,
+            user_role=current_user.profile.value,
+            action=HistoryAction.APPROVED,
+            from_status=RequestStatus.TREASURY_PENDING.value,
+            to_status=RequestStatus.APPROVED.value,
+            comments=f"Treasury approval completed with SAP record: {sap_data.sap_record_number}"
+        ))
+        
+        # Auto-create travel expense report if not exists
+        existing_report = db.query(TravelExpenseReport).filter(
+            TravelExpenseReport.prepayment_id == prepayment.id
+        ).first()
+        
+        if not existing_report:
+            report = TravelExpenseReport(
+                prepayment_id=prepayment.id,
+                status=RequestStatus.PENDING,
+                requesting_user_id=prepayment.requesting_user_id
+            )
+            db.add(report)
+        
+        db.commit()
+        
+        return TreasuryApprovalResponse(
+            success=True,
+            message="Prepayment approved by treasury successfully",
+            prepayment_id=prepayment_id,
+            deposit_number=prepayment.deposit_number,
+            sap_file_path=prepayment.sap_prepayment_file,
+            sap_record_number=sap_data.sap_record_number,
+            status=RequestStatus.APPROVED.value
+        )
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to complete treasury approval: {str(e)}"
+        )
+
+
+@router.get("/prepayments/{prepayment_id}/sap-file")
+async def download_sap_file(
+    prepayment_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Download SAP prepayment file (Treasury and Superuser only)
+    """
+    # Check permissions - only treasury users and superusers
+    if not (current_user.is_superuser or 
+            (current_user.is_approver and current_user.profile == UserProfile.TREASURY)):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions to download SAP files"
+        )
+    
+    prepayment = db.query(Prepayment).filter(Prepayment.id == prepayment_id).first()
+    
+    if not prepayment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Prepayment not found"
+        )
+    
+    if not prepayment.sap_prepayment_file:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="SAP file not found for this prepayment"
+        )
+    
+    # Get full file path
+    file_path = SAPService.get_file_path(prepayment.sap_prepayment_file)
+    
+    if not os.path.exists(file_path):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="SAP file not found on disk"
+        )
+    
+    # Extract filename
+    filename = os.path.basename(file_path)
+    
+    return FileResponse(
+        path=file_path,
+        filename=filename,
+        media_type='text/plain'
     )
 
 

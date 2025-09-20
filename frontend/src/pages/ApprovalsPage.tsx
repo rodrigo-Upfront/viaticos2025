@@ -42,6 +42,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import ConfirmDialog from '../components/forms/ConfirmDialog';
 import PrepaymentViewModal from '../components/modals/PrepaymentViewModal';
+import TreasuryApprovalModal from '../components/modals/TreasuryApprovalModal';
 
 import { approvalService, PendingApprovalItem } from '../services/approvalService';
 import apiClient from '../services/apiClient';
@@ -218,6 +219,14 @@ const ApprovalsPage: React.FC = () => {
     data: null as any
   });
 
+  // Treasury approval modal state
+  const [treasuryModal, setTreasuryModal] = useState({
+    open: false,
+    prepaymentId: 0,
+    currentDepositNumber: '',
+    currentSapFile: '',
+    currentSapRecordNumber: ''
+  });
 
 
   const [quickRejectionDialog, setQuickRejectionDialog] = useState({
@@ -234,7 +243,7 @@ const ApprovalsPage: React.FC = () => {
     reason: '',
   });
 
-  const handleApprove = (listItemId: number, type: string) => {
+  const handleApprove = async (listItemId: number, type: string) => {
     // Find the item in the pending list
     const item = pendingItems.find(p => p.id === listItemId);
     if (!item) return;
@@ -243,6 +252,41 @@ const ApprovalsPage: React.FC = () => {
       ? item.reason || 'Prepayment request'
       : `Expense Report #${item.entity_id}`;
 
+    // Check if this is a treasury user approving a prepayment in treasury_pending status
+    if (item.type === 'prepayment' && 
+        user?.profile === 'TREASURY' && 
+        item.status?.toLowerCase() === 'treasury_pending') {
+      
+      // For treasury prepayment approval, open the treasury modal instead
+      try {
+        setLoading(prev => ({ ...prev, action: true }));
+        
+        // Fetch current prepayment data to get treasury fields
+        const response = await apiClient.get(`/prepayments/${item.entity_id}`);
+        const prepaymentData = response.data;
+        
+        setTreasuryModal({
+          open: true,
+          prepaymentId: item.entity_id,
+          currentDepositNumber: prepaymentData.deposit_number || '',
+          currentSapFile: prepaymentData.sap_prepayment_file || '',
+          currentSapRecordNumber: prepaymentData.sap_record_number || ''
+        });
+        
+      } catch (error) {
+        console.error('Failed to fetch prepayment data:', error);
+        setSnackbar({
+          open: true,
+          message: 'Failed to load prepayment data',
+          severity: 'error'
+        });
+      } finally {
+        setLoading(prev => ({ ...prev, action: false }));
+      }
+      return;
+    }
+
+    // Regular approval flow for non-treasury or non-prepayment items
     setConfirmDialog({
       open: true,
       title: 'Approve',
@@ -498,6 +542,27 @@ const ApprovalsPage: React.FC = () => {
     } finally {
       setLoading(prev => ({ ...prev, action: false }));
     }
+  };
+
+  // Treasury modal handlers
+  const handleTreasuryApprovalComplete = () => {
+    // Refresh the pending approvals list
+    loadPendingApprovals();
+    setSnackbar({
+      open: true,
+      message: t('treasury.approvalComplete'),
+      severity: 'success'
+    });
+  };
+
+  const handleTreasuryModalClose = () => {
+    setTreasuryModal({
+      open: false,
+      prepaymentId: 0,
+      currentDepositNumber: '',
+      currentSapFile: '',
+      currentSapRecordNumber: ''
+    });
   };
 
   return (
@@ -939,6 +1004,17 @@ const ApprovalsPage: React.FC = () => {
         open={viewModal.open && viewModal.type === 'prepayment'}
         onClose={() => setViewModal({ open: false, type: '', data: null })}
         prepayment={viewModal.data}
+      />
+
+      {/* Treasury Approval Modal */}
+      <TreasuryApprovalModal
+        open={treasuryModal.open}
+        onClose={handleTreasuryModalClose}
+        onApprovalComplete={handleTreasuryApprovalComplete}
+        prepaymentId={treasuryModal.prepaymentId}
+        currentDepositNumber={treasuryModal.currentDepositNumber}
+        currentSapFile={treasuryModal.currentSapFile}
+        currentSapRecordNumber={treasuryModal.currentSapRecordNumber}
       />
 
 
