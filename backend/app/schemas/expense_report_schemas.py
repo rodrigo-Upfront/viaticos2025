@@ -61,6 +61,9 @@ class ExpenseReportResponse(ExpenseReportBase):
     # Fund return fields
     return_document_number: Optional[str] = None
     return_document_files: Optional[List] = None
+    
+    # SAP fields
+    sap_compensation_number: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -105,7 +108,8 @@ class ExpenseReportResponse(ExpenseReportBase):
             rejection_reason=getattr(obj, 'rejection_reason', None),
             balance=balance,
             return_document_number=getattr(obj, 'return_document_number', None),
-            return_document_files=getattr(obj, 'return_document_files', None)
+            return_document_files=getattr(obj, 'return_document_files', None),
+            sap_compensation_number=getattr(obj, 'sap_compensation_number', None)
         )
 
 

@@ -110,6 +110,7 @@ interface Tax {
   id?: number;
   code: string;
   regime: string;
+  rate: number;
 }
 
 const SettingsPage: React.FC = () => {
@@ -311,7 +312,8 @@ const SettingsPage: React.FC = () => {
       const mappedTaxes = response.taxes.map((tax: ApiTax) => ({
         id: tax.id,
         code: tax.code,
-        regime: tax.regime
+        regime: tax.regime,
+        rate: tax.rate || 0
       }));
       setTaxes(mappedTaxes);
     } catch (error) {
@@ -814,13 +816,15 @@ const SettingsPage: React.FC = () => {
       if (taxModal.mode === 'create') {
         const apiData = {
           code: taxData.code,
-          regime: taxData.regime
+          regime: taxData.regime,
+          rate: taxData.rate
         };
         const newTax = await taxService.createTax(apiData);
         const mappedTax = {
           id: newTax.id,
           code: newTax.code,
-          regime: newTax.regime
+          regime: newTax.regime,
+          rate: newTax.rate
         };
         setTaxes(prev => [...prev, mappedTax]);
         setSnackbar({
@@ -831,13 +835,15 @@ const SettingsPage: React.FC = () => {
       } else if (taxData.id) {
         const apiData = {
           code: taxData.code,
-          regime: taxData.regime
+          regime: taxData.regime,
+          rate: taxData.rate
         };
         const updatedTax = await taxService.updateTax(taxData.id, apiData);
         const mappedTax = {
           id: updatedTax.id,
           code: updatedTax.code,
-          regime: updatedTax.regime
+          regime: updatedTax.regime,
+          rate: updatedTax.rate
         };
         setTaxes(prev => prev.map(t => t.id === taxData.id ? mappedTax : t));
         setSnackbar({
@@ -1170,6 +1176,7 @@ const SettingsPage: React.FC = () => {
                   <TableCell>{t('tables.id')}</TableCell>
                   <TableCell>{t('taxes.code')}</TableCell>
                   <TableCell>{t('taxes.regime')}</TableCell>
+                  <TableCell>{t('taxes.rate')}</TableCell>
                   <TableCell>{t('common.actions')}</TableCell>
                 </TableRow>
               </TableHead>
@@ -1179,6 +1186,7 @@ const SettingsPage: React.FC = () => {
                     <TableCell>{tax.id}</TableCell>
                     <TableCell>{tax.code}</TableCell>
                     <TableCell>{tax.regime}</TableCell>
+                    <TableCell>{tax.rate}%</TableCell>
                     <TableCell>
                       <IconButton
                         size="small"

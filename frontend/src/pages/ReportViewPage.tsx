@@ -114,6 +114,8 @@ interface ExpenseReport {
   prepayment_reason?: string;
   prepayment_destination?: string;
   currency: string;
+  // SAP fields
+  sap_compensation_number?: string;
   // Fund return fields
   return_document_number?: string;
   return_document_files?: Array<{
@@ -290,6 +292,7 @@ const ReportViewPage: React.FC = () => {
           prepayment_reason: reportData.prepayment_reason,
           prepayment_destination: reportData.prepayment_destination,
           currency: reportData.currency,
+          sap_compensation_number: reportData.sap_compensation_number,
           return_document_number: reportData.return_document_number,
           return_document_files: reportData.return_document_files,
         };
@@ -654,6 +657,17 @@ const ReportViewPage: React.FC = () => {
                   <TableCell><strong>{t('reports.sendDate')}</strong></TableCell>
                   <TableCell align="right">{formatDate(report.reportDate)}</TableCell>
                 </TableRow>
+                {/* SAP Compensation Number - only show for superusers and accounting users when it exists */}
+                {report.sap_compensation_number && (user?.is_superuser || user?.profile === 'ACCOUNTING') && (
+                  <TableRow>
+                    <TableCell><strong>{t('accounting.sapCompensationNumber')}</strong></TableCell>
+                    <TableCell align="right">
+                      <Typography fontWeight="bold" color="primary.main">
+                        {report.sap_compensation_number}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </Paper>

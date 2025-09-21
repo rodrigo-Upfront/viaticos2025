@@ -32,6 +32,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import apiClient from '../../services/apiClient';
+import AccountingApprovalModal from './AccountingApprovalModal';
 
 // Report status labels
 const REPORT_STATUS_LABELS: Record<string, { en: string; es: string }> = {
@@ -151,6 +152,12 @@ const ReportApprovalModal: React.FC<ReportApprovalModalProps> = ({
   const [error, setError] = useState<string>('');
   // const [expenseActions, setExpenseActions] = useState<Record<number, 'approve' | 'reject' | null>>({});
   const [expenseRejectionReasons, setExpenseRejectionReasons] = useState<Record<number, string>>({});
+  
+  // Accounting approval modal state
+  const [accountingModal, setAccountingModal] = useState({
+    open: false,
+    reportId: 0
+  });
 
   // Helper function to determine user role based on report status
   const getUserRole = () => {
@@ -329,8 +336,15 @@ const ReportApprovalModal: React.FC<ReportApprovalModalProps> = ({
           : expense
       ));
       
-      // Check if report status changed (all expenses processed)
-      if (response.data.report_status_changed) {
+      // Check if accounting approval is required (all expenses approved by accounting user)
+      if (response.data.accounting_approval_required) {
+        // Open accounting approval modal
+        setAccountingModal({
+          open: true,
+          reportId: response.data.report_id
+        });
+      } else if (response.data.report_status_changed) {
+        // Regular flow - all expenses processed
         if (onApprovalComplete) {
           onApprovalComplete();
         }
@@ -388,6 +402,7 @@ const ReportApprovalModal: React.FC<ReportApprovalModalProps> = ({
   const requestingUserName = report?.requester || 'N/A';
 
   return (
+    <>
     <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
       <DialogTitle>
         <Box display="flex" alignItems="center" justifyContent="space-between">
@@ -648,12 +663,42 @@ const ReportApprovalModal: React.FC<ReportApprovalModalProps> = ({
           </>
         )}
         {isAccountingUser && (
-          <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
-            Approve or reject individual expenses above. The report will be automatically processed when all expenses are reviewed.
-          </Typography>
+          <>
+            {/* Check if all expenses are approved to show Resume button */}
+            {expenses.length > 0 && expenses.every(exp => exp.status === 'APPROVED') ? (
+              <Button
+                onClick={() => setAccountingModal({ open: true, reportId: report?.id || 0 })}
+                color="primary"
+                variant="contained"
+                disabled={submitting || loading}
+                sx={{ ml: 2 }}
+              >
+                Resume Accounting Approval
+              </Button>
+            ) : (
+              <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
+                Approve or reject individual expenses above. The report will be automatically processed when all expenses are reviewed.
+              </Typography>
+            )}
+          </>
         )}
       </DialogActions>
     </Dialog>
+
+    {/* Accounting Approval Modal */}
+    <AccountingApprovalModal
+      open={accountingModal.open}
+      onClose={() => setAccountingModal({ open: false, reportId: 0 })}
+      onApprovalComplete={() => {
+        setAccountingModal({ open: false, reportId: 0 });
+        if (onApprovalComplete) {
+          onApprovalComplete();
+        }
+        onClose();
+      }}
+      reportId={accountingModal.reportId}
+    />
+    </>
   );
 };
 

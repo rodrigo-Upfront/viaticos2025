@@ -1,15 +1,18 @@
 """
 SAP File Generation Service
-Handles generation of SAP prepayment files for treasury approval
+Handles generation of SAP files for treasury and accounting approvals
 """
 
 import os
 from datetime import datetime
 from decimal import Decimal
-from typing import Optional
+from typing import Optional, List
 from sqlalchemy.orm import Session
 
-from app.models.models import Prepayment, LocationCurrency
+from app.models.models import (
+    Prepayment, LocationCurrency, TravelExpenseReport, Expense, 
+    DocumentType, TaxableOption
+)
 from app.core.config import settings
 
 
@@ -139,3 +142,256 @@ class SAPService:
             return False
         except Exception:
             return False
+
+    @staticmethod
+    def generate_expenses_report_file(report: TravelExpenseReport, db: Session) -> str:
+        """
+        Generate SAP expenses report file for accounting approval
+        Only includes FACTURA expenses
+        
+        Args:
+            report: TravelExpenseReport object with loaded relationships
+            db: Database session
+            
+        Returns:
+            str: File path to generated SAP expenses file
+            
+        Raises:
+            SAPFileGenerationError: If required data is missing or file generation fails
+        """
+        
+        # Get FACTURA expenses from the report
+        factura_expenses = [exp for exp in report.expenses 
+                           if exp.document_type == DocumentType.FACTURA and exp.status.value == 'APPROVED']
+        
+        if not factura_expenses:
+            raise SAPFileGenerationError("No approved FACTURA expenses found in this report")
+        
+        # Validate user and location data
+        user = report.requesting_user
+        if not user:
+            raise SAPFileGenerationError("Report requesting user not found")
+            
+        if not user.location:
+            raise SAPFileGenerationError(f"User {user.name} does not have a location assigned. Please assign a location and retry.")
+            
+        if not user.sap_code:
+            raise SAPFileGenerationError(f"User {user.name} does not have a SAP code assigned. Please assign a SAP code and retry.")
+            
+        location = user.location
+        
+        # Generate file content - one line per FACTURA expense
+        file_lines = []
+        # Use local timezone for processing date
+        from datetime import timezone, timedelta
+        local_tz = timezone(timedelta(hours=-5))  # UTC-5 for your timezone
+        today = datetime.now(local_tz)
+        processing_date = today.strftime("%d.%m.%Y")
+        
+        for expense in factura_expenses:
+            # Validate expense data
+            if not expense.category or not expense.category.account:
+                raise SAPFileGenerationError(f"Expense category for expense ID {expense.id} does not have a SAP account configured")
+            
+            # Calculate tax amounts if taxable
+            tax_amount = ""
+            tax_code = ""
+            calculated_tax_amount = 0
+            if expense.taxable == TaxableOption.SI and expense.tax and expense.tax.rate:
+                # Calculate tax amount: tax_amount = expense_amount * (tax_rate / (100 + tax_rate))
+                rate = float(expense.tax.rate)
+                total_amount = float(expense.amount)
+                calculated_tax_amount = total_amount * (rate / (100 + rate))
+                tax_amount = f"{calculated_tax_amount:.2f}"
+                tax_code = expense.tax.code
+            
+            # Format expense amount (negative) - should be net amount (expense - tax)
+            total_amount = float(expense.amount)
+            net_amount = total_amount - calculated_tax_amount
+            if net_amount == int(net_amount):
+                amount_str = f"-{int(net_amount)}"
+            else:
+                amount_str = f"-{net_amount:.2f}"
+            
+            # Format expense date
+            expense_date_str = expense.expense_date.strftime("%d.%m.%Y")
+            
+            # Build SAP file fields for this expense
+            fields = [
+                location.sap_code,                    # COMP_CODE
+                processing_date,                      # DOC_DATE (processing date)
+                processing_date,                      # PSTNG_DATE (processing date)
+                expense.document_number,              # REF_DOC_NO
+                "0000000001",                        # ITEMNO_ACC
+                report.reason if report.reason else f"Expense Report {report.id}",  # HEADER_TXT
+                "",                                  # PROFIT_CTR (always empty)
+                expense.currency.code,               # CURRENCY
+                amount_str,                          # AMT_DOCCUR (negative)
+                expense.category.account,            # GL_ACCOUNT
+                expense.purpose,                     # ITEM_TEXT
+                user.cost_center,                    # COSTCENTER
+                expense.document_number,             # ALLOC_NMBR (document number repeated)
+                expense_date_str,                    # VALUE_DATE (expense date)
+                tax_amount,                          # AMT_DOCCUR_TAX
+                tax_code,                            # TAX_CODE
+                "FACTURA"                            # MOVIMIENTO
+            ]
+            
+            file_lines.append(";".join(fields))
+        
+        # Create file content
+        file_content = "\n".join(file_lines)
+        
+        # Generate filename
+        filename = f"expense-report-{report.id}-expenses-sap.txt"
+        
+        # Ensure uploads directory exists
+        uploads_dir = os.path.join(settings.UPLOAD_PATH, "sap_files", "expense_reports")
+        os.makedirs(uploads_dir, exist_ok=True)
+        
+        # Full file path
+        file_path = os.path.join(uploads_dir, filename)
+        
+        try:
+            # Write file
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(file_content)
+                
+            # Return relative path for storage in database
+            relative_path = os.path.join("sap_files", "expense_reports", filename)
+            return relative_path
+            
+        except Exception as e:
+            raise SAPFileGenerationError(f"Failed to generate SAP expenses file: {str(e)}")
+
+    @staticmethod
+    def generate_compensation_report_file(report: TravelExpenseReport, db: Session) -> str:
+        """
+        Generate SAP compensation report file for accounting approval
+        Includes all approved expenses with compensation logic
+        
+        Args:
+            report: TravelExpenseReport object with loaded relationships
+            db: Database session
+            
+        Returns:
+            str: File path to generated SAP compensation file
+            
+        Raises:
+            SAPFileGenerationError: If required data is missing or file generation fails
+        """
+        
+        # Get all approved expenses from the report
+        approved_expenses = [exp for exp in report.expenses if exp.status.value == 'APPROVED']
+        
+        if not approved_expenses:
+            raise SAPFileGenerationError("No approved expenses found in this report")
+        
+        # Validate user data
+        user = report.requesting_user
+        if not user:
+            raise SAPFileGenerationError("Report requesting user not found")
+            
+        if not user.location:
+            raise SAPFileGenerationError(f"User {user.name} does not have a location assigned")
+        
+        # Calculate totals for compensation logic
+        total_expenses = sum(float(exp.amount) for exp in approved_expenses)
+        prepayment_amount = float(report.prepayment.amount) if report.prepayment else 0.0
+        
+        # Determine compensation type and amount to return
+        if prepayment_amount == 0:
+            compensation_type = "COMPENSACIÓN"
+            compensation_subtype = "Gastos Aprobados"
+            amount_to_return = 0.0
+        elif prepayment_amount > total_expenses:
+            compensation_type = "COMPENSACIÓN"
+            compensation_subtype = "Pendiente de Devolución"
+            amount_to_return = prepayment_amount - total_expenses
+        elif prepayment_amount < total_expenses:
+            compensation_type = "COMPENSACIÓN"
+            compensation_subtype = "Aprobado para Reembolso"
+            amount_to_return = total_expenses - prepayment_amount
+        else:  # Equal amounts
+            compensation_type = "COMPENSACIÓN"
+            compensation_subtype = "Gastos Aprobados"
+            amount_to_return = 0.0
+        
+        # Generate file content - one line per expense
+        file_lines = []
+        
+        for expense in approved_expenses:
+            # Calculate net amount (expense amount - tax amount for taxable expenses)
+            expense_amount = float(expense.amount)
+            if expense.taxable == TaxableOption.SI and expense.tax and expense.tax.rate:
+                # Calculate tax amount: tax_amount = expense_amount * (tax_rate / (100 + tax_rate))
+                rate = float(expense.tax.rate)
+                tax_amount = expense_amount * (rate / (100 + rate))
+                net_amount = expense_amount - tax_amount
+            else:
+                net_amount = expense_amount
+            
+            # Determine expense type fields based on document type
+            if expense.document_type == DocumentType.FACTURA:
+                expense_type_fields = [
+                    expense.sap_invoice_number or "",     # No Partida SAP Factura
+                    report.reason if report.reason else f"Expense Report {report.id}",  # Nombre Factura
+                    "FACTURA"                             # Indicador de Factura
+                ]
+            else:  # BOLETA
+                expense_type_fields = [
+                    "40",                                 # Clave del Gasto
+                    expense.category.account,             # Cuenta mayor
+                    report.reason if report.reason else f"Expense Report {report.id}"  # Identificador de Viaje
+                ]
+            
+            # Build compensation file fields
+            fields = [
+                compensation_type,                        # Tipo
+                compensation_subtype,                     # Tipo de Compensación
+                user.location.sap_code,                  # Sociedad
+                # Prepayment fields (if exists)
+                str(report.prepayment.id) if report.prepayment else "",  # No Partida SAP Anticipo
+                report.reason if report.reason else f"Expense Report {report.id}",  # Nombre Anticipo
+                "ANTICIPO" if report.prepayment else "", # Indicador de Anticipo
+            ]
+            
+            # Add expense type specific fields
+            fields.extend(expense_type_fields)
+            
+            # Add common expense fields
+            fields.extend([
+                f"{net_amount:.2f}",                     # Importe (net amount)
+                "C0" if expense.document_type == DocumentType.BOLETA else "",  # Indicador de Impuesto
+                user.cost_center,                        # Centro de Costo
+                expense.purpose,                         # Detalle de Gasto
+                f"{amount_to_return:.0f}" if amount_to_return > 0 else "",  # Importe a devolver
+                "TBD"                                    # Proveedor a devolver
+            ])
+            
+            file_lines.append(";".join(fields))
+        
+        # Create file content
+        file_content = "\n".join(file_lines)
+        
+        # Generate filename
+        filename = f"expense-report-{report.id}-compensation-sap.txt"
+        
+        # Ensure uploads directory exists
+        uploads_dir = os.path.join(settings.UPLOAD_PATH, "sap_files", "expense_reports")
+        os.makedirs(uploads_dir, exist_ok=True)
+        
+        # Full file path
+        file_path = os.path.join(uploads_dir, filename)
+        
+        try:
+            # Write file
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(file_content)
+                
+            # Return relative path for storage in database
+            relative_path = os.path.join("sap_files", "expense_reports", filename)
+            return relative_path
+            
+        except Exception as e:
+            raise SAPFileGenerationError(f"Failed to generate SAP compensation file: {str(e)}")

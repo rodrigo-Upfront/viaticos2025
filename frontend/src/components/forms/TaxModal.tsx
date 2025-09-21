@@ -15,6 +15,7 @@ interface Tax {
   id?: number;
   code: string;
   regime: string;
+  rate: number;
 }
 
 interface TaxModalProps {
@@ -38,6 +39,7 @@ const TaxModal: React.FC<TaxModalProps> = ({
   const [formData, setFormData] = useState<Tax>({
     code: '',
     regime: '',
+    rate: 0,
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
@@ -48,15 +50,22 @@ const TaxModal: React.FC<TaxModalProps> = ({
       setFormData({
         code: '',
         regime: '',
+        rate: 0,
       });
     }
     setErrors({});
   }, [tax, mode, open]);
 
   const handleChange = (field: keyof Tax) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    let value: any = event.target.value;
+    if (field === 'rate') {
+      // Handle rate field: convert to number, allow 0
+      const numValue = parseFloat(event.target.value);
+      value = isNaN(numValue) ? 0 : numValue;
+    }
     setFormData(prev => ({
       ...prev,
-      [field]: event.target.value
+      [field]: value
     }));
     // Clear error when user starts typing
     if (errors[field]) {
@@ -78,6 +87,13 @@ const TaxModal: React.FC<TaxModalProps> = ({
       newErrors.regime = t('taxes.regimeRequired');
     }
 
+    // Rate is now mandatory and must be a valid number
+    if (typeof formData.rate !== 'number' || isNaN(formData.rate)) {
+      newErrors.rate = t('taxes.rateRequired');
+    } else if (formData.rate < 0 || formData.rate > 100) {
+      newErrors.rate = t('taxes.rateInvalid');
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -92,6 +108,7 @@ const TaxModal: React.FC<TaxModalProps> = ({
     setFormData({
       code: '',
       regime: '',
+      rate: 0,
     });
     setErrors({});
     onClose();
@@ -132,6 +149,24 @@ const TaxModal: React.FC<TaxModalProps> = ({
             multiline
             rows={2}
             placeholder={t('taxes.regimePlaceholder')}
+          />
+
+          <TextField
+            fullWidth
+            label={t('taxes.rate')}
+            value={formData.rate}
+            onChange={handleChange('rate')}
+            error={!!errors.rate}
+            helperText={errors.rate || t('taxes.rateHelp')}
+            margin="normal"
+            type="number"
+            required
+            inputProps={{ 
+              min: 0, 
+              max: 100, 
+              step: 0.01 
+            }}
+            placeholder={t('taxes.ratePlaceholder')}
           />
         </Box>
       </DialogContent>

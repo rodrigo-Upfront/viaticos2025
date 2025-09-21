@@ -240,6 +240,7 @@ class Tax(Base):
     id = Column(Integer, primary_key=True, index=True)
     code = Column(String(50), unique=True, nullable=False)  # Tax Code / Código
     regime = Column(String(200), nullable=False)  # Tax Regime / Régimen
+    rate = Column(Numeric(5, 2), nullable=True)  # Tax rate as percentage (e.g., 18.00)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
@@ -297,6 +298,11 @@ class TravelExpenseReport(Base):
     return_document_number = Column(String(100), nullable=True)
     return_document_files = Column(JSON, nullable=True)  # Array of file paths
     
+    # Accounting approval SAP fields
+    sap_expenses_file = Column(String(500), nullable=True)  # Path to SAP expenses report file
+    sap_compensation_file = Column(String(500), nullable=True)  # Path to SAP compensation report file
+    sap_compensation_number = Column(String(50), nullable=True)  # SAP compensation number
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
@@ -326,6 +332,7 @@ class Expense(Base):
     document_number = Column(String(100), nullable=False)
     taxable = Column(SQLEnum(TaxableOption), default=TaxableOption.NO, nullable=True)
     tax_id = Column(Integer, ForeignKey("taxes.id"), nullable=True)  # Tax for taxable invoices
+    sap_invoice_number = Column(String(50), nullable=True)  # SAP invoice number for FACTURA expenses
     document_file = Column(String(500), nullable=True)
     rejection_reason = Column(String(300), nullable=True)
     status = Column(SQLEnum(ExpenseStatus), default=ExpenseStatus.PENDING, nullable=False)

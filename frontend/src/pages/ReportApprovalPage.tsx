@@ -30,12 +30,14 @@ import {
   Close as CloseIcon,
   ArrowBack as ArrowBackIcon,
   Visibility as VisibilityIcon,
+  Assignment as AssignmentIcon,
 } from '@mui/icons-material';
 import HistoryIcon from '@mui/icons-material/History';
 import ExpenseRejectionHistoryModal from '../components/forms/ExpenseRejectionHistoryModal';
 import apiClient from '../services/apiClient';
 import { useAuth } from '../contexts/AuthContext';
 import ExpenseViewModal from '../components/modals/ExpenseViewModal';
+import AccountingApprovalModal from '../components/modals/AccountingApprovalModal';
 
 // Report status labels
 const REPORT_STATUS_LABELS: Record<string, { en: string; es: string }> = {
@@ -199,6 +201,12 @@ const ReportApprovalPage: React.FC = () => {
   } | undefined>(undefined);
   const [expenseDetailModal, setExpenseDetailModal] = useState(false);
   const [historyExpenseId, setHistoryExpenseId] = useState<number | null>(null);
+  
+  // Accounting approval modal state
+  const [accountingModal, setAccountingModal] = useState({
+    open: false,
+    reportId: 0
+  });
 
   // Function to get user-friendly status labels
   const getStatusLabel = (status: string): string => {
@@ -489,8 +497,15 @@ const ReportApprovalPage: React.FC = () => {
           : expense
       ));
       
-      // Check if report status changed (all expenses processed)
-      if (response.data.report_status_changed) {
+      // Check if accounting approval is required (all expenses approved by accounting user)
+      if (response.data.accounting_approval_required) {
+        // Open accounting approval modal
+        setAccountingModal({
+          open: true,
+          reportId: response.data.report_id
+        });
+      } else if (response.data.report_status_changed) {
+        // Regular flow - all expenses processed
         navigate(getBackPath(), { 
           state: { message: 'All expenses processed. Report completed.', severity: 'success' }
         });
@@ -680,6 +695,22 @@ const ReportApprovalPage: React.FC = () => {
                   size="medium"
                 >
                   {t('common.approve')}
+                </Button>
+              </Box>
+            )}
+            
+            {/* Resume Accounting Approval button for accounting users when all expenses are approved */}
+            {isAccountingUser && expenses.length > 0 && expenses.every(exp => exp.status === 'APPROVED') && (
+              <Box display="flex" justifyContent="flex-end" gap={2}>
+                <Button
+                  onClick={() => setAccountingModal({ open: true, reportId: parseInt(reportId || '0') })}
+                  color="primary"
+                  variant="contained"
+                  startIcon={<AssignmentIcon />}
+                  disabled={submitting || loading}
+                  size="medium"
+                >
+                  {t('accounting.resumeApproval')}
                 </Button>
               </Box>
             )}
@@ -1030,6 +1061,20 @@ const ReportApprovalPage: React.FC = () => {
         open={historyExpenseId !== null}
         onClose={() => setHistoryExpenseId(null)}
         expenseId={historyExpenseId}
+      />
+
+      {/* Accounting Approval Modal */}
+      <AccountingApprovalModal
+        open={accountingModal.open}
+        onClose={() => setAccountingModal({ open: false, reportId: 0 })}
+        onApprovalComplete={() => {
+          setAccountingModal({ open: false, reportId: 0 });
+          // Refresh the page or navigate back to approvals
+          navigate('/approvals', { 
+            state: { message: 'Accounting approval completed successfully', severity: 'success' }
+          });
+        }}
+        reportId={accountingModal.reportId}
       />
     </Box>
   );

@@ -9,6 +9,7 @@ export interface Tax {
   id: number;
   code: string;
   regime: string;
+  rate: number;
   created_at: string;
   updated_at: string;
 }
@@ -16,11 +17,13 @@ export interface Tax {
 export interface TaxCreate {
   code: string;
   regime: string;
+  rate: number;
 }
 
 export interface TaxUpdate {
   code?: string;
   regime?: string;
+  rate?: number;
 }
 
 export interface TaxListResponse {

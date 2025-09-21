@@ -1239,20 +1239,20 @@ async def approve_expense(
     if report.status != RequestStatus.ACCOUNTING_PENDING:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Report is not in accounting approval stage")
     
-    if expense.status == ExpenseStatus.APPROVED:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Expense is already approved")
-    
     try:
-        # Update expense status
-        expense.status = ExpenseStatus.APPROVED
-        expense.rejection_reason = None  # Clear any previous rejection
-        expense.updated_at = datetime.utcnow()
+        # Update expense status (only if not already approved)
+        if expense.status != ExpenseStatus.APPROVED:
+            expense.status = ExpenseStatus.APPROVED
+            expense.rejection_reason = None  # Clear any previous rejection
+            expense.updated_at = datetime.utcnow()
 
         # Check if all expenses in the report are now processed
         all_expenses = report.expenses
         unprocessed_expenses = [e for e in all_expenses if e.status not in [ExpenseStatus.APPROVED, ExpenseStatus.REJECTED]]
         
         report_status_changed = False
+        accounting_approval_required = False
+        
         if len(unprocessed_expenses) == 0:
             # All expenses are processed, determine report outcome
             rejected_expenses = [e for e in all_expenses if e.status == ExpenseStatus.REJECTED]
@@ -1263,26 +1263,33 @@ async def approve_expense(
                 report.rejection_reason = f"Report rejected due to {len(rejected_expenses)} rejected expense(s)"
                 report_status_changed = True
             else:
-                # All expenses approved, continue with normal approval logic
-                total_expenses = sum(expense.amount for expense in all_expenses) if all_expenses else 0
-                prepaid_amount = float(report.prepayment.amount) if report.prepayment and report.prepayment.amount else 0
-                
-                # Round to 2 decimals for strict comparison
-                total_expenses = round(float(total_expenses), 2)
-                prepaid_amount = round(prepaid_amount, 2)
-                
-                # Business Logic Implementation:
-                if report.prepayment_id and prepaid_amount == total_expenses:
-                    # Rule 1: Prepayment type - equal amounts - skip treasury
-                    report.status = RequestStatus.APPROVED_EXPENSES
-                elif total_expenses > prepaid_amount:
-                    # Rule 2: Any case - over budget - needs reimbursement
-                    report.status = RequestStatus.APPROVED_FOR_REIMBURSEMENT
+                # All expenses approved - check if accounting user needs special approval process
+                if (current_user.is_approver and current_user.profile == UserProfile.ACCOUNTING and 
+                    report.status == RequestStatus.ACCOUNTING_PENDING):
+                    # Accounting user approved last expense - trigger accounting approval modal
+                    accounting_approval_required = True
+                    # Don't change report status yet - will be handled by accounting approval process
                 else:
-                    # Rule 3: Any case - under budget - needs fund return documents
-                    report.status = RequestStatus.FUNDS_RETURN_PENDING
-                
-                report_status_changed = True
+                    # Continue with normal approval logic for non-accounting users
+                    total_expenses = sum(expense.amount for expense in all_expenses) if all_expenses else 0
+                    prepaid_amount = float(report.prepayment.amount) if report.prepayment and report.prepayment.amount else 0
+                    
+                    # Round to 2 decimals for strict comparison
+                    total_expenses = round(float(total_expenses), 2)
+                    prepaid_amount = round(prepaid_amount, 2)
+                    
+                    # Business Logic Implementation:
+                    if report.prepayment_id and prepaid_amount == total_expenses:
+                        # Rule 1: Prepayment type - equal amounts - skip treasury
+                        report.status = RequestStatus.APPROVED_EXPENSES
+                    elif total_expenses > prepaid_amount:
+                        # Rule 2: Any case - over budget - needs reimbursement
+                        report.status = RequestStatus.APPROVED_FOR_REIMBURSEMENT
+                    else:
+                        # Rule 3: Any case - under budget - needs fund return documents
+                        report.status = RequestStatus.FUNDS_RETURN_PENDING
+                    
+                    report_status_changed = True
 
         if report_status_changed:
             report.updated_at = datetime.utcnow()
@@ -1294,7 +1301,9 @@ async def approve_expense(
             "expense_id": expense.id,
             "expense_status": ExpenseStatus.APPROVED.value,
             "report_status_changed": report_status_changed,
-            "new_report_status": report.status.value if report_status_changed else None
+            "new_report_status": report.status.value if report_status_changed else None,
+            "accounting_approval_required": accounting_approval_required,
+            "report_id": report.id if accounting_approval_required else None
         }
 
     except Exception as e:

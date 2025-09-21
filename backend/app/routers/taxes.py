@@ -73,7 +73,8 @@ async def create_tax(
         # Create tax
         db_tax = Tax(
             code=tax_data.code,
-            regime=tax_data.regime
+            regime=tax_data.regime,
+            rate=tax_data.rate
         )
         
         db.add(db_tax)
