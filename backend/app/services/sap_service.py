@@ -356,46 +356,36 @@ class SAPService:
             else:
                 net_amount = expense_amount
             
-            # Determine expense type fields based on document type
-            if expense.document_type == DocumentType.FACTURA:
-                expense_type_fields = [
-                    expense.sap_invoice_number or "",     # No Partida SAP Factura
-                    report_reason,                        # Nombre Factura
-                    "FACTURA"                             # Indicador de Factura
-                ]
-            else:  # BOLETA
-                expense_type_fields = [
-                    str(expense.id),                      # Clave del Gasto (Expense ID)
-                    expense.category.account,             # Cuenta mayor
-                    report_reason                         # Identificador de Viaje
-                ]
-            
-            # Build compensation file fields
+            # Build compensation file fields - ALL 18 fields for every expense
             fields = [
-                compensation_type,                        # Tipo
-                compensation_subtype,                     # Tipo de Compensación
-                user.location.sap_code,                  # Sociedad
+                # Fields 1-3: Basic compensation info
+                compensation_type,                        # 1. Tipo
+                compensation_subtype,                     # 2. Tipo de Compensación
+                user.location.sap_code,                  # 3. Sociedad
+                
+                # Fields 4-6: Prepayment info (always present)
+                str(report.prepayment.id) if report.prepayment else "",  # 4. No Partida SAP Anticipo
+                report_reason,                            # 5. Nombre Anticipo
+                "ANTICIPO" if report.prepayment else "", # 6. Indicador de Anticipo
+                
+                # Fields 7-9: FACTURA-specific fields (empty for BOLETA)
+                expense.sap_invoice_number or "" if expense.document_type == DocumentType.FACTURA else "",  # 7. No Partida SAP Factura
+                report_reason if expense.document_type == DocumentType.FACTURA else "",  # 8. Nombre Factura
+                "FACTURA" if expense.document_type == DocumentType.FACTURA else "",      # 9. Indicador de Factura
+                
+                # Fields 10-12: BOLETA-specific fields (empty for FACTURA)
+                "40" if expense.document_type == DocumentType.BOLETA else "",            # 10. Clave del Gasto
+                expense.category.account if expense.document_type == DocumentType.BOLETA else "",  # 11. Cuenta mayor
+                report_reason if expense.document_type == DocumentType.BOLETA else "",   # 12. Identificador de Viaje
+                
+                # Fields 13-18: Common fields for all expenses
+                f"{net_amount:.2f}",                     # 13. Importe
+                "C0" if expense.document_type == DocumentType.BOLETA else "",  # 14. Indicador de Impuesto
+                user.cost_center or "",                  # 15. Centro de Costo
+                expense.purpose or "",                   # 16. Detalle de Gasto
+                f"{amount_to_return:.0f}" if amount_to_return > 0 else "",  # 17. Importe a devolver
+                "TBD"                                    # 18. Proveedor a devolver
             ]
-            
-            # Add expense type specific fields first
-            fields.extend(expense_type_fields)
-            
-            # Add prepayment fields (if exists)
-            fields.extend([
-                str(report.prepayment.id) if report.prepayment else "",  # No Partida SAP Anticipo
-                report_reason,                            # Nombre Anticipo
-                "ANTICIPO" if report.prepayment else "", # Indicador de Anticipo
-            ])
-            
-            # Add common expense fields
-            fields.extend([
-                f"{net_amount:.2f}",                     # Importe (net amount)
-                "C0" if expense.document_type == DocumentType.BOLETA else "",  # Indicador de Impuesto
-                user.cost_center or "",                  # Centro de Costo
-                expense.purpose or "",                   # Detalle de Gasto
-                f"{amount_to_return:.0f}" if amount_to_return > 0 else "",  # Importe a devolver
-                "TBD"                                    # Proveedor a devolver
-            ])
             
             # Ensure empty fields are preserved with separators
             file_lines.append(";".join(str(field) if field is not None else "" for field in fields))
