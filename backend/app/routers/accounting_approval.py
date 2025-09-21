@@ -346,10 +346,10 @@ async def complete_accounting_approval(
             entity_type=EntityType.TRAVEL_EXPENSE_REPORT,
             entity_id=report.id,
             user_id=current_user.id,
-            user_role=current_user.profile.value,
+            user_role=current_user.profile.value if hasattr(current_user.profile, 'value') else str(current_user.profile),
             action=HistoryAction.APPROVED,
             from_status="ACCOUNTING_PENDING",
-            to_status=report.status.value,
+            to_status=report.status.value if hasattr(report.status, 'value') else str(report.status),
             comments=f"Accounting approval completed with SAP compensation: {compensation_data.sap_compensation_number} - {status_message}"
         ))
         

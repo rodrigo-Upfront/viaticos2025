@@ -26,6 +26,7 @@ import {
   Alert,
   Breadcrumbs,
   Link,
+  Autocomplete,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -668,7 +669,7 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
             <CardContent>
               <TableContainer sx={{ width: '100%', overflowX: 'auto' }}>
                 <Table size="small" sx={{ 
-                  minWidth: showTaxableColumn ? 1000 : 900,
+                  minWidth: showTaxColumn ? 1050 : (showTaxableColumn ? 1000 : 900),
                   '& .MuiTableCell-root': {
                     padding: '8px 12px', // Reduced from default 16px
                     fontSize: '0.875rem'
@@ -704,7 +705,7 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                         <TableCell sx={{ minWidth: 100 }}>{t('expenses.taxable')}</TableCell>
                       )}
                       {showTaxColumn && (
-                        <TableCell sx={{ minWidth: 150 }}>{t('expenses.tax')}</TableCell>
+                        <TableCell sx={{ minWidth: 120 }}>{t('expenses.tax')}</TableCell>
                       )}
                       <TableCell sx={{ minWidth: 200 }}>{t('expenses.purpose')}</TableCell>
                       <TableCell sx={{ width: 80, textAlign: 'center' }}>
@@ -775,21 +776,41 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                               placeholder={t('expenses.enterSupplier')}
                             />
                           ) : (
-                            <FormControl size="small" fullWidth error={!!row.errors.factura_supplier_id}>
-                              <Select
-                                value={row.factura_supplier_id}
-                                onChange={(e) => updateRow(row.id, 'factura_supplier_id', e.target.value)}
-                              >
-                                <MenuItem value={0}>
-                                  <em>{t('expenses.selectSupplier')}</em>
-                                </MenuItem>
-                                {suppliers.map((supplier) => (
-                                  <MenuItem key={supplier.id} value={supplier.id}>
-                                    {supplier.name} ({supplier.tax_name})
-                                  </MenuItem>
-                                ))}
-                              </Select>
-                            </FormControl>
+                            <Autocomplete
+                              size="small"
+                              fullWidth
+                              options={suppliers}
+                              getOptionLabel={(option) => option.name}
+                              value={suppliers.find(s => s.id === row.factura_supplier_id) || null}
+                              onChange={(event, newValue) => {
+                                updateRow(row.id, 'factura_supplier_id', newValue?.id || 0);
+                              }}
+                              filterOptions={(options, { inputValue }) => {
+                                const filtered = options.filter((option) =>
+                                  option.name.toLowerCase().includes(inputValue.toLowerCase()) ||
+                                  option.tax_name.toLowerCase().includes(inputValue.toLowerCase())
+                                );
+                                return filtered;
+                              }}
+                              renderInput={(params) => (
+                                <TextField
+                                  {...params}
+                                  placeholder={t('expenses.selectSupplier')}
+                                  error={!!row.errors.factura_supplier_id}
+                                  helperText={row.errors.factura_supplier_id}
+                                />
+                              )}
+                              renderOption={(props, option) => (
+                                <Box component="li" {...props}>
+                                  <Box>
+                                    <Typography variant="body2">{option.name}</Typography>
+                                    <Typography variant="caption" color="textSecondary">
+                                      {option.tax_name}
+                                    </Typography>
+                                  </Box>
+                                </Box>
+                              )}
+                            />
                           )}
                         </TableCell>
 
@@ -866,28 +887,46 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                         {/* Tax - Only show for taxable FACTURA documents */}
                         {showTaxColumn && (
                           <TableCell>
-                            <FormControl size="small" fullWidth>
-                              <Select
-                                value={row.tax_id || ''}
-                                onChange={(e) => {
-                                  const value = e.target.value;
-                                  const taxId = value === '' ? undefined : Number(value);
-                                  const selectedTax = taxId ? taxes.find(t => t.id === taxId) : undefined;
-                                  updateRow(row.id, 'tax_id', taxId);
-                                  updateRow(row.id, 'tax', selectedTax ? selectedTax.code : '');
-                                }}
-                                disabled={row.document_type !== 'FACTURA' || row.taxable !== 'SI'}
-                              >
-                                <MenuItem value="">
-                                  <em>{t('taxes.selectTax')}</em>
-                                </MenuItem>
-                                {taxes.map((tax) => (
-                                  <MenuItem key={tax.id} value={tax.id}>
-                                    {tax.code}
-                                  </MenuItem>
-                                ))}
-                              </Select>
-                            </FormControl>
+                            <Autocomplete
+                              size="small"
+                              fullWidth
+                              options={taxes}
+                              getOptionLabel={(option) => option.code}
+                              value={taxes.find(t => t.id === row.tax_id) || null}
+                              onChange={(event, newValue) => {
+                                updateRow(row.id, 'tax_id', newValue?.id || undefined);
+                                updateRow(row.id, 'tax', newValue ? newValue.code : '');
+                              }}
+                              filterOptions={(options, { inputValue }) => {
+                                const filtered = options.filter((option) =>
+                                  option.code.toLowerCase().includes(inputValue.toLowerCase()) ||
+                                  option.regime.toLowerCase().includes(inputValue.toLowerCase())
+                                );
+                                return filtered;
+                              }}
+                              disabled={row.document_type !== 'FACTURA' || row.taxable !== 'SI'}
+                              sx={{
+                                '& .MuiAutocomplete-input': {
+                                  minWidth: '80px !important'
+                                }
+                              }}
+                              renderInput={(params) => (
+                                <TextField
+                                  {...params}
+                                  placeholder={t('taxes.selectTax')}
+                                />
+                              )}
+                              renderOption={(props, option) => (
+                                <Box component="li" {...props}>
+                                  <Box>
+                                    <Typography variant="body2">{option.code}</Typography>
+                                    <Typography variant="caption" color="textSecondary">
+                                      {option.regime}
+                                    </Typography>
+                                  </Box>
+                                </Box>
+                              )}
+                            />
                           </TableCell>
                         )}
 

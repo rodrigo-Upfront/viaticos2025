@@ -239,13 +239,16 @@ const ExpenseViewModal: React.FC<ExpenseViewModalProps> = ({ open, onClose, expe
           </Grid>
 
           {/* Tax field - only show if taxable and has tax info */}
-          {(expense.taxable === 'SI' || expense.taxable === 'Si') && expense.tax_code && (
+          {(expense.taxable === 'SI' || expense.taxable === 'Si') && (expense.tax_code || expense.tax_id) && (
             <Grid item xs={12} sm={6}>
               <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
                 {t('expenses.tax')}
               </Typography>
               <Typography variant="body1" sx={{ mb: 1.5 }}>
-                {expense.tax_code} - {expense.tax_regime}
+                {expense.tax_code && expense.tax_regime 
+                  ? `${expense.tax_code} - ${expense.tax_regime}`
+                  : expense.tax_code || 'Tax Applied'
+                }
               </Typography>
             </Grid>
           )}

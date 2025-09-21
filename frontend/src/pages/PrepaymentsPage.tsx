@@ -475,8 +475,8 @@ const PrepaymentsPage: React.FC = () => {
       open: true,
       title: isRejected ? t('prepaymentModule.resubmitForApprovalTitle') : t('prepaymentModule.sendForApprovalTitle'),
       message: isRejected 
-        ? t('prepaymentModule.resubmitForApprovalMessage', { reason: prepayment.reason })
-        : t('prepaymentModule.sendForApprovalMessage', { reason: prepayment.reason }),
+        ? t('prepaymentModule.resubmitForApprovalMessage').replace('{reason}', prepayment.reason)
+        : t('prepaymentModule.sendForApprovalMessage').replace('{reason}', prepayment.reason),
       onConfirm: async () => {
         try {
           setLoading(prev => ({ ...prev, action: true }));
