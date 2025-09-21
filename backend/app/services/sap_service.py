@@ -240,6 +240,7 @@ class SAPService:
                 expense.document_number,              # REF_DOC_NO
                 "0000000001",                        # ITEMNO_ACC
                 report_reason,                       # HEADER_TXT
+                user.sap_code,                       # USER_SAP_CODE (user SAP code)
                 "",                                  # PROFIT_CTR (always empty)
                 expense.currency.code,               # CURRENCY
                 amount_str,                          # AMT_DOCCUR (full expense amount, negative)
