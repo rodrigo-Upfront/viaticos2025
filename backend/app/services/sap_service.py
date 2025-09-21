@@ -363,10 +363,10 @@ class SAPService:
                 compensation_subtype,                     # 2. Tipo de Compensación
                 user.location.sap_code,                  # 3. Sociedad
                 
-                # Fields 4-6: Prepayment info (always present)
-                str(report.prepayment.id) if report.prepayment else "",  # 4. No Partida SAP Anticipo
-                report_reason,                            # 5. Nombre Anticipo
-                "ANTICIPO" if report.prepayment else "", # 6. Indicador de Anticipo
+                # Fields 4-6: Prepayment info (only if prepayment exists)
+                report.prepayment.sap_record_number or "" if report.prepayment else "",  # 4. No Partida SAP Anticipo
+                report.prepayment.reason or "" if report.prepayment else "",             # 5. Nombre Anticipo
+                "ANTICIPO" if report.prepayment else "",                                 # 6. Indicador de Anticipo
                 
                 # Fields 7-9: FACTURA-specific fields (empty for BOLETA)
                 expense.sap_invoice_number or "" if expense.document_type == DocumentType.FACTURA else "",  # 7. No Partida SAP Factura
