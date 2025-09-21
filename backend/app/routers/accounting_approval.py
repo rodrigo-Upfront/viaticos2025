@@ -319,7 +319,6 @@ async def complete_accounting_approval(
         
         # Check treasury approvers exist for cases that need treasury
         if report.status in [RequestStatus.APPROVED_FOR_REIMBURSEMENT, RequestStatus.FUNDS_RETURN_PENDING]:
-            from app.models.models import User, UserProfile
             has_treasury = db.query(User).filter(
                 User.profile == UserProfile.TREASURY,
                 User.is_approver == True
