@@ -36,17 +36,15 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import CountryModal from '../components/forms/CountryModal';
-import CategoryModal from '../components/forms/CategoryModal';
 import SupplierModal from '../components/forms/SupplierModal';
 import CurrencyModal from '../components/forms/CurrencyModal';
-import CategoryAlertsModal from '../components/forms/CategoryAlertsModal';
 import MFASettingsModal from '../components/forms/MFASettingsModal';
 import LocationModal from '../components/forms/LocationModal';
 import LocationCurrencyModal from '../components/forms/LocationCurrencyModal';
+import LocationCategoryModal from '../components/forms/LocationCategoryModal';
 import TaxModal from '../components/forms/TaxModal';
 import ConfirmDialog from '../components/forms/ConfirmDialog';
 import { supplierService, Supplier as ApiSupplier } from '../services/supplierService';
-import { categoryService, Category as ApiCategory } from '../services/categoryService';
 import { countryService, Country as ApiCountry } from '../services/countryService';
 import { currencyService, Currency as ApiCurrency } from '../services/currencyService';
 import { locationService, Location as ApiLocation } from '../services/locationService';
@@ -79,11 +77,7 @@ interface Country {
   name: string;
 }
 
-interface Category {
-  id?: number;
-  name: string;
-  account: string;
-}
+// Category interface removed - categories now managed under locations
 
 interface Supplier {
   id?: number;
@@ -120,7 +114,6 @@ const SettingsPage: React.FC = () => {
   // Loading states
   const [loading, setLoading] = useState({
     countries: true,
-    categories: true,
     suppliers: true,
     currencies: true,
     locations: true,
@@ -131,9 +124,7 @@ const SettingsPage: React.FC = () => {
   const [countries, setCountries] = useState<Country[]>([]);
   const [countryModal, setCountryModal] = useState({ open: false, mode: 'create' as 'create' | 'edit', country: undefined as Country | undefined });
 
-  // Categories state  
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [categoryModal, setCategoryModal] = useState({ open: false, mode: 'create' as 'create' | 'edit', category: undefined as Category | undefined });
+  // Categories state (removed - now managed under locations)
 
   // Suppliers state
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -151,17 +142,17 @@ const SettingsPage: React.FC = () => {
     locationId: 0, 
     locationName: '' 
   });
+  const [locationCategoryModal, setLocationCategoryModal] = useState({ 
+    open: false, 
+    locationId: 0, 
+    locationName: '' 
+  });
 
   // Taxes state
   const [taxes, setTaxes] = useState<Tax[]>([]);
   const [taxModal, setTaxModal] = useState({ open: false, mode: 'create' as 'create' | 'edit', tax: undefined as Tax | undefined });
 
-  // Category alerts state
-  const [categoryAlertsModal, setCategoryAlertsModal] = useState({ 
-    open: false, 
-    categoryId: 0, 
-    categoryName: '' 
-  });
+  // Category alerts state (removed - now managed under locations)
 
   // MFA settings state
   const [mfaSettingsModal, setMfaSettingsModal] = useState(false);
@@ -184,7 +175,6 @@ const SettingsPage: React.FC = () => {
   // Load data from APIs
   useEffect(() => {
     loadCountries();
-    loadCategories();
     loadSuppliers();
     loadCurrencies();
     loadLocations();
@@ -213,27 +203,7 @@ const SettingsPage: React.FC = () => {
     }
   };
 
-  const loadCategories = async () => {
-    try {
-      setLoading(prev => ({ ...prev, categories: true }));
-      const response = await categoryService.getCategories();
-      const mappedCategories = response.categories.map((cat: ApiCategory) => ({
-        id: cat.id,
-        name: cat.name,
-        account: cat.account,
-      }));
-      setCategories(mappedCategories);
-    } catch (error) {
-      console.error('Failed to load categories:', error);
-      setSnackbar({
-        open: true,
-        message: 'Failed to load categories',
-        severity: 'error'
-      });
-    } finally {
-      setLoading(prev => ({ ...prev, categories: false }));
-    }
-  };
+  // loadCategories removed - categories now managed under locations
 
   const loadSuppliers = async () => {
     try {
@@ -412,97 +382,7 @@ const SettingsPage: React.FC = () => {
     }
   };
 
-  // Category CRUD operations
-  const handleCreateCategory = () => {
-    setCategoryModal({ open: true, mode: 'create', category: undefined });
-  };
-
-  const handleEditCategory = (category: Category) => {
-    setCategoryModal({ open: true, mode: 'edit', category });
-  };
-
-  const handleDeleteCategory = (category: Category) => {
-    setConfirmDialog({
-      open: true,
-      title: 'Delete Category',
-      message: `Are you sure you want to delete "${category.name}"? This action cannot be undone.`,
-      onConfirm: async () => {
-        if (category.id) {
-          try {
-            await categoryService.deleteCategory(category.id);
-            setCategories(prev => prev.filter(c => c.id !== category.id));
-            setSnackbar({
-              open: true,
-              message: `Category "${category.name}" deleted successfully`,
-              severity: 'success'
-            });
-          } catch (error) {
-            console.error('Failed to delete category:', error);
-            setSnackbar({
-              open: true,
-              message: `Failed to delete category "${category.name}"`,
-              severity: 'error'
-            });
-          }
-        }
-      }
-    });
-  };
-
-  const handleSaveCategory = async (categoryData: Category) => {
-    try {
-      if (categoryModal.mode === 'create') {
-        const apiData = {
-          name: categoryData.name,
-          account: categoryData.account
-        };
-        const newCategory = await categoryService.createCategory(apiData);
-        const mappedCategory = {
-          id: newCategory.id,
-          name: newCategory.name,
-          account: newCategory.account
-        };
-        setCategories(prev => [...prev, mappedCategory]);
-        setSnackbar({
-          open: true,
-          message: `Category "${categoryData.name}" created successfully`,
-          severity: 'success'
-        });
-      } else if (categoryData.id) {
-        const apiData = {
-          name: categoryData.name,
-          account: categoryData.account
-        };
-        const updatedCategory = await categoryService.updateCategory(categoryData.id, apiData);
-        const mappedCategory = {
-          id: updatedCategory.id,
-          name: updatedCategory.name,
-          account: updatedCategory.account
-        };
-        setCategories(prev => prev.map(c => c.id === categoryData.id ? mappedCategory : c));
-        setSnackbar({
-          open: true,
-          message: `Category "${categoryData.name}" updated successfully`,
-          severity: 'success'
-        });
-      }
-    } catch (error) {
-      console.error('Failed to save category:', error);
-      setSnackbar({
-        open: true,
-        message: `Failed to save category "${categoryData.name}"`,
-        severity: 'error'
-      });
-    }
-  };
-
-  const handleSetCategoryAlerts = (category: Category) => {
-    setCategoryAlertsModal({
-      open: true,
-      categoryId: category.id!,
-      categoryName: category.name
-    });
-  };
+  // Category CRUD operations removed - categories now managed under locations
 
   // Supplier CRUD operations
   const handleCreateSupplier = () => {
@@ -774,6 +654,14 @@ const SettingsPage: React.FC = () => {
     });
   };
 
+  const handleManageLocationCategories = (location: Location) => {
+    setLocationCategoryModal({
+      open: true,
+      locationId: location.id!,
+      locationName: location.name
+    });
+  };
+
   // Tax CRUD operations
   const handleCreateTax = () => {
     setTaxModal({ open: true, mode: 'create', tax: undefined });
@@ -873,7 +761,6 @@ const SettingsPage: React.FC = () => {
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs value={tabValue} onChange={handleTabChange}>
             <Tab icon={<CountryIcon />} label={t('configuration.countries')} />
-            <Tab icon={<CategoryIcon />} label={t('configuration.expenseCategories')} />
             <Tab icon={<SupplierIcon />} label={t('configuration.suppliers')} />
             <Tab icon={<CurrencyIcon />} label={t('configuration.currencies')} />
             <Tab icon={<LocationIcon />} label={t('configuration.locations')} />
@@ -930,68 +817,9 @@ const SettingsPage: React.FC = () => {
           </TableContainer>
         </TabPanel>
 
-        <TabPanel value={tabValue} index={1}>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-            <Typography variant="h6">{t('configuration.expenseCategoriesManagement')}</Typography>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={handleCreateCategory}
-            >
-{t('configuration.addCategory')}
-            </Button>
-          </Box>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>{t('tables.id')}</TableCell>
-                  <TableCell>{t('users.name')}</TableCell>
-                  <TableCell>{t('configuration.sapAccount')}</TableCell>
-                  <TableCell>{t('configuration.setAlerts')}</TableCell>
-                  <TableCell>{t('common.actions')}</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {categories.map((category) => (
-                  <TableRow key={category.id}>
-                    <TableCell>{category.id}</TableCell>
-                    <TableCell>{category.name}</TableCell>
-                    <TableCell>{category.account}</TableCell>
-                    <TableCell>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleSetCategoryAlerts(category)}
-                        color="primary"
-                        title={t('configuration.setAlerts')}
-                      >
-                        <AlertIcon />
-                      </IconButton>
-                    </TableCell>
-                    <TableCell>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleEditCategory(category)}
-                        color="primary"
-                      >
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => handleDeleteCategory(category)}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </TabPanel>
+        {/* Categories tab removed - now managed under locations */}
 
-        <TabPanel value={tabValue} index={2}>
+        <TabPanel value={tabValue} index={1}>
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
             <Typography variant="h6">{t('configuration.suppliersManagement')}</Typography>
             <Button
@@ -1043,7 +871,7 @@ const SettingsPage: React.FC = () => {
           </TableContainer>
         </TabPanel>
 
-        <TabPanel value={tabValue} index={3}>
+        <TabPanel value={tabValue} index={2}>
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
             <Typography variant="h6">{t('configuration.currenciesManagement')}</Typography>
             <Button
@@ -1095,7 +923,7 @@ const SettingsPage: React.FC = () => {
           </TableContainer>
         </TabPanel>
 
-        <TabPanel value={tabValue} index={4}>
+        <TabPanel value={tabValue} index={3}>
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
             <Typography variant="h6">{t('configuration.locationsManagement')}</Typography>
             <Button
@@ -1115,6 +943,7 @@ const SettingsPage: React.FC = () => {
                   <TableCell>{t('configuration.sapCode')}</TableCell>
                   <TableCell>{t('configuration.costCenter')}</TableCell>
                   <TableCell>{t('configuration.manageCurrencies')}</TableCell>
+                  <TableCell>{t('configuration.manageCategories')}</TableCell>
                   <TableCell>{t('common.actions')}</TableCell>
                 </TableRow>
               </TableHead>
@@ -1133,6 +962,16 @@ const SettingsPage: React.FC = () => {
                         title={t('configuration.manageCurrencies')}
                       >
                         <AccountIcon />
+                      </IconButton>
+                    </TableCell>
+                    <TableCell>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleManageLocationCategories(location)}
+                        color="primary"
+                        title={t('configuration.manageCategories')}
+                      >
+                        <CategoryIcon />
                       </IconButton>
                     </TableCell>
                     <TableCell>
@@ -1158,7 +997,7 @@ const SettingsPage: React.FC = () => {
           </TableContainer>
         </TabPanel>
 
-        <TabPanel value={tabValue} index={5}>
+        <TabPanel value={tabValue} index={4}>
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
             <Typography variant="h6">{t('taxes.taxesManagement')}</Typography>
             <Button
@@ -1210,7 +1049,7 @@ const SettingsPage: React.FC = () => {
           </TableContainer>
         </TabPanel>
 
-        <TabPanel value={tabValue} index={6}>
+        <TabPanel value={tabValue} index={5}>
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
             <Typography variant="h6">{t('mfa.settings.title')}</Typography>
           </Box>
@@ -1253,14 +1092,7 @@ const SettingsPage: React.FC = () => {
         mode={countryModal.mode}
       />
 
-      {/* Category Modal */}
-      <CategoryModal
-        open={categoryModal.open}
-        onClose={() => setCategoryModal({ open: false, mode: 'create', category: undefined })}
-        onSave={handleSaveCategory}
-        category={categoryModal.category}
-        mode={categoryModal.mode}
-      />
+      {/* Category Modal removed - categories now managed under locations */}
 
       {/* Supplier Modal */}
       <SupplierModal
@@ -1280,13 +1112,7 @@ const SettingsPage: React.FC = () => {
         mode={currencyModal.mode}
       />
 
-      {/* Category Alerts Modal */}
-      <CategoryAlertsModal
-        open={categoryAlertsModal.open}
-        onClose={() => setCategoryAlertsModal({ open: false, categoryId: 0, categoryName: '' })}
-        categoryId={categoryAlertsModal.categoryId}
-        categoryName={categoryAlertsModal.categoryName}
-      />
+      {/* Category Alerts Modal removed - categories now managed under locations */}
 
       {/* MFA Settings Modal */}
       <MFASettingsModal
@@ -1309,6 +1135,14 @@ const SettingsPage: React.FC = () => {
         onClose={() => setLocationCurrencyModal({ open: false, locationId: 0, locationName: '' })}
         locationId={locationCurrencyModal.locationId}
         locationName={locationCurrencyModal.locationName}
+      />
+
+      {/* Location Category Modal */}
+      <LocationCategoryModal
+        open={locationCategoryModal.open}
+        onClose={() => setLocationCategoryModal({ open: false, locationId: 0, locationName: '' })}
+        locationId={locationCategoryModal.locationId}
+        locationName={locationCategoryModal.locationName}
       />
 
       {/* Tax Modal */}

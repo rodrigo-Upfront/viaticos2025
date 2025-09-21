@@ -8,7 +8,7 @@ from sqlalchemy import and_, or_
 from typing import List, Optional
 
 from ..database.connection import get_db
-from ..models.models import Location, LocationCurrency, Currency
+from ..models.models import Location, LocationCurrency, Currency, ExpenseCategory
 from ..schemas.location_schemas import (
     Location as LocationSchema,
     LocationCreate,
@@ -19,6 +19,11 @@ from ..schemas.location_schemas import (
     LocationCurrencyCreate,
     LocationCurrencyUpdate,
     LocationCurrencyWithDetails
+)
+from ..schemas.category_schemas import (
+    CategoryCreate,
+    CategoryUpdate,
+    CategoryResponse
 )
 from ..services.auth_service import get_current_user, get_current_superuser
 
@@ -369,3 +374,164 @@ async def get_location_currencies(
         location_currencies.append(LocationCurrencyWithDetails(**currency_dict))
     
     return location_currencies
+
+
+# Location Categories Management
+
+@router.get("/{location_id}/categories", response_model=List[CategoryResponse])
+async def get_location_categories(
+    location_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_superuser)
+):
+    """Get all categories for a specific location"""
+    
+    # Verify location exists
+    location = db.query(Location).filter(Location.id == location_id).first()
+    if not location:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Location not found"
+        )
+    
+    # Get categories for this location
+    categories = db.query(ExpenseCategory).filter(
+        ExpenseCategory.location_id == location_id
+    ).order_by(ExpenseCategory.name).all()
+    
+    return [CategoryResponse.from_orm(category) for category in categories]
+
+
+@router.post("/{location_id}/categories", response_model=CategoryResponse)
+async def add_location_category(
+    location_id: int,
+    category_data: CategoryCreate,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_superuser)
+):
+    """Add a new category to a location"""
+    
+    # Verify location exists
+    location = db.query(Location).filter(Location.id == location_id).first()
+    if not location:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Location not found"
+        )
+    
+    # Check if category name already exists for this location
+    existing_category = db.query(ExpenseCategory).filter(
+        and_(
+            ExpenseCategory.location_id == location_id,
+            ExpenseCategory.name == category_data.name
+        )
+    ).first()
+    
+    if existing_category:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Category '{category_data.name}' already exists for this location"
+        )
+    
+    # Create new category
+    db_category = ExpenseCategory(
+        name=category_data.name,
+        account=category_data.account,
+        location_id=location_id
+    )
+    
+    db.add(db_category)
+    db.commit()
+    db.refresh(db_category)
+    
+    return CategoryResponse.from_orm(db_category)
+
+
+@router.put("/{location_id}/categories/{category_id}", response_model=CategoryResponse)
+async def update_location_category(
+    location_id: int,
+    category_id: int,
+    category_data: CategoryUpdate,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_superuser)
+):
+    """Update a category within a location"""
+    
+    # Find the category
+    category = db.query(ExpenseCategory).filter(
+        and_(
+            ExpenseCategory.id == category_id,
+            ExpenseCategory.location_id == location_id
+        )
+    ).first()
+    
+    if not category:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Category not found for this location"
+        )
+    
+    # Check name uniqueness if name is being updated
+    if category_data.name and category_data.name != category.name:
+        existing_category = db.query(ExpenseCategory).filter(
+            and_(
+                ExpenseCategory.location_id == location_id,
+                ExpenseCategory.name == category_data.name,
+                ExpenseCategory.id != category_id
+            )
+        ).first()
+        
+        if existing_category:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Category '{category_data.name}' already exists for this location"
+            )
+    
+    # Update category
+    update_data = category_data.dict(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(category, field, value)
+    
+    db.commit()
+    db.refresh(category)
+    
+    return CategoryResponse.from_orm(category)
+
+
+@router.delete("/{location_id}/categories/{category_id}")
+async def remove_location_category(
+    location_id: int,
+    category_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_superuser)
+):
+    """Remove a category from a location"""
+    
+    # Find the category
+    category = db.query(ExpenseCategory).filter(
+        and_(
+            ExpenseCategory.id == category_id,
+            ExpenseCategory.location_id == location_id
+        )
+    ).first()
+    
+    if not category:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Category not found for this location"
+        )
+    
+    # Check if category is being used by any expenses
+    from ..models.models import Expense
+    expenses_using = db.query(Expense).filter(Expense.category_id == category_id).first()
+    
+    if expenses_using:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete category: it is being used by expenses"
+        )
+    
+    db.delete(category)
+    db.commit()
+    
+    return {"message": "Category removed from location successfully"}

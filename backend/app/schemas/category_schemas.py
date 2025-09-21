@@ -44,6 +44,7 @@ class CategoryResponse(CategoryBase):
             id=obj.id,
             name=obj.name,
             account=obj.account,
+            location_id=obj.location_id,
             created_at=obj.created_at,
             updated_at=obj.updated_at
         )

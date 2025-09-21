@@ -46,6 +46,27 @@ export interface LocationCurrencyUpdate {
   account?: string;
 }
 
+export interface LocationCategory {
+  id: number;
+  name: string;
+  account: string;
+  location_id: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LocationCategoryCreate {
+  name: string;
+  account: string;
+  location_id: number;
+}
+
+export interface LocationCategoryUpdate {
+  name?: string;
+  account?: string;
+  location_id?: number;
+}
+
 export interface LocationWithCurrencies extends Location {
   location_currencies: LocationCurrency[];
 }
@@ -143,6 +164,41 @@ export class LocationService {
    */
   async removeLocationCurrency(locationId: number, currencyId: number): Promise<void> {
     await apiClient.delete(`${this.basePath}/${locationId}/currencies/${currencyId}`);
+  }
+
+  /**
+   * Get categories for a specific location
+   */
+  async getLocationCategories(locationId: number): Promise<LocationCategory[]> {
+    const response = await apiClient.get(`${this.basePath}/${locationId}/categories`);
+    return response.data;
+  }
+
+  /**
+   * Add category to location
+   */
+  async addLocationCategory(locationId: number, data: LocationCategoryCreate): Promise<LocationCategory> {
+    const response = await apiClient.post(`${this.basePath}/${locationId}/categories`, data);
+    return response.data;
+  }
+
+  /**
+   * Update location category
+   */
+  async updateLocationCategory(
+    locationId: number, 
+    categoryId: number, 
+    data: LocationCategoryUpdate
+  ): Promise<LocationCategory> {
+    const response = await apiClient.put(`${this.basePath}/${locationId}/categories/${categoryId}`, data);
+    return response.data;
+  }
+
+  /**
+   * Remove category from location
+   */
+  async removeLocationCategory(locationId: number, categoryId: number): Promise<void> {
+    await apiClient.delete(`${this.basePath}/${locationId}/categories/${categoryId}`);
   }
 }
 

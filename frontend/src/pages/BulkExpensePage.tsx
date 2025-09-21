@@ -242,7 +242,7 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
   };
 
   const updateRow = (rowId: string, field: keyof BulkExpenseRow, value: any) => {
-    setExpenseRows(expenseRows.map(row => {
+    setExpenseRows(prevRows => prevRows.map(row => {
       if (row.id === rowId) {
         const updatedRow = { ...row, [field]: value, errors: { ...row.errors, [field]: '' } };
         
@@ -870,10 +870,11 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                               <Select
                                 value={row.tax_id || ''}
                                 onChange={(e) => {
-                                  const taxId = e.target.value as number;
-                                  const selectedTax = taxes.find(t => t.id === taxId);
-                                  updateRow(row.id, 'tax_id', taxId || undefined);
-                                  updateRow(row.id, 'tax', selectedTax ? `${selectedTax.code} - ${selectedTax.regime}` : '');
+                                  const value = e.target.value;
+                                  const taxId = value === '' ? undefined : Number(value);
+                                  const selectedTax = taxId ? taxes.find(t => t.id === taxId) : undefined;
+                                  updateRow(row.id, 'tax_id', taxId);
+                                  updateRow(row.id, 'tax', selectedTax ? selectedTax.code : '');
                                 }}
                                 disabled={row.document_type !== 'FACTURA' || row.taxable !== 'SI'}
                               >
@@ -882,7 +883,7 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                                 </MenuItem>
                                 {taxes.map((tax) => (
                                   <MenuItem key={tax.id} value={tax.id}>
-                                    {tax.code} - {tax.regime}
+                                    {tax.code}
                                   </MenuItem>
                                 ))}
                               </Select>
