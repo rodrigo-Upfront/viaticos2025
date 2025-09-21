@@ -565,7 +565,7 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
                           {file.original_name || file.filename}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          {t('validation.clickToDownload').replace('{number}', (index + 1).toString())}
+                          {t('validation.clickToDownload', { number: index + 1 })}
                         </Typography>
                       </Box>
                       <IconButton 
