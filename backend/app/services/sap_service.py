@@ -378,11 +378,13 @@ class SAPService:
                 expense.category.account if expense.document_type == DocumentType.BOLETA else "",  # 11. Cuenta mayor
                 report_reason if expense.document_type == DocumentType.BOLETA else "",   # 12. Identificador de Viaje
                 
-                # Fields 13-18: Common fields for all expenses
-                f"{net_amount:.2f}",                     # 13. Importe
-                "C0" if expense.document_type == DocumentType.BOLETA else "",  # 14. Indicador de Impuesto
-                user.cost_center or "",                  # 15. Centro de Costo
-                expense.purpose or "",                   # 16. Detalle de Gasto
+                # Fields 13-16: BOLETA-specific fields (empty for FACTURA)
+                f"{net_amount:.2f}" if expense.document_type == DocumentType.BOLETA else "",     # 13. Importe
+                "C0" if expense.document_type == DocumentType.BOLETA else "",                    # 14. Indicador de Impuesto
+                user.cost_center or "" if expense.document_type == DocumentType.BOLETA else "", # 15. Centro de Costo
+                expense.purpose or "" if expense.document_type == DocumentType.BOLETA else "",  # 16. Detalle de Gasto
+                
+                # Fields 17-18: Common fields for all expenses
                 f"{amount_to_return:.0f}" if amount_to_return > 0 else "",  # 17. Importe a devolver
                 "TBD"                                    # 18. Proveedor a devolver
             ]
