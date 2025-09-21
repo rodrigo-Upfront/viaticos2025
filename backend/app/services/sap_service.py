@@ -365,7 +365,7 @@ class SAPService:
                 ]
             else:  # BOLETA
                 expense_type_fields = [
-                    "40",                                 # Clave del Gasto
+                    str(expense.id),                      # Clave del Gasto (Expense ID)
                     expense.category.account,             # Cuenta mayor
                     report_reason                         # Identificador de Viaje
                 ]
@@ -391,8 +391,8 @@ class SAPService:
             fields.extend([
                 f"{net_amount:.2f}",                     # Importe (net amount)
                 "C0" if expense.document_type == DocumentType.BOLETA else "",  # Indicador de Impuesto
-                user.cost_center,                        # Centro de Costo
-                expense.purpose,                         # Detalle de Gasto
+                user.cost_center or "",                  # Centro de Costo
+                expense.purpose or "",                   # Detalle de Gasto
                 f"{amount_to_return:.0f}" if amount_to_return > 0 else "",  # Importe a devolver
                 "TBD"                                    # Proveedor a devolver
             ])
