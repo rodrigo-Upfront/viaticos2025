@@ -290,10 +290,45 @@ async def complete_accounting_approval(
         )
     
     try:
-        # Update report with compensation number and advance status
+        # Update report with compensation number
         report.sap_compensation_number = compensation_data.sap_compensation_number
-        report.status = RequestStatus.TREASURY_PENDING  # Move to next approval stage
         report.updated_at = datetime.utcnow()
+        
+        # Apply business logic to determine next status
+        # Calculate total expenses vs prepaid amount
+        total_expenses = sum(expense.amount for expense in report.expenses) if report.expenses else 0
+        prepaid_amount = float(report.prepayment.amount) if report.prepayment and report.prepayment.amount else 0
+        
+        # Round to 2 decimals for strict comparison
+        total_expenses = round(float(total_expenses), 2)
+        prepaid_amount = round(prepaid_amount, 2)
+        
+        # Business Logic Implementation:
+        if report.prepayment_id and prepaid_amount == total_expenses:
+            # Rule 1: Prepayment type - equal amounts - skip treasury
+            report.status = RequestStatus.APPROVED_EXPENSES
+            status_message = "amounts match, no treasury approval needed"
+        elif total_expenses > prepaid_amount:
+            # Rule 2: Any case - over budget - needs reimbursement
+            report.status = RequestStatus.APPROVED_FOR_REIMBURSEMENT
+            status_message = "pending treasury for reimbursement"
+        else:
+            # Rule 3: Any case - under budget - needs fund return documents
+            report.status = RequestStatus.FUNDS_RETURN_PENDING
+            status_message = "employee must submit fund return documents"
+        
+        # Check treasury approvers exist for cases that need treasury
+        if report.status in [RequestStatus.APPROVED_FOR_REIMBURSEMENT, RequestStatus.FUNDS_RETURN_PENDING]:
+            from app.models.models import User, UserProfile
+            has_treasury = db.query(User).filter(
+                User.profile == UserProfile.TREASURY,
+                User.is_approver == True
+            ).count() > 0
+            if not has_treasury:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST, 
+                    detail="Error - no treasury users available"
+                )
         
         # Create approval record
         approval = Approval(
@@ -314,15 +349,15 @@ async def complete_accounting_approval(
             user_role=current_user.profile.value,
             action=HistoryAction.APPROVED,
             from_status="ACCOUNTING_PENDING",
-            to_status=RequestStatus.TREASURY_PENDING.value,
-            comments=f"Accounting approval completed with SAP compensation: {compensation_data.sap_compensation_number}"
+            to_status=report.status.value,
+            comments=f"Accounting approval completed with SAP compensation: {compensation_data.sap_compensation_number} - {status_message}"
         ))
         
         db.commit()
         
         return AccountingApprovalResponse(
             success=True,
-            message="Accounting approval completed successfully",
+            message=f"Accounting approval completed successfully - {status_message}",
             report_id=report_id,
             step=4,
             sap_compensation_number=compensation_data.sap_compensation_number
