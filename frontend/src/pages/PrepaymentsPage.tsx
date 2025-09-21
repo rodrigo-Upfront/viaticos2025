@@ -447,11 +447,20 @@ const PrepaymentsPage: React.FC = () => {
           severity: 'success'
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save prepayment:', error);
+      
+      // Extract error message from response
+      let errorMessage = `Failed to ${modal.mode === 'create' ? 'create' : 'update'} prepayment`;
+      if (error?.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
       setSnackbar({
         open: true,
-        message: `Failed to ${modal.mode === 'create' ? 'create' : 'update'} prepayment`,
+        message: errorMessage,
         severity: 'error'
       });
       throw error; // Re-throw to let modal handle it

@@ -558,7 +558,7 @@ async def upload_prepayment_file(
         )
     
     # Validate file type
-    allowed_extensions = {'.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'}
+    allowed_extensions = {'.pdf', '.doc', '.docx', '.xls', '.xlsx', '.jpg', '.jpeg', '.png'}
     file_extension = os.path.splitext(file.filename or '')[1].lower()
     if file_extension not in allowed_extensions:
         raise HTTPException(
@@ -648,7 +648,7 @@ async def upload_multiple_prepayment_files(
         )
     
     # Validate each file
-    allowed_extensions = {'.pdf', '.jpg', '.jpeg', '.png'}
+    allowed_extensions = {'.pdf', '.doc', '.docx', '.xls', '.xlsx', '.jpg', '.jpeg', '.png'}
     max_size = 10 * 1024 * 1024  # 10MB
     file_data = []
     
