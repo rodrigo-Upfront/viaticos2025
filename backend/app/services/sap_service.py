@@ -335,10 +335,10 @@ class SAPService:
             amount_to_return = 0.0
         
         # Determine report reason based on report type
-        if report.prepayment and report.prepayment.reason:
-            report_reason = report.prepayment.reason
-        elif report.reason:
+        if report.reason:
             report_reason = report.reason
+        elif report.prepayment and report.prepayment.reason:
+            report_reason = report.prepayment.reason
         else:
             report_reason = f"Expense Report {report.id}"
         
@@ -375,14 +375,17 @@ class SAPService:
                 compensation_type,                        # Tipo
                 compensation_subtype,                     # Tipo de Compensación
                 user.location.sap_code,                  # Sociedad
-                # Prepayment fields (if exists)
-                str(report.prepayment.id) if report.prepayment else "",  # No Partida SAP Anticipo
-                report.reason if report.reason else f"Expense Report {report.id}",  # Nombre Anticipo
-                "ANTICIPO" if report.prepayment else "", # Indicador de Anticipo
             ]
             
-            # Add expense type specific fields
+            # Add expense type specific fields first
             fields.extend(expense_type_fields)
+            
+            # Add prepayment fields (if exists)
+            fields.extend([
+                str(report.prepayment.id) if report.prepayment else "",  # No Partida SAP Anticipo
+                report_reason,                            # Nombre Anticipo
+                "ANTICIPO" if report.prepayment else "", # Indicador de Anticipo
+            ])
             
             # Add common expense fields
             fields.extend([
@@ -394,7 +397,8 @@ class SAPService:
                 "TBD"                                    # Proveedor a devolver
             ])
             
-            file_lines.append(";".join(fields))
+            # Ensure empty fields are preserved with separators
+            file_lines.append(";".join(str(field) if field is not None else "" for field in fields))
         
         # Create file content
         file_content = "\n".join(file_lines)
