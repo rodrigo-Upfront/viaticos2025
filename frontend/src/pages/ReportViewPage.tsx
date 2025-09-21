@@ -167,6 +167,9 @@ const ReportViewPage: React.FC = () => {
     amount: number;
     document_number: string;
     taxable: 'Si' | 'No';
+    tax_id?: number;
+    tax_code?: string;
+    tax_regime?: string;
     document_file?: string;
     comments?: string;
     status: 'pending' | 'in_process' | 'approved';
@@ -345,6 +348,9 @@ const ReportViewPage: React.FC = () => {
       amount: parseFloat(expense.amount),
       document_number: (expense as any).document_number || 'N/A',
       taxable: (expense as any).taxable || 'No',
+      tax_id: (expense as any).tax_id,
+      tax_code: (expense as any).tax_code,
+      tax_regime: (expense as any).tax_regime,
       document_file: (expense as any).document_file,
       comments: (expense as any).comments || expense.rejection_reason || undefined,
       status: (expense.status.toLowerCase() === 'rejected' ? 'pending' : expense.status.toLowerCase()) as 'pending' | 'in_process' | 'approved'

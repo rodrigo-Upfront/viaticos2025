@@ -17,10 +17,12 @@ import {
   Switch,
   IconButton,
   Autocomplete,
+  Grid,
 } from '@mui/material';
 import {
   Download as DownloadIcon,
   Description as DocumentIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import apiClient from '../../services/apiClient';
@@ -575,7 +577,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
         return;
       }
 
-      // File type validation (PDF and images only)
+      // File type validation (PDF, images, and documents)
       const allowedTypes = [
         'application/pdf',
         'image/jpeg',
@@ -583,7 +585,11 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
         'image/png',
         'image/gif',
         'image/bmp',
-        'image/webp'
+        'image/webp',
+        'application/msword', // .doc
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+        'application/vnd.ms-excel', // .xls
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' // .xlsx
       ];
       
       if (!allowedTypes.includes(file.type)) {
@@ -596,6 +602,15 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
       }
 
       setSelectedFile(file);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    // Clear the file input
+    const fileInput = document.getElementById('expense-file-input') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
     }
   };
 
@@ -693,6 +708,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
       </DialogTitle>
       <DialogContent>
         <Box sx={{ pt: 2 }}>
+          {/* 1. Reporte del gasto de viaje (2/2) */}
           <FormControl fullWidth margin="normal" error={!!errors.travel_expense_report_id} required>
             <InputLabel>{t('expenses.travelExpenseReport')}</InputLabel>
             <Select
@@ -716,29 +732,254 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
             )}
           </FormControl>
 
-          <FormControl fullWidth margin="normal" error={!!errors.category_id} required>
-            <InputLabel>{t('expenses.expenseCategory')}</InputLabel>
-            <Select
-              value={formData.category_id}
-              onChange={handleCategoryChange}
-              label={t('expenses.expenseCategory')}
-            >
-              <MenuItem value={0}>
-                <em>{t('expenses.selectCategory')}</em>
-              </MenuItem>
-              {categories.map((category) => (
-                <MenuItem key={category.id} value={category.id}>
-                  {category.name}
-                </MenuItem>
-              ))}
-            </Select>
-            {errors.category_id && (
-              <Box sx={{ color: 'error.main', fontSize: '0.75rem', mt: 0.5, ml: 2 }}>
-                {errors.category_id}
-              </Box>
-            )}
-          </FormControl>
+          {/* 2. País (1/2) & 3. Fecha del gasto (1/2) */}
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>{t('common.country')}</InputLabel>
+                <Select
+                  value={formData.country_id}
+                  onChange={handleCountryChange}
+                  label={t('common.country')}
+                  disabled={formData.travel_expense_report_id > 0}
+                >
+                  <MenuItem value={0}><em>Select a country</em></MenuItem>
+                  {countries.map((country) => (
+                    <MenuItem key={country.id} value={country.id}>{country.name}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label={t('expenses.expenseDate')}
+                type="date"
+                value={formData.expense_date}
+                onChange={handleChange('expense_date')}
+                error={!!errors.expense_date}
+                helperText={errors.expense_date}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+                required
+              />
+            </Grid>
+          </Grid>
 
+          {/* 4. Tipo de documento (1/2) & 5. Proveedor (1/2) */}
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth required>
+                <InputLabel>{t('expenses.documentType')}</InputLabel>
+                <Select
+                  value={formData.document_type}
+                  onChange={handleSelectChange('document_type')}
+                  label={t('expenses.documentType')}
+                >
+                  <MenuItem value="Boleta">Boleta</MenuItem>
+                  <MenuItem value="Factura">Factura</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              {formData.document_type === 'Boleta' && (
+                <TextField
+                  fullWidth
+                  label={t('expenses.supplierName')}
+                  value={formData.boleta_supplier}
+                  onChange={handleChange('boleta_supplier')}
+                  error={!!errors.boleta_supplier}
+                  helperText={errors.boleta_supplier}
+                  required
+                />
+              )}
+              {formData.document_type === 'Factura' && (
+                <Autocomplete
+                  fullWidth
+                  options={suppliers}
+                  getOptionLabel={(option) => `${option.name} (${option.tax_name})`}
+                  value={suppliers.find(s => s.id === formData.factura_supplier_id) || null}
+                  onChange={(event, newValue) => {
+                    setFormData(prev => ({
+                      ...prev,
+                      factura_supplier_id: newValue?.id || 0,
+                      factura_supplier: newValue?.name || ''
+                    }));
+                    // Clear error when supplier is selected
+                    if (errors.factura_supplier_id) {
+                      setErrors(prev => ({
+                        ...prev,
+                        factura_supplier_id: ''
+                      }));
+                    }
+                  }}
+                  filterOptions={(options, { inputValue }) => {
+                    const filtered = options.filter((option) =>
+                      option.name.toLowerCase().includes(inputValue.toLowerCase()) ||
+                      option.tax_name.toLowerCase().includes(inputValue.toLowerCase())
+                    );
+                    return filtered;
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label={t('expenses.supplierName')}
+                      required
+                      error={!!errors.factura_supplier_id}
+                      helperText={errors.factura_supplier_id || 'Search by supplier name or tax name'}
+                    />
+                  )}
+                  renderOption={(props, option) => (
+                    <Box component="li" {...props}>
+                      <Box>
+                        <Typography variant="body1">{option.name}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {option.tax_name}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  )}
+                />
+              )}
+            </Grid>
+          </Grid>
+
+          {/* 6. Número del documento (1/2) & 7. Categoria del gasto (1/2) */}
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label={t('expenses.documentNumber')}
+                value={formData.document_number}
+                onChange={handleChange('document_number')}
+                error={!!errors.document_number}
+                helperText={errors.document_number}
+                required
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth error={!!errors.category_id} required>
+                <InputLabel>{t('expenses.expenseCategory')}</InputLabel>
+                <Select
+                  value={formData.category_id}
+                  onChange={handleCategoryChange}
+                  label={t('expenses.expenseCategory')}
+                >
+                  <MenuItem value={0}>
+                    <em>{t('expenses.selectCategory')}</em>
+                  </MenuItem>
+                  {categories.map((category) => (
+                    <MenuItem key={category.id} value={category.id}>
+                      {category.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+                {errors.category_id && (
+                  <Box sx={{ color: 'error.main', fontSize: '0.75rem', mt: 0.5, ml: 2 }}>
+                    {errors.category_id}
+                  </Box>
+                )}
+              </FormControl>
+            </Grid>
+          </Grid>
+
+          {/* 8. Monto (1/2) & 9. Moneda (1/2) */}
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label={t('common.amount')}
+                type="number"
+                value={formData.amount}
+                onChange={handleChange('amount')}
+                error={!!errors.amount}
+                helperText={errors.amount}
+                required
+                InputProps={{
+                  startAdornment: <InputAdornment position="start">{formData.currency}</InputAdornment>,
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>{t('common.currency')}</InputLabel>
+                <Select
+                  value={formData.currency || ''}
+                  onChange={handleSelectChange('currency')}
+                  label={t('common.currency')}
+                  disabled={formData.travel_expense_report_id > 0}
+                >
+                  <MenuItem value=""><em>Select currency</em></MenuItem>
+                  {currencies.map((c) => (
+                    <MenuItem key={c.id} value={c.code}>{c.code} - {c.name}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
+
+          {/* 10. Taxable & 11. Impuesto (1/2) */}
+          {formData.document_type === 'Factura' && (
+            <>
+              <Box sx={{ mt: 2 }}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.taxable === 'Si'}
+                      onChange={(e) => {
+                        const isTaxable = e.target.checked;
+                        setFormData(prev => ({
+                          ...prev,
+                          taxable: isTaxable ? 'Si' : 'No',
+                          // Clear tax selection when switching to non-taxable
+                          tax_id: isTaxable ? prev.tax_id : undefined,
+                          tax: isTaxable ? prev.tax : ''
+                        }));
+                      }}
+                    />
+                  }
+                  label={t('expenses.taxable')}
+                />
+              </Box>
+
+              {formData.taxable === 'Si' && (
+                <Grid container spacing={2} sx={{ mt: 1 }}>
+                  <Grid item xs={12} sm={6}>
+                    <FormControl fullWidth>
+                      <InputLabel>{t('expenses.tax')}</InputLabel>
+                      <Select
+                        value={formData.tax_id || ''}
+                        onChange={(e) => {
+                          const taxId = e.target.value as number;
+                          const selectedTax = taxes.find(t => t.id === taxId);
+                          setFormData(prev => ({
+                            ...prev,
+                            tax_id: taxId || undefined,
+                            tax: selectedTax ? `${selectedTax.code} - ${selectedTax.regime}` : ''
+                          }));
+                        }}
+                        label={t('expenses.tax')}
+                        required
+                      >
+                        <MenuItem value=""><em>{t('taxes.selectTax')}</em></MenuItem>
+                        {taxes.map((tax) => (
+                          <MenuItem key={tax.id} value={tax.id}>
+                            {tax.code} - {tax.regime}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    {/* Empty space to maintain layout */}
+                  </Grid>
+                </Grid>
+              )}
+            </>
+          )}
+
+          {/* 12. Detalle del gasto (2/2) */}
           <TextField
             fullWidth
             label={t('expenses.purpose')}
@@ -748,212 +989,15 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
             helperText={errors.purpose}
             margin="normal"
             required
+            sx={{ mt: 2 }}
           />
 
-          <FormControl fullWidth margin="normal" required>
-            <InputLabel>{t('expenses.documentType')}</InputLabel>
-            <Select
-              value={formData.document_type}
-              onChange={handleSelectChange('document_type')}
-              label={t('expenses.documentType')}
-            >
-              <MenuItem value="Boleta">Boleta</MenuItem>
-              <MenuItem value="Factura">Factura</MenuItem>
-            </Select>
-          </FormControl>
-
-          {formData.document_type === 'Boleta' && (
-            <TextField
-              fullWidth
-              label={t('expenses.supplierName')}
-              value={formData.boleta_supplier}
-              onChange={handleChange('boleta_supplier')}
-              error={!!errors.boleta_supplier}
-              helperText={errors.boleta_supplier}
-              margin="normal"
-              required
-            />
-          )}
-
-          {formData.document_type === 'Factura' && (
-            <>
-              <Autocomplete
-                fullWidth
-                options={suppliers}
-                getOptionLabel={(option) => `${option.name} (${option.tax_name})`}
-                value={suppliers.find(s => s.id === formData.factura_supplier_id) || null}
-                onChange={(event, newValue) => {
-                  setFormData(prev => ({
-                    ...prev,
-                    factura_supplier_id: newValue?.id || 0,
-                    factura_supplier: newValue?.name || ''
-                  }));
-                  // Clear error when supplier is selected
-                  if (errors.factura_supplier_id) {
-                    setErrors(prev => ({
-                      ...prev,
-                      factura_supplier_id: ''
-                    }));
-                  }
-                }}
-                filterOptions={(options, { inputValue }) => {
-                  const filtered = options.filter((option) =>
-                    option.name.toLowerCase().includes(inputValue.toLowerCase()) ||
-                    option.tax_name.toLowerCase().includes(inputValue.toLowerCase())
-                  );
-                  return filtered;
-                }}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label={t('expenses.supplierName')}
-                    required
-                    error={!!errors.factura_supplier_id}
-                    helperText={errors.factura_supplier_id || 'Search by supplier name or tax name'}
-                    margin="normal"
-                  />
-                )}
-                renderOption={(props, option) => (
-                  <Box component="li" {...props}>
-                    <Box>
-                      <Typography variant="body1">{option.name}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {option.tax_name}
-                      </Typography>
-                    </Box>
-                  </Box>
-                )}
-              />
-
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.taxable === 'Si'}
-                    onChange={(e) => {
-                      const isTaxable = e.target.checked;
-                      setFormData(prev => ({
-                        ...prev,
-                        taxable: isTaxable ? 'Si' : 'No',
-                        // Clear tax selection when switching to non-taxable
-                        tax_id: isTaxable ? prev.tax_id : undefined,
-                        tax: isTaxable ? prev.tax : ''
-                      }));
-                    }}
-                  />
-                }
-                label={t('expenses.taxable')}
-                sx={{ mt: 2 }}
-              />
-            </>
-          )}
-
-          <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
-            <TextField
-              fullWidth
-              label={t('expenses.expenseDate')}
-              type="date"
-              value={formData.expense_date}
-              onChange={handleChange('expense_date')}
-              error={!!errors.expense_date}
-              helperText={errors.expense_date}
-              InputLabelProps={{
-                shrink: true,
-              }}
-              required
-            />
-
-            <TextField
-              fullWidth
-              label={t('expenses.documentNumber')}
-              value={formData.document_number}
-              onChange={handleChange('document_number')}
-              error={!!errors.document_number}
-              helperText={errors.document_number}
-              required
-            />
-          </Box>
-
-          {/* Country display/edit */}
-          <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
-            <FormControl fullWidth>
-              <InputLabel>{t('common.country')}</InputLabel>
-              <Select
-                value={formData.country_id}
-                onChange={handleCountryChange}
-                label={t('common.country')}
-                disabled={formData.travel_expense_report_id > 0}
-              >
-                <MenuItem value={0}><em>Select a country</em></MenuItem>
-                {countries.map((country) => (
-                  <MenuItem key={country.id} value={country.id}>{country.name}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Box>
-
-          <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
-            <TextField
-              label={t('common.amount')}
-              type="number"
-              value={formData.amount}
-              onChange={handleChange('amount')}
-              error={!!errors.amount}
-              helperText={errors.amount}
-              required
-              InputProps={{
-                startAdornment: <InputAdornment position="start">{formData.currency}</InputAdornment>,
-              }}
-              sx={{ flex: 1 }}
-            />
-
-            {/* Currency selection */}
-            <FormControl fullWidth sx={{ flex: 1 }}>
-              <InputLabel>{t('common.currency')}</InputLabel>
-              <Select
-                value={formData.currency || ''}
-                onChange={handleSelectChange('currency')}
-                label={t('common.currency')}
-                disabled={formData.travel_expense_report_id > 0}
-              >
-                <MenuItem value=""><em>Select currency</em></MenuItem>
-                {currencies.map((c) => (
-                  <MenuItem key={c.id} value={c.code}>{c.code} - {c.name}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Box>
-
-          {/* Tax selection - only show for taxable invoices */}
-          {formData.document_type === 'Factura' && formData.taxable === 'Si' && (
-            <FormControl fullWidth sx={{ mt: 2 }}>
-              <InputLabel>{t('expenses.tax')}</InputLabel>
-              <Select
-                value={formData.tax_id || ''}
-                onChange={(e) => {
-                  const taxId = e.target.value as number;
-                  const selectedTax = taxes.find(t => t.id === taxId);
-                  setFormData(prev => ({
-                    ...prev,
-                    tax_id: taxId || undefined,
-                    tax: selectedTax ? `${selectedTax.code} - ${selectedTax.regime}` : ''
-                  }));
-                }}
-                label={t('expenses.tax')}
-                required
-              >
-                <MenuItem value=""><em>{t('taxes.selectTax')}</em></MenuItem>
-                {taxes.map((tax) => (
-                  <MenuItem key={tax.id} value={tax.id}>
-                    {tax.code} - {tax.regime}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          )}
-
-          <Box sx={{ mt: 2 }}>
-            <InputLabel sx={{ mb: 1 }}>{t('expenses.documentFile')}</InputLabel>
-            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+          {/* 13. Archivo (en su propia sección) */}
+          <Box sx={{ mt: 3, p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              {t('expenses.documentFile')}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
               {t('validation.fileMaxSize')}
             </Typography>
             <Box sx={{ display: 'flex', gap: 2, flexDirection: 'column', alignItems: 'flex-start' }}>
@@ -963,11 +1007,12 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 startIcon={<InputAdornment position="start">📎</InputAdornment>}
                 color={errors.document_file ? 'error' : 'primary'}
               >
-{t('expenses.chooseFile')}
+                {t('expenses.chooseFile')}
                 <input
+                  id="expense-file-input"
                   type="file"
                   hidden
-                  accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp,.webp"
+                  accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp,.webp,.doc,.docx,.xls,.xlsx"
                   onChange={handleFileChange}
                 />
               </Button>
@@ -1004,7 +1049,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
                       {expense.document_file}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      Existing file • Click to download
+                      {t('validation.existingFileDownload')}
                     </Typography>
                   </Box>
                   <IconButton 
@@ -1021,14 +1066,34 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
               
               {/* Show newly selected file */}
               {selectedFile && selectedFile.name !== expense?.document_file && (
-                <Box display="flex" alignItems="center" sx={{ mt: 1 }}>
-                  <DocumentIcon sx={{ mr: 1, color: 'success.main' }} />
-                  <Typography variant="body2" color="success.main" sx={{ fontWeight: 'medium' }}>
-                    {selectedFile.name}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
-                    (New file selected)
-                  </Typography>
+                <Box display="flex" alignItems="center" justifyContent="space-between" sx={{ 
+                  mt: 1, 
+                  p: 1, 
+                  border: 1, 
+                  borderColor: 'success.main', 
+                  borderRadius: 1,
+                  bgcolor: 'success.50',
+                  width: '100%'
+                }}>
+                  <Box display="flex" alignItems="center">
+                    <DocumentIcon sx={{ mr: 1, color: 'success.main' }} />
+                    <Box>
+                      <Typography variant="body2" color="success.main" sx={{ fontWeight: 'medium' }}>
+                        {selectedFile.name}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        (New file selected - {(selectedFile.size / 1024 / 1024).toFixed(1)} MB)
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <IconButton
+                    size="small"
+                    color="error"
+                    onClick={handleRemoveFile}
+                    title={t('common.remove')}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
                 </Box>
               )}
             </Box>

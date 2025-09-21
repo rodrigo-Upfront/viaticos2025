@@ -180,8 +180,17 @@
     "documentNumberRequired": "El número de documento es requerido",
     "commentsRequired": "Los comentarios son requeridos",
     "fileSizeLimit": "El archivo debe ser menor a 10MB",
-    "fileTypeInvalid": "Solo se permiten archivos PDF e imágenes (JPEG, PNG, GIF, BMP, WebP)",
-    "fileMaxSize": "Tamaño máximo de archivo: 10MB. Formatos permitidos: PDF, JPEG, PNG, GIF, BMP, WebP"
+    "fileTypeInvalid": "Solo se permiten archivos PDF, imágenes y documentos (PDF, JPEG, PNG, GIF, BMP, WebP, DOC, DOCX, XLS, XLSX)",
+    "fileMaxSize": "Tamaño máximo de archivo: 10MB. Formatos permitidos: PDF, JPEG, PNG, GIF, BMP, WebP, DOC, DOCX, XLS, XLSX",
+    "fileExceedsLimit": "El archivo \"{fileName}\" excede el límite de 10MB",
+    "fileTypeNotAllowed": "El tipo de archivo \"{fileName}\" no está permitido. Solo se permiten archivos PDF, imágenes y documentos.",
+    "maxFilesAllowed": "Máximo {maxFiles} archivos permitidos (seleccionados {selectedCount})",
+    "chooseFiles": "Elegir Archivos (máx 5)",
+    "filesSelected": "{count} archivo{plural} seleccionado{plural}",
+    "existingFiles": "Archivos existentes ({count}):",
+    "existingFile": "Archivo existente {number} • Clic para descargar",
+    "existingFileDownload": "Archivo existente • Clic para descargar",
+    "clickToDownload": "Clic para descargar • Adjunto de justificación {number}"
   },
   "approvals": {
     "pendingApprovals": "Aprobaciones Pendientes",
@@ -192,7 +201,22 @@
       "prepayment": "Anticipo",
       "expenseReport": "Reporte de Gastos",
       "reimbursement": "Reembolso"
-    }
+    },
+    "approveTitle": "Aprobar",
+    "approveMessage": "¿Aprobar este elemento?",
+    "rejectTitle": "Rechazar {itemName}",
+    "rejectMessage": "Por favor proporcione una razón para rechazar este elemento:",
+    "rejectionReason": "Motivo de Rechazo",
+    "rejectionPlaceholder": "Ingrese el motivo del rechazo...",
+    "quickApprove": "Aprobación Rápida",
+    "quickReject": "Rechazo Rápido",
+    "quickApproveTitle": "Aprobación Rápida",
+    "quickApproveMessage": "¿Está seguro de que desea aprobar rápidamente este reporte?",
+    "quickRejectTitle": "Rechazo Rápido de Reporte",
+    "quickRejectMessage": "Por favor proporcione una razón para rechazar este reporte:",
+    "rejectionReasonRequired": "El motivo de rechazo es obligatorio",
+    "reviewAndApprove": "Revisar y Aprobar/Rechazar Gastos",
+    "detailedReview": "Revisión Detallada"
   },
   "reports": {
     "title": "Reportes",
@@ -314,7 +338,18 @@
     "justificationFile": "Archivo de Justificación (Opcional)",
     "rejectionReason": "Motivo de Rechazo",
     "providedByApprover": "Proporcionado por el aprobador al rechazar",
-    "update": "ACTUALIZAR"
+    "update": "Actualizar",
+    "sendForApproval": "Enviar para Aprobación",
+    "resubmitForApproval": "Reenviar para Aprobación",
+    "sendForApprovalTitle": "Enviar para Aprobación",
+    "resubmitForApprovalTitle": "Reenviar para Aprobación",
+    "sendForApprovalMessage": "Esto enviará el anticipo \"{reason}\" para aprobación. ¿Continuar?",
+    "resubmitForApprovalMessage": "Esto reenviará el anticipo rechazado \"{reason}\" para aprobación. ¿Continuar?",
+    "sendButton": "Enviar",
+    "resubmitButton": "Reenviar",
+    "sentForApproval": "Enviado para aprobación",
+    "resubmittedForApproval": "Reenviado para aprobación",
+    "onlyPendingRejectedCanApprove": "Solo los anticipos pendientes o rechazados pueden enviarse para aprobación"
   },
   "users": {
     "title": "Usuarios",
@@ -340,7 +375,7 @@
     "superuser": "Superusuario",
     "approver": "Aprobador",
     "forcePasswordChange": "Forzar Cambio de Contraseña",
-    "update": "ACTUALIZAR",
+    "update": "Actualizar",
     "accounting": "Contabilidad",
     "treasury": "Tesorería",
     "manager": "Gerente",

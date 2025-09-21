@@ -197,24 +197,40 @@ class SAPService:
             tax_amount = ""
             tax_code = ""
             calculated_tax_amount = 0
+            net_amount_for_tax_field = ""
+            
             if expense.taxable == TaxableOption.SI and expense.tax and expense.tax.rate:
                 # Calculate tax amount: tax_amount = expense_amount * (tax_rate / (100 + tax_rate))
                 rate = float(expense.tax.rate)
                 total_amount = float(expense.amount)
                 calculated_tax_amount = total_amount * (rate / (100 + rate))
-                tax_amount = f"{calculated_tax_amount:.2f}"
+                
+                # For tax field (Field 15): Net amount (expense - tax)
+                net_amount = total_amount - calculated_tax_amount
+                if net_amount == int(net_amount):
+                    net_amount_for_tax_field = f"{int(net_amount)}"
+                else:
+                    net_amount_for_tax_field = f"{net_amount:.2f}"
+                
                 tax_code = expense.tax.code
             
-            # Format expense amount (negative) - should be net amount (expense - tax)
+            # Format expense amount (negative) - should be FULL expense amount
             total_amount = float(expense.amount)
-            net_amount = total_amount - calculated_tax_amount
-            if net_amount == int(net_amount):
-                amount_str = f"-{int(net_amount)}"
+            if total_amount == int(total_amount):
+                amount_str = f"-{int(total_amount)}"
             else:
-                amount_str = f"-{net_amount:.2f}"
+                amount_str = f"-{total_amount:.2f}"
             
             # Format expense date
             expense_date_str = expense.expense_date.strftime("%d.%m.%Y")
+            
+            # Determine report reason based on report type
+            if report.prepayment and report.prepayment.reason:
+                report_reason = report.prepayment.reason
+            elif report.reason:
+                report_reason = report.reason
+            else:
+                report_reason = f"Expense Report {report.id}"
             
             # Build SAP file fields for this expense
             fields = [
@@ -223,16 +239,16 @@ class SAPService:
                 processing_date,                      # PSTNG_DATE (processing date)
                 expense.document_number,              # REF_DOC_NO
                 "0000000001",                        # ITEMNO_ACC
-                report.reason if report.reason else f"Expense Report {report.id}",  # HEADER_TXT
+                report_reason,                       # HEADER_TXT
                 "",                                  # PROFIT_CTR (always empty)
                 expense.currency.code,               # CURRENCY
-                amount_str,                          # AMT_DOCCUR (negative)
+                amount_str,                          # AMT_DOCCUR (full expense amount, negative)
                 expense.category.account,            # GL_ACCOUNT
                 expense.purpose,                     # ITEM_TEXT
                 user.cost_center,                    # COSTCENTER
                 expense.document_number,             # ALLOC_NMBR (document number repeated)
                 expense_date_str,                    # VALUE_DATE (expense date)
-                tax_amount,                          # AMT_DOCCUR_TAX
+                net_amount_for_tax_field,            # AMT_DOCCUR_TAX (net amount: expense - tax)
                 tax_code,                            # TAX_CODE
                 "FACTURA"                            # MOVIMIENTO
             ]
@@ -317,6 +333,14 @@ class SAPService:
             compensation_subtype = "Gastos Aprobados"
             amount_to_return = 0.0
         
+        # Determine report reason based on report type
+        if report.prepayment and report.prepayment.reason:
+            report_reason = report.prepayment.reason
+        elif report.reason:
+            report_reason = report.reason
+        else:
+            report_reason = f"Expense Report {report.id}"
+        
         # Generate file content - one line per expense
         file_lines = []
         
@@ -335,14 +359,14 @@ class SAPService:
             if expense.document_type == DocumentType.FACTURA:
                 expense_type_fields = [
                     expense.sap_invoice_number or "",     # No Partida SAP Factura
-                    report.reason if report.reason else f"Expense Report {report.id}",  # Nombre Factura
+                    report_reason,                        # Nombre Factura
                     "FACTURA"                             # Indicador de Factura
                 ]
             else:  # BOLETA
                 expense_type_fields = [
                     "40",                                 # Clave del Gasto
                     expense.category.account,             # Cuenta mayor
-                    report.reason if report.reason else f"Expense Report {report.id}"  # Identificador de Viaje
+                    report_reason                         # Identificador de Viaje
                 ]
             
             # Build compensation file fields

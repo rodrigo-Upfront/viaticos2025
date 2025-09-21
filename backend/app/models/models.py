@@ -156,14 +156,19 @@ class ExpenseCategory(Base):
     __tablename__ = "expense_categories"
     
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(100), unique=True, nullable=False)
+    name = Column(String(100), nullable=False)  # Removed unique constraint since categories are now location-specific
     account = Column(String(50), nullable=False)
+    location_id = Column(Integer, ForeignKey("locations.id"), nullable=False)  # Added location foreign key
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
     # Relationships
+    location = relationship("Location", back_populates="categories")
     expenses = relationship("Expense", back_populates="category")
     country_alerts = relationship("CategoryCountryAlert", back_populates="category")
+    
+    # Unique constraint - one category name per location
+    __table_args__ = (UniqueConstraint('name', 'location_id', name='_category_location_uc'),)
 
 
 class CategoryCountryAlert(Base):
@@ -200,6 +205,7 @@ class Location(Base):
     
     # Relationships
     location_currencies = relationship("LocationCurrency", back_populates="location", cascade="all, delete-orphan")
+    categories = relationship("ExpenseCategory", back_populates="location", cascade="all, delete-orphan")
 
 
 class LocationCurrency(Base):

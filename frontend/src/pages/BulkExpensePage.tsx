@@ -74,6 +74,14 @@ interface Currency {
 interface Supplier {
   id: number;
   name: string;
+  tax_name: string;
+}
+
+interface Tax {
+  id: number;
+  code: string;
+  regime: string;
+  rate: number;
 }
 
 interface BulkExpenseRow {
@@ -87,9 +95,10 @@ interface BulkExpenseRow {
   factura_supplier_id: number;
   document_number: string;
   taxable: 'SI' | 'NO';
+  tax_id?: number;
+  tax?: string;
   country_id: number;
   currency_id: number;
-  comments: string;
   document_file?: File;
   errors: Record<string, string>;
 }
@@ -100,6 +109,7 @@ interface BulkExpensePageProps {
   countries: Country[];
   currencies: Currency[];
   suppliers: Supplier[];
+  taxes: Tax[];
   onSave: (expenses: BulkExpenseRow[], reportId: number) => Promise<void>;
   loading?: boolean;
 }
@@ -110,6 +120,7 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
   countries,
   currencies,
   suppliers,
+  taxes,
   onSave,
   loading = false
 }) => {
@@ -206,9 +217,10 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
       factura_supplier_id: 0,
       document_number: '',
       taxable: 'NO',
+      tax_id: undefined,
+      tax: '',
       country_id,
       currency_id,
-      comments: '',
       errors: {}
     };
   };
@@ -383,6 +395,9 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
 
   // Check if any row has FACTURA document type to show taxable column
   const showTaxableColumn = expenseRows.some(row => row.document_type === 'FACTURA');
+  
+  // Check if any row has taxable = 'SI' to show tax column
+  const showTaxColumn = expenseRows.some(row => row.document_type === 'FACTURA' && row.taxable === 'SI');
 
   // Calculate totals
   const totalAmount = expenseRows.reduce((sum, row) => sum + (row.amount || 0), 0);
@@ -679,16 +694,19 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                       <TableCell sx={{ width: 60, position: 'sticky', left: 0, bgcolor: 'background.paper', zIndex: 1 }}>
                         #
                       </TableCell>
-                      <TableCell sx={{ minWidth: 180 }}>{t('common.category')}</TableCell>
-                      <TableCell sx={{ minWidth: 200 }}>{t('expenses.purpose')}</TableCell>
-                      <TableCell sx={{ minWidth: 120 }}>{t('common.amount')}</TableCell>
                       <TableCell sx={{ minWidth: 150 }}>{t('expenses.expenseDate')}</TableCell>
                       <TableCell sx={{ minWidth: 130 }}>{t('expenses.documentType')}</TableCell>
                       <TableCell sx={{ minWidth: 180 }}>{t('expenses.supplierName')}</TableCell>
                       <TableCell sx={{ minWidth: 150 }}>{t('expenses.documentNumber')}</TableCell>
+                      <TableCell sx={{ minWidth: 180 }}>{t('common.category')}</TableCell>
+                      <TableCell sx={{ minWidth: 120 }}>{t('common.amount')}</TableCell>
                       {showTaxableColumn && (
                         <TableCell sx={{ minWidth: 100 }}>{t('expenses.taxable')}</TableCell>
                       )}
+                      {showTaxColumn && (
+                        <TableCell sx={{ minWidth: 150 }}>{t('expenses.tax')}</TableCell>
+                      )}
+                      <TableCell sx={{ minWidth: 200 }}>{t('expenses.purpose')}</TableCell>
                       <TableCell sx={{ width: 80, textAlign: 'center' }}>
                         <AttachFileIcon sx={{ fontSize: '1rem', color: 'text.secondary' }} />
                       </TableCell>
@@ -703,52 +721,6 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                         {/* Row Number */}
                         <TableCell sx={{ position: 'sticky', left: 0, bgcolor: 'background.paper', zIndex: 1 }}>
                           <Chip label={index + 1} size="small" color="primary" variant="outlined" />
-                        </TableCell>
-
-                        {/* Category */}
-                        <TableCell>
-                          <FormControl size="small" fullWidth error={!!row.errors.category_id}>
-                            <Select
-                              value={row.category_id}
-                              onChange={(e) => updateRow(row.id, 'category_id', e.target.value)}
-                            >
-                              <MenuItem value={0}>
-                                <em>{t('expenses.selectCategory')}</em>
-                              </MenuItem>
-                              {categories.map((cat) => (
-                                <MenuItem key={cat.id} value={cat.id}>
-                                  {cat.name}
-                                </MenuItem>
-                              ))}
-                            </Select>
-                          </FormControl>
-                        </TableCell>
-
-                        {/* Purpose */}
-                        <TableCell>
-                          <TextField
-                            size="small"
-                            fullWidth
-                            value={row.purpose}
-                            onChange={(e) => updateRow(row.id, 'purpose', e.target.value)}
-                            error={!!row.errors.purpose}
-                            placeholder={t('expenses.enterPurpose')}
-                          />
-                        </TableCell>
-
-                        {/* Amount */}
-                        <TableCell>
-                          <TextField
-                            size="small"
-                            fullWidth
-                            type="number"
-                            value={row.amount || ''}
-                            onChange={(e) => updateRow(row.id, 'amount', parseFloat(e.target.value) || 0)}
-                            error={!!row.errors.amount}
-                            InputProps={{
-                              startAdornment: <InputAdornment position="start">$</InputAdornment>
-                            }}
-                          />
                         </TableCell>
 
                         {/* Expense Date */}
@@ -774,7 +746,16 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                           <FormControl size="small" fullWidth>
                             <Select
                               value={row.document_type}
-                              onChange={(e) => updateRow(row.id, 'document_type', e.target.value)}
+                              onChange={(e) => {
+                                const newDocType = e.target.value as 'BOLETA' | 'FACTURA';
+                                updateRow(row.id, 'document_type', newDocType);
+                                // Reset taxable and tax when changing document type
+                                if (newDocType === 'BOLETA') {
+                                  updateRow(row.id, 'taxable', 'NO');
+                                  updateRow(row.id, 'tax_id', undefined);
+                                  updateRow(row.id, 'tax', '');
+                                }
+                              }}
                             >
                               <MenuItem value="BOLETA">Boleta</MenuItem>
                               <MenuItem value="FACTURA">Factura</MenuItem>
@@ -804,7 +785,7 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                                 </MenuItem>
                                 {suppliers.map((supplier) => (
                                   <MenuItem key={supplier.id} value={supplier.id}>
-                                    {supplier.name}
+                                    {supplier.name} ({supplier.tax_name})
                                   </MenuItem>
                                 ))}
                               </Select>
@@ -819,7 +800,42 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                             fullWidth
                             value={row.document_number}
                             onChange={(e) => updateRow(row.id, 'document_number', e.target.value)}
+                            error={!!row.errors.document_number}
                             placeholder={t('expenses.enterDocNumber')}
+                          />
+                        </TableCell>
+
+                        {/* Category */}
+                        <TableCell>
+                          <FormControl size="small" fullWidth error={!!row.errors.category_id}>
+                            <Select
+                              value={row.category_id}
+                              onChange={(e) => updateRow(row.id, 'category_id', e.target.value)}
+                            >
+                              <MenuItem value={0}>
+                                <em>{t('expenses.selectCategory')}</em>
+                              </MenuItem>
+                              {categories.map((cat) => (
+                                <MenuItem key={cat.id} value={cat.id}>
+                                  {cat.name}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        </TableCell>
+
+                        {/* Amount */}
+                        <TableCell>
+                          <TextField
+                            size="small"
+                            fullWidth
+                            type="number"
+                            value={row.amount || ''}
+                            onChange={(e) => updateRow(row.id, 'amount', parseFloat(e.target.value) || 0)}
+                            error={!!row.errors.amount}
+                            InputProps={{
+                              startAdornment: <InputAdornment position="start">$</InputAdornment>
+                            }}
                           />
                         </TableCell>
 
@@ -829,7 +845,15 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                             <FormControl size="small" fullWidth>
                               <Select
                                 value={row.taxable}
-                                onChange={(e) => updateRow(row.id, 'taxable', e.target.value)}
+                                onChange={(e) => {
+                                  const newTaxable = e.target.value as 'SI' | 'NO';
+                                  updateRow(row.id, 'taxable', newTaxable);
+                                  // Clear tax selection when switching to non-taxable
+                                  if (newTaxable === 'NO') {
+                                    updateRow(row.id, 'tax_id', undefined);
+                                    updateRow(row.id, 'tax', '');
+                                  }
+                                }}
                                 disabled={row.document_type !== 'FACTURA'}
                               >
                                 <MenuItem value="NO">{t('common.no')}</MenuItem>
@@ -838,6 +862,45 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                             </FormControl>
                           </TableCell>
                         )}
+
+                        {/* Tax - Only show for taxable FACTURA documents */}
+                        {showTaxColumn && (
+                          <TableCell>
+                            <FormControl size="small" fullWidth>
+                              <Select
+                                value={row.tax_id || ''}
+                                onChange={(e) => {
+                                  const taxId = e.target.value as number;
+                                  const selectedTax = taxes.find(t => t.id === taxId);
+                                  updateRow(row.id, 'tax_id', taxId || undefined);
+                                  updateRow(row.id, 'tax', selectedTax ? `${selectedTax.code} - ${selectedTax.regime}` : '');
+                                }}
+                                disabled={row.document_type !== 'FACTURA' || row.taxable !== 'SI'}
+                              >
+                                <MenuItem value="">
+                                  <em>{t('taxes.selectTax')}</em>
+                                </MenuItem>
+                                {taxes.map((tax) => (
+                                  <MenuItem key={tax.id} value={tax.id}>
+                                    {tax.code} - {tax.regime}
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                          </TableCell>
+                        )}
+
+                        {/* Purpose */}
+                        <TableCell>
+                          <TextField
+                            size="small"
+                            fullWidth
+                            value={row.purpose}
+                            onChange={(e) => updateRow(row.id, 'purpose', e.target.value)}
+                            error={!!row.errors.purpose}
+                            placeholder={t('expenses.enterPurpose')}
+                          />
+                        </TableCell>
 
                         {/* File Attachment */}
                         <TableCell>

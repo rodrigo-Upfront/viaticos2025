@@ -13,6 +13,7 @@ class CategoryBase(BaseModel):
     """Base category schema"""
     name: str = Field(..., min_length=1, max_length=200, description="Category name")
     account: str = Field(..., min_length=1, max_length=50, description="SAP account")
+    location_id: int = Field(..., description="Location ID this category belongs to")
     # Category-level alert removed in favor of per-country/currency alerts
 
 

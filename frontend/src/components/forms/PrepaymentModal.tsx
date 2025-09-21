@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next';
 import {
   Download as DownloadIcon,
   Description as DocumentIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
 
 
@@ -191,7 +192,7 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
     if (files.length > 5) {
       setErrors(prev => ({
         ...prev,
-        justification_files: `Maximum 5 files allowed (selected ${files.length})`
+        justification_files: t('validation.maxFilesAllowed', { maxFiles: 5, selectedCount: files.length })
       }));
       event.target.value = ''; // Clear the input
       return;
@@ -203,24 +204,31 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
       if (file.size > 10 * 1024 * 1024) {
         setErrors(prev => ({
           ...prev,
-          justification_files: `File "${file.name}" exceeds 10MB limit`
+          justification_files: t('validation.fileExceedsLimit', { fileName: file.name })
         }));
         event.target.value = ''; // Clear the input
         return;
       }
 
-      // File type validation (PDF and images only)
+      // File type validation (PDF, images, and documents)
       const allowedTypes = [
         'application/pdf',
         'image/jpeg',
         'image/jpg', 
-        'image/png'
+        'image/png',
+        'image/gif',
+        'image/bmp',
+        'image/webp',
+        'application/msword', // .doc
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+        'application/vnd.ms-excel', // .xls
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' // .xlsx
       ];
       
       if (!allowedTypes.includes(file.type)) {
         setErrors(prev => ({
           ...prev,
-          justification_files: `File "${file.name}" type not allowed. Only PDF and images allowed.`
+          justification_files: t('validation.fileTypeNotAllowed', { fileName: file.name })
         }));
         event.target.value = ''; // Clear the input
         return;
@@ -230,6 +238,13 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
     // All files are valid, set them
     setSelectedFiles(files);
     setHasNewFiles(true);
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    if (selectedFiles.length === 1) {
+      setHasNewFiles(false);
+    }
   };
 
   const uploadFile = async (prepaymentId: number, file: File): Promise<string> => {
@@ -501,12 +516,12 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
                 startIcon={<InputAdornment position="start">📎</InputAdornment>}
                 color={errors.justification_files ? 'error' : 'primary'}
               >
-{selectedFiles.length > 0 ? `${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''} selected` : 'Choose Files (max 5)'}
+{selectedFiles.length > 0 ? t('validation.filesSelected', { count: selectedFiles.length, plural: selectedFiles.length > 1 ? 's' : '' }) : t('validation.chooseFiles')}
                 <input
                   type="file"
                   multiple
                   hidden
-                  accept=".pdf,.jpg,.jpeg,.png"
+                  accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp,.webp,.doc,.docx,.xls,.xlsx"
                   onChange={handleMultipleFileChange}
                 />
               </Button>
@@ -522,7 +537,7 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
               {mode === 'edit' && prepayment?.justification_files && prepayment.justification_files.length > 0 && (
                 <Box sx={{ mt: 1 }}>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                    Existing files ({prepayment.justification_files.length}):
+{t('validation.existingFiles', { count: prepayment.justification_files.length })}
                   </Typography>
                   {prepayment.justification_files.map((file, index) => (
                     <Box 
@@ -550,7 +565,7 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
                           {file.original_name || file.filename}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          Existing file {index + 1} • Click to download
+{t('validation.existingFile', { number: index + 1 })}
                         </Typography>
                       </Box>
                       <IconButton 
@@ -574,14 +589,33 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
                     {selectedFiles.length} file{selectedFiles.length > 1 ? 's' : ''} selected:
                   </Typography>
                   {selectedFiles.map((file, index) => (
-                    <Box key={index} display="flex" alignItems="center" sx={{ mt: 0.5 }}>
-                      <DocumentIcon sx={{ mr: 1, color: 'success.main' }} />
-                      <Typography variant="body2" color="success.main">
-                        {file.name}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
-                        ({(file.size / 1024 / 1024).toFixed(1)} MB)
-                      </Typography>
+                    <Box key={index} display="flex" alignItems="center" justifyContent="space-between" sx={{ 
+                      mt: 0.5, 
+                      p: 1, 
+                      border: 1, 
+                      borderColor: 'success.main', 
+                      borderRadius: 1,
+                      bgcolor: 'success.50'
+                    }}>
+                      <Box display="flex" alignItems="center">
+                        <DocumentIcon sx={{ mr: 1, color: 'success.main' }} />
+                        <Box>
+                          <Typography variant="body2" color="success.main">
+                            {file.name}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            ({(file.size / 1024 / 1024).toFixed(1)} MB)
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => handleRemoveFile(index)}
+                        title={t('common.remove')}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
                     </Box>
                   ))}
                 </Box>

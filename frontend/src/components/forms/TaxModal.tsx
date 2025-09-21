@@ -154,7 +154,7 @@ const TaxModal: React.FC<TaxModalProps> = ({
           <TextField
             fullWidth
             label={t('taxes.rate')}
-            value={formData.rate}
+            value={formData.rate === 0 ? '0' : formData.rate}
             onChange={handleChange('rate')}
             error={!!errors.rate}
             helperText={errors.rate || t('taxes.rateHelp')}

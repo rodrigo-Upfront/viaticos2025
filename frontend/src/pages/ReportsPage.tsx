@@ -29,6 +29,9 @@ import {
   Snackbar,
   Alert,
   CircularProgress,
+  Checkbox,
+  ListItemText,
+  OutlinedInput,
 } from '@mui/material';
 import {
   Download as DownloadIcon,
@@ -165,7 +168,7 @@ const ReportsPage: React.FC = () => {
     country: '',
     budgetStatus: '',
     type: '',
-    status: '',
+    status: [] as string[], // Changed to array for multiple selection
   });
 
   // User filter state (for accounting/treasury users)
@@ -229,9 +232,11 @@ const ReportsPage: React.FC = () => {
       );
     }
 
-    if (searchFilters.status) {
+    if (searchFilters.status.length > 0) {
       filtered = filtered.filter(report => 
-        report.status.toUpperCase().includes(searchFilters.status.toUpperCase())
+        searchFilters.status.some(status => 
+          report.status.toUpperCase().includes(status.toUpperCase())
+        )
       );
     }
 
@@ -599,7 +604,7 @@ const ReportsPage: React.FC = () => {
               return expenseReports.length > 0 ? (count / expenseReports.length) * 100 : 0;
             })()}
             onClick={() => {
-              setSearchFilters(prev => ({ ...prev, status: 'REJECTED' }));
+              setSearchFilters(prev => ({ ...prev, status: ['PENDING', 'REJECTED'] }));
             }}
           />
         </Grid>
@@ -622,8 +627,7 @@ const ReportsPage: React.FC = () => {
               return expenseReports.length > 0 ? (count / expenseReports.length) * 100 : 0;
             })()}
             onClick={() => {
-              // Set multiple statuses - we'll need to update the filter logic for this
-              setSearchFilters(prev => ({ ...prev, status: 'SUPERVISOR_PENDING' }));
+              setSearchFilters(prev => ({ ...prev, status: ['SUPERVISOR_PENDING', 'ACCOUNTING_PENDING', 'TREASURY_PENDING'] }));
             }}
           />
         </Grid>
@@ -642,7 +646,7 @@ const ReportsPage: React.FC = () => {
               return expenseReports.length > 0 ? (count / expenseReports.length) * 100 : 0;
             })()}
             onClick={() => {
-              setSearchFilters(prev => ({ ...prev, status: 'FUNDS_RETURN_PENDING' }));
+              setSearchFilters(prev => ({ ...prev, status: ['FUNDS_RETURN_PENDING'] }));
             }}
           />
         </Grid>
@@ -686,13 +690,28 @@ const ReportsPage: React.FC = () => {
             <FormControl fullWidth size="small">
               <InputLabel>{t('common.status')}</InputLabel>
               <Select
+                multiple
                 value={searchFilters.status}
-                label={t('common.status')}
-                onChange={(e) => setSearchFilters(prev => ({ ...prev, status: e.target.value }))}
+                onChange={(e) => {
+                  const value = typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value;
+                  setSearchFilters(prev => ({ ...prev, status: value }));
+                }}
+                input={<OutlinedInput label={t('common.status')} />}
+                renderValue={(selected) => {
+                  if (selected.length === 0) {
+                    return <em>All</em>;
+                  }
+                  if (selected.length === 1) {
+                    return getStatusLabel(selected[0]);
+                  }
+                  return `${selected.length} selected`;
+                }}
               >
-                <MenuItem value=""><em>All</em></MenuItem>
                 {filterOptions.statuses.map(status => (
-                  <MenuItem key={status} value={status}>{getStatusLabel(status)}</MenuItem>
+                  <MenuItem key={status} value={status}>
+                    <Checkbox checked={searchFilters.status.indexOf(status) > -1} />
+                    <ListItemText primary={getStatusLabel(status)} />
+                  </MenuItem>
                 ))}
               </Select>
             </FormControl>

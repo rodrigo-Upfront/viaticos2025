@@ -289,8 +289,8 @@ const ApprovalsPage: React.FC = () => {
     // Regular approval flow for non-treasury or non-prepayment items
     setConfirmDialog({
       open: true,
-      title: 'Approve',
-      message: 'Approve this item?',
+      title: t('approvals.approveTitle'),
+      message: t('approvals.approveMessage'),
       onConfirm: async () => {
         try {
           setLoading(prev => ({ ...prev, action: true }));
@@ -320,8 +320,8 @@ const ApprovalsPage: React.FC = () => {
           setLoading(prev => ({ ...prev, action: false }));
         }
       },
-      confirmText: 'Approve',
-      cancelText: 'Cancel',
+      confirmText: t('approvals.approveTitle'),
+      cancelText: t('common.cancel'),
       severity: 'info'
     });
   };
@@ -461,8 +461,8 @@ const ApprovalsPage: React.FC = () => {
   const handleQuickApprove = async (reportId: number) => {
     setConfirmDialog({
       open: true,
-      title: 'Quick Approve',
-      message: 'Are you sure you want to quickly approve this report?',
+      title: t('approvals.quickApproveTitle'),
+      message: t('approvals.quickApproveMessage'),
       onConfirm: async () => {
         try {
           setLoading(prev => ({ ...prev, action: true }));
@@ -488,8 +488,8 @@ const ApprovalsPage: React.FC = () => {
           setLoading(prev => ({ ...prev, action: false }));
         }
       },
-      confirmText: 'Approve',
-      cancelText: 'Cancel',
+      confirmText: t('approvals.approveTitle'),
+      cancelText: t('common.cancel'),
       severity: 'info'
     });
   };
@@ -508,7 +508,7 @@ const ApprovalsPage: React.FC = () => {
     if (!quickRejectionDialog.rejectionReason.trim()) {
       setSnackbar({
         open: true,
-        message: 'Rejection reason is required',
+        message: t('approvals.rejectionReasonRequired'),
         severity: 'error'
       });
       return;
@@ -689,7 +689,7 @@ const ApprovalsPage: React.FC = () => {
                                 size="small"
                                 color="primary"
                                 onClick={() => handleApproveReport(item)}
-                                title="Review & Approve/Reject Expenses"
+                                title={t('approvals.reviewAndApprove')}
                                 disabled={loading.action}
                               >
                                 <AssignmentIcon />
@@ -700,7 +700,7 @@ const ApprovalsPage: React.FC = () => {
                                   size="small"
                                   color="success"
                                   onClick={() => handleQuickApprove(item.entity_id)}
-                                  title="Quick Approve"
+                                  title={t('approvals.quickApprove')}
                                   disabled={loading.action}
                                 >
                                   <QuickApproveIcon />
@@ -1028,19 +1028,19 @@ const ApprovalsPage: React.FC = () => {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Reject {rejectionDialog.itemName}</DialogTitle>
+        <DialogTitle>{t('approvals.rejectTitle', { itemName: rejectionDialog.itemName })}</DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ mb: 2 }}>
-            Please provide a reason for rejecting this item:
+            {t('approvals.rejectMessage')}
           </Typography>
           <TextField
-            label="Rejection Reason"
+            label={t('approvals.rejectionReason')}
             multiline
             rows={3}
             fullWidth
             value={rejectionDialog.reason}
             onChange={(e) => setRejectionDialog({ ...rejectionDialog, reason: e.target.value })}
-            placeholder="Enter reason for rejection..."
+            placeholder={t('approvals.rejectionPlaceholder')}
           />
         </DialogContent>
         <DialogActions>
@@ -1056,7 +1056,7 @@ const ApprovalsPage: React.FC = () => {
             variant="contained"
             disabled={loading.action}
           >
-            {loading.action ? <CircularProgress size={20} /> : 'Reject'}
+            {loading.action ? <CircularProgress size={20} /> : t('common.reject')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1068,10 +1068,10 @@ const ApprovalsPage: React.FC = () => {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Quick Reject Report</DialogTitle>
+        <DialogTitle>{t('approvals.quickRejectTitle')}</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Please provide a reason for rejecting this report:
+            {t('approvals.quickRejectMessage')}
           </Typography>
           <TextField
             fullWidth

@@ -178,7 +178,22 @@
       "prepayment": "Prepayment",
       "expenseReport": "Expense Report",
       "reimbursement": "Reimbursement"
-    }
+    },
+    "approveTitle": "Approve",
+    "approveMessage": "Approve this item?",
+    "rejectTitle": "Reject {itemName}",
+    "rejectMessage": "Please provide a reason for rejecting this item:",
+    "rejectionReason": "Rejection Reason",
+    "rejectionPlaceholder": "Enter reason for rejection...",
+    "quickApprove": "Quick Approve",
+    "quickReject": "Quick Reject",
+    "quickApproveTitle": "Quick Approve",
+    "quickApproveMessage": "Are you sure you want to quickly approve this report?",
+    "quickRejectTitle": "Quick Reject Report",
+    "quickRejectMessage": "Please provide a reason for rejecting this report:",
+    "rejectionReasonRequired": "Rejection reason is required",
+    "reviewAndApprove": "Review & Approve/Reject Expenses",
+    "detailedReview": "Detailed Review"
   },
   "reports": {
     "title": "Reports",
@@ -300,7 +315,18 @@
     "justificationFile": "Justification File (Optional)",
     "rejectionReason": "Rejection Reason",
     "providedByApprover": "Provided by approver upon rejection",
-    "update": "UPDATE"
+    "update": "Update",
+    "sendForApproval": "Send for Approval",
+    "resubmitForApproval": "Resubmit for Approval",
+    "sendForApprovalTitle": "Send for Approval",
+    "resubmitForApprovalTitle": "Resubmit for Approval",
+    "sendForApprovalMessage": "This will send the prepayment \"{reason}\" for approval. Continue?",
+    "resubmitForApprovalMessage": "This will resubmit the rejected prepayment \"{reason}\" for approval. Continue?",
+    "sendButton": "Send",
+    "resubmitButton": "Resubmit",
+    "sentForApproval": "Sent for approval",
+    "resubmittedForApproval": "Resubmitted for approval",
+    "onlyPendingRejectedCanApprove": "Only pending or rejected prepayments can be sent for approval"
   },
   "users": {
     "title": "Users",
@@ -326,7 +352,7 @@
     "superuser": "Superuser",
     "approver": "Approver",
     "forcePasswordChange": "Force Password Change",
-    "update": "UPDATE",
+    "update": "Update",
     "accounting": "Accounting",
     "treasury": "Treasury",
     "manager": "Manager",
@@ -598,6 +624,29 @@
     "approvalComplete": "Accounting approval completed successfully",
     "downloadError": "Failed to download file",
     "downloadSuccess": "File downloaded successfully"
+  },
+  "validation": {
+    "required": "This field is required",
+    "categoryRequired": "Category is required",
+    "reportRequired": "Travel expense report is required",
+    "purposeRequired": "Purpose is required",
+    "supplierRequiredBoleta": "Supplier name is required for Boleta",
+    "supplierRequiredFactura": "Supplier is required for Factura",
+    "amountRequired": "Amount must be greater than 0",
+    "documentNumberRequired": "Document number is required",
+    "commentsRequired": "Comments are required",
+    "fileSizeLimit": "File must be smaller than 10MB",
+    "fileTypeInvalid": "Only PDF, images, and document files are allowed (PDF, JPEG, PNG, GIF, BMP, WebP, DOC, DOCX, XLS, XLSX)",
+    "fileMaxSize": "Maximum file size: 10MB. Allowed formats: PDF, JPEG, PNG, GIF, BMP, WebP, DOC, DOCX, XLS, XLSX",
+    "fileExceedsLimit": "File \"{fileName}\" exceeds 10MB limit",
+    "fileTypeNotAllowed": "File \"{fileName}\" type not allowed. Only PDF, images, and document files allowed.",
+    "maxFilesAllowed": "Maximum {maxFiles} files allowed (selected {selectedCount})",
+    "chooseFiles": "Choose Files (max 5)",
+    "filesSelected": "{count} file{plural} selected",
+    "existingFiles": "Existing files ({count}):",
+    "existingFile": "Existing file {number} • Click to download",
+    "existingFileDownload": "Existing file • Click to download",
+    "clickToDownload": "Click to download • Justification attachment {number}"
   }
 }
 

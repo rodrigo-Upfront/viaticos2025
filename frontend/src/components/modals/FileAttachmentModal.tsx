@@ -127,7 +127,7 @@ const FileAttachmentModal: React.FC<FileAttachmentModalProps> = ({
           <input
             id={`file-input-${rowId}`}
             type="file"
-            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+            accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp,.webp,.doc,.docx,.xls,.xlsx"
             style={{ display: 'none' }}
             onChange={handleFileChange}
           />
@@ -139,7 +139,7 @@ const FileAttachmentModal: React.FC<FileAttachmentModalProps> = ({
           </Typography>
           
           <Typography variant="body2" color="textSecondary">
-            {t('expenses.acceptedFormats')}: PDF, JPG, PNG, DOC, DOCX
+            {t('expenses.acceptedFormats')}: PDF, JPG, PNG, GIF, BMP, WebP, DOC, DOCX, XLS, XLSX
           </Typography>
         </Box>
 

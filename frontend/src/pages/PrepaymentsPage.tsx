@@ -461,26 +461,33 @@ const PrepaymentsPage: React.FC = () => {
   };
 
   const handleSendForApproval = (prepayment: Prepayment) => {
-    if (prepayment.status.toLowerCase() !== 'pending') {
+    if (!['pending', 'rejected'].includes(prepayment.status.toLowerCase())) {
       setSnackbar({
         open: true,
-        message: 'Only pending prepayments can be sent for approval',
+        message: t('prepaymentModule.onlyPendingRejectedCanApprove'),
         severity: 'warning'
       });
       return;
     }
 
+    const isRejected = prepayment.status.toLowerCase() === 'rejected';
     setConfirmDialog({
       open: true,
-      title: 'Send for Approval',
-      message: `This will send the prepayment "${prepayment.reason}" for approval. Continue?`,
+      title: isRejected ? t('prepaymentModule.resubmitForApprovalTitle') : t('prepaymentModule.sendForApprovalTitle'),
+      message: isRejected 
+        ? t('prepaymentModule.resubmitForApprovalMessage', { reason: prepayment.reason })
+        : t('prepaymentModule.sendForApprovalMessage', { reason: prepayment.reason }),
       onConfirm: async () => {
         try {
           setLoading(prev => ({ ...prev, action: true }));
           await apiClient.post(`/approvals/prepayments/${prepayment.id}/submit`, {});
           // Refresh list or update item status locally
           setPrepayments(prev => prev.map(p => p.id === prepayment.id ? { ...p, status: 'supervisor_pending' } : p));
-          setSnackbar({ open: true, message: 'Sent for approval', severity: 'success' });
+          setSnackbar({ 
+            open: true, 
+            message: isRejected ? t('prepaymentModule.resubmittedForApproval') : t('prepaymentModule.sentForApproval'), 
+            severity: 'success' 
+          });
         } catch (error: any) {
           console.error('Failed to submit for approval:', error);
           setSnackbar({ open: true, message: 'Failed to send for approval', severity: 'error' });
@@ -488,7 +495,7 @@ const PrepaymentsPage: React.FC = () => {
           setLoading(prev => ({ ...prev, action: false }));
         }
       },
-      confirmText: 'Send',
+      confirmText: isRejected ? t('prepaymentModule.resubmitButton') : t('prepaymentModule.sendButton'),
       cancelText: 'Cancel',
       severity: 'info'
     });
@@ -654,12 +661,12 @@ const PrepaymentsPage: React.FC = () => {
                       <EditIcon />
                     </IconButton>
                   )}
-                  {prepayment.status.toLowerCase() === 'pending' && (
+                  {(prepayment.status.toLowerCase() === 'pending' || prepayment.status.toLowerCase() === 'rejected') && (
                     <IconButton
                       size="small"
                       onClick={() => handleSendForApproval(prepayment)}
                       color="success"
-                      title="Send for Approval"
+                      title={prepayment.status.toLowerCase() === 'rejected' ? t('prepaymentModule.resubmitForApproval') : t('prepaymentModule.sendForApproval')}
                     >
                       <SendIcon />
                     </IconButton>

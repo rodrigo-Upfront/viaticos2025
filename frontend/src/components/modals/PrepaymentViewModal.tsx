@@ -290,7 +290,7 @@ const PrepaymentViewModal: React.FC<PrepaymentViewModalProps> = ({ open, onClose
                       {file.original_name || file.filename}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      Click to download • Justification attachment {index + 1}
+{t('validation.clickToDownload', { number: index + 1 })}
                     </Typography>
                   </Box>
                 </Box>

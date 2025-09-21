@@ -10,6 +10,7 @@ import { reportService, ExpenseReport as ApiReport } from '../services/reportSer
 import { countryService, Country as ApiCountry } from '../services/countryService';
 import { currencyService, Currency } from '../services/currencyService';
 import { categoryAlertService } from '../services/categoryAlertService';
+import { taxService, Tax } from '../services/taxService';
 
 interface BulkExpenseRow {
   id: string;
@@ -22,9 +23,10 @@ interface BulkExpenseRow {
   factura_supplier_id: number;
   document_number: string;
   taxable: 'SI' | 'NO';
+  tax_id?: number;
+  tax?: string;
   country_id: number;
   currency_id: number;
-  comments: string;
   document_file?: File;
   errors: Record<string, string>;
 }
@@ -61,12 +63,14 @@ const BulkExpenseContainer: React.FC = () => {
     countries: ApiCountry[];
     currencies: Currency[];
     suppliers: ApiSupplier[];
+    taxes: Tax[];
   }>({
     reports: [],
     categories: [],
     countries: [],
     currencies: [],
-    suppliers: []
+    suppliers: [],
+    taxes: []
   });
 
   useEffect(() => {
@@ -76,12 +80,13 @@ const BulkExpenseContainer: React.FC = () => {
   const loadAllData = async () => {
     try {
       setLoading(true);
-      const [reportsResponse, categoriesResponse, countries, currencies, suppliersResponse] = await Promise.all([
+      const [reportsResponse, categoriesResponse, countries, currencies, suppliersResponse, taxesResponse] = await Promise.all([
         reportService.getReports(),
         categoryService.getCategories(),
         countryService.getCountries(),
         currencyService.getCurrencies(),
-        supplierService.getSuppliers()
+        supplierService.getSuppliers(),
+        taxService.getTaxes()
       ]);
 
       // Filter reports to only show those available for adding expenses
@@ -106,7 +111,8 @@ const BulkExpenseContainer: React.FC = () => {
         categories: categoriesResponse.categories,
         countries: countries, // This returns Country[] directly
         currencies: currencies, // This returns Currency[] directly  
-        suppliers: suppliersResponse.suppliers
+        suppliers: suppliersResponse.suppliers,
+        taxes: taxesResponse.taxes
       });
     } catch (error) {
       console.error('Error loading data:', error);
@@ -181,6 +187,7 @@ const BulkExpenseContainer: React.FC = () => {
           amount: row.amount,
           document_number: row.document_number || '',
           taxable: row.taxable,
+          tax_id: row.tax_id,
         };
         
         const createdExpense = await expenseService.createExpense(apiData);
@@ -220,6 +227,7 @@ const BulkExpenseContainer: React.FC = () => {
           amount: row.amount,
           document_number: row.document_number || '',
           taxable: row.taxable,
+          tax_id: row.tax_id,
         };
         
         const createdExpense = await expenseService.createExpense(apiData);
@@ -268,6 +276,7 @@ const BulkExpenseContainer: React.FC = () => {
         countries={data.countries}
         currencies={data.currencies}
         suppliers={data.suppliers}
+        taxes={data.taxes}
         onSave={handleBulkSave}
         loading={actionLoading}
       />
