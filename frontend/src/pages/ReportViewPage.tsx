@@ -541,7 +541,7 @@ const ReportViewPage: React.FC = () => {
               sx={{ fontSize: '0.875rem', fontWeight: 'bold' }}
               />
               <Button variant="text" startIcon={<HistoryIcon />} onClick={() => setHistoryOpen(true)}>
-                History
+                {t('common.history')}
               </Button>
             </Box>
           </Box>
@@ -663,8 +663,8 @@ const ReportViewPage: React.FC = () => {
                   <TableCell><strong>{t('reports.sendDate')}</strong></TableCell>
                   <TableCell align="right">{formatDate(report.reportDate)}</TableCell>
                 </TableRow>
-                {/* SAP Compensation Number - only show for superusers and accounting users when it exists */}
-                {report.sap_compensation_number && (user?.is_superuser || user?.profile === 'ACCOUNTING') && (
+                {/* SAP Compensation Number - show for all users when it exists */}
+                {report.sap_compensation_number && (
                   <TableRow>
                     <TableCell><strong>{t('accounting.sapCompensationNumber')}</strong></TableCell>
                     <TableCell align="right">
@@ -831,7 +831,7 @@ const ReportViewPage: React.FC = () => {
                 
                 {report.status === 'APPROVED_RETURNED_FUNDS' && (
                   <Alert severity="success" sx={{ mt: 2 }}>
-                    Fund return approved and processed.
+                    {t('reports.fundReturnApproved')}
                   </Alert>
                 )}
               </Box>

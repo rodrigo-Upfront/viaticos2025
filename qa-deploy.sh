@@ -50,11 +50,6 @@ ssh $SERVER_USER@$SERVER_IP "
 echo -e "${YELLOW}⏳ Waiting for services to start...${NC}"
 sleep 10
 
-# Restart nginx to refresh proxy connections after container restart
-echo -e "${YELLOW}🔄 Restarting nginx to refresh proxy connections...${NC}"
-ssh root@$SERVER_IP "systemctl restart nginx"
-sleep 3
-
 # Verify deployment
 echo -e "${YELLOW}🔍 Verifying deployment...${NC}"
 BACKEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://$SERVER_IP/api/health)

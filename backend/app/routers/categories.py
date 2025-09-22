@@ -4,7 +4,7 @@ Handles expense category management operations
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from datetime import datetime
 
@@ -30,7 +30,9 @@ async def get_categories(
     """
     Get all categories
     """
-    query = db.query(ExpenseCategory)
+    query = db.query(ExpenseCategory).options(
+        joinedload(ExpenseCategory.location)
+    )
     
     # Apply search filter
     if search:

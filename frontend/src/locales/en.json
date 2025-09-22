@@ -242,6 +242,7 @@
     "approval": "Approval",
     "submitForApproval": "Submit for Approval",
     "fundReturnDocuments": "Fund Return Documents",
+    "fundReturnApproved": "Fund return approved and processed.",
     "submittedFiles": "Submitted Files",
     "documentsSubmittedReview": "Documents submitted for treasury review."
   },
@@ -384,6 +385,12 @@
     "suppliersManagement": "Factura Suppliers Management",
     "currenciesManagement": "Currencies Management",
     "locationsManagement": "Locations Management",
+    "expenseCategories": "Expense Categories",
+    "expenseCategoriesDescription": "Manage expense categories and their alert thresholds by currency and country.",
+    "categoryName": "Category Name",
+    "location": "Location",
+    "manageAlerts": "Manage Alerts",
+    "noCategoriesFound": "No categories found",
     "addCountry": "ADD COUNTRY",
     "addCategory": "ADD CATEGORY",
     "addSupplier": "ADD SUPPLIER",
@@ -646,10 +653,10 @@
     "maxFilesAllowed": "Maximum {maxFiles} files allowed (selected {selectedCount})",
     "chooseFiles": "Choose Files (max 5)",
     "filesSelected": "{count} file{plural} selected",
-    "existingFiles": "Existing files ({count}):",
+    "existingFiles": "Existing files:",
     "existingFile": "Existing file {number} • Click to download",
     "existingFileDownload": "Existing file • Click to download",
-    "clickToDownload": "Click to download • Justification attachment {number}"
+    "clickToDownload": "Click to download"
   }
 }
 

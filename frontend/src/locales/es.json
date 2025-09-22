@@ -187,10 +187,10 @@
     "maxFilesAllowed": "Máximo {maxFiles} archivos permitidos (seleccionados {selectedCount})",
     "chooseFiles": "Elegir Archivos (máx 5)",
     "filesSelected": "{count} archivo{plural} seleccionado{plural}",
-    "existingFiles": "Archivos existentes ({count}):",
+    "existingFiles": "Archivos existentes:",
     "existingFile": "Archivo existente {number} • Clic para descargar",
     "existingFileDownload": "Archivo existente • Clic para descargar",
-    "clickToDownload": "Clic para descargar • Adjunto de justificación {number}"
+    "clickToDownload": "Clic para descargar"
   },
   "approvals": {
     "pendingApprovals": "Aprobaciones Pendientes",
@@ -264,6 +264,7 @@
     "approval": "Aprobación",
     "submitForApproval": "Enviar para Aprobación",
     "fundReturnDocuments": "Documentos de Devolución",
+    "fundReturnApproved": "Devolución de fondos aprobada y procesada.",
     "submittedFiles": "Archivos Enviados",
     "documentsSubmittedReview": "Documentos enviados para revisión de tesorería."
   },
@@ -407,6 +408,12 @@
     "suppliersManagement": "Gestión de Proveedores de Factura",
     "currenciesManagement": "Gestión de Monedas",
     "locationsManagement": "Gestión de Ubicaciones",
+    "expenseCategories": "Categorías de Gastos",
+    "expenseCategoriesDescription": "Gestiona las categorías de gastos y sus umbrales de alerta por moneda y país.",
+    "categoryName": "Nombre de Categoría",
+    "location": "Ubicación",
+    "manageAlerts": "Gestionar Alertas",
+    "noCategoriesFound": "No se encontraron categorías",
     "addCountry": "AGREGAR PAÍS",
     "addCategory": "AGREGAR CATEGORÍA",
     "addSupplier": "AGREGAR PROVEEDOR",

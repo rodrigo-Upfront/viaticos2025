@@ -49,6 +49,8 @@ import { countryService, Country as ApiCountry } from '../services/countryServic
 import { currencyService, Currency as ApiCurrency } from '../services/currencyService';
 import { locationService, Location as ApiLocation } from '../services/locationService';
 import { taxService, Tax as ApiTax } from '../services/taxService';
+import { categoryService } from '../services/categoryService';
+import CategoryAlertsModal from '../components/forms/CategoryAlertsModal';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -107,6 +109,14 @@ interface Tax {
   rate: number;
 }
 
+interface ExpenseCategory {
+  id?: number;
+  name: string;
+  account: string;
+  location_id: number;
+  location_name?: string;
+}
+
 const SettingsPage: React.FC = () => {
   const { t } = useTranslation();
   const [tabValue, setTabValue] = useState(0);
@@ -118,6 +128,7 @@ const SettingsPage: React.FC = () => {
     currencies: true,
     locations: true,
     taxes: true,
+    categories: true,
   });
 
   // Countries state
@@ -152,6 +163,14 @@ const SettingsPage: React.FC = () => {
   const [taxes, setTaxes] = useState<Tax[]>([]);
   const [taxModal, setTaxModal] = useState({ open: false, mode: 'create' as 'create' | 'edit', tax: undefined as Tax | undefined });
 
+  // Expense categories state
+  const [expenseCategories, setExpenseCategories] = useState<ExpenseCategory[]>([]);
+  const [categoryAlertsModal, setCategoryAlertsModal] = useState({ 
+    open: false, 
+    categoryId: 0, 
+    categoryName: '' 
+  });
+
   // Category alerts state (removed - now managed under locations)
 
   // MFA settings state
@@ -179,7 +198,8 @@ const SettingsPage: React.FC = () => {
     loadCurrencies();
     loadLocations();
     loadTaxes();
-  }, []);
+    loadExpenseCategories();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadCountries = async () => {
     try {
@@ -295,6 +315,24 @@ const SettingsPage: React.FC = () => {
       });
     } finally {
       setLoading(prev => ({ ...prev, taxes: false }));
+    }
+  };
+
+  const loadExpenseCategories = async () => {
+    try {
+      setLoading(prev => ({ ...prev, categories: true }));
+      const categoriesData = await categoryService.getCategories();
+      // Categories now include location_name from the API
+      setExpenseCategories(categoriesData.categories);
+    } catch (error) {
+      console.error('Failed to load expense categories:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to load expense categories',
+        severity: 'error'
+      });
+    } finally {
+      setLoading(prev => ({ ...prev, categories: false }));
     }
   };
 
@@ -655,10 +693,21 @@ const SettingsPage: React.FC = () => {
   };
 
   const handleManageLocationCategories = (location: Location) => {
+    // Ensure we're on the locations tab when opening category modal
+    setTabValue(3);
     setLocationCategoryModal({
       open: true,
       locationId: location.id!,
       locationName: location.name
+    });
+  };
+
+  // Expense category alert operations
+  const handleManageCategoryAlerts = (category: ExpenseCategory) => {
+    setCategoryAlertsModal({
+      open: true,
+      categoryId: category.id!,
+      categoryName: category.name
     });
   };
 
@@ -765,6 +814,7 @@ const SettingsPage: React.FC = () => {
             <Tab icon={<CurrencyIcon />} label={t('configuration.currencies')} />
             <Tab icon={<LocationIcon />} label={t('configuration.locations')} />
             <Tab icon={<TaxIcon />} label={t('configuration.taxes')} />
+            <Tab icon={<CategoryIcon />} label={t('configuration.expenseCategories')} />
             <Tab icon={<SecurityIcon />} label={t('mfa.settings.title')} />
           </Tabs>
         </Box>
@@ -1051,6 +1101,57 @@ const SettingsPage: React.FC = () => {
 
         <TabPanel value={tabValue} index={5}>
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+            <Typography variant="h6">{t('configuration.expenseCategoriesManagement')}</Typography>
+          </Box>
+          
+          <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
+            {t('configuration.expenseCategoriesDescription')}
+          </Typography>
+          
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>{t('configuration.categoryName')}</TableCell>
+                  <TableCell>{t('configuration.sapAccount')}</TableCell>
+                  <TableCell>{t('configuration.location')}</TableCell>
+                  <TableCell align="center">{t('common.actions')}</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {expenseCategories.map((category) => (
+                  <TableRow key={category.id}>
+                    <TableCell>{category.name}</TableCell>
+                    <TableCell>{category.account}</TableCell>
+                    <TableCell>{category.location_name}</TableCell>
+                    <TableCell align="center">
+                      <IconButton
+                        size="small"
+                        color="primary"
+                        onClick={() => handleManageCategoryAlerts(category)}
+                        title={t('configuration.manageAlerts')}
+                      >
+                        <AlertIcon />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {expenseCategories.length === 0 && !loading.categories && (
+                  <TableRow>
+                    <TableCell colSpan={4} align="center">
+                      <Typography variant="body2" color="textSecondary">
+                        {t('configuration.noCategoriesFound')}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </TabPanel>
+
+        <TabPanel value={tabValue} index={6}>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
             <Typography variant="h6">{t('mfa.settings.title')}</Typography>
           </Box>
           
@@ -1143,6 +1244,14 @@ const SettingsPage: React.FC = () => {
         onClose={() => setLocationCategoryModal({ open: false, locationId: 0, locationName: '' })}
         locationId={locationCategoryModal.locationId}
         locationName={locationCategoryModal.locationName}
+      />
+
+      {/* Category Alerts Modal */}
+      <CategoryAlertsModal
+        open={categoryAlertsModal.open}
+        onClose={() => setCategoryAlertsModal({ open: false, categoryId: 0, categoryName: '' })}
+        categoryId={categoryAlertsModal.categoryId}
+        categoryName={categoryAlertsModal.categoryName}
       />
 
       {/* Tax Modal */}

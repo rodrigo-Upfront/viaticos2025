@@ -162,7 +162,7 @@ async def get_pending_approvals(
                 RequestStatus.ACCOUNTING_PENDING,
                 RequestStatus.TREASURY_PENDING
             ])
-        ).all()
+        ).order_by(Prepayment.created_at.asc()).all()
 
         pending_prepayments = []
         for prepayment in all_stage_prepayments:
@@ -226,7 +226,7 @@ async def get_pending_approvals(
                 ]))
 
         if report_stage_filters:
-            pending_reports = report_query.filter(or_(*report_stage_filters)).all()
+            pending_reports = report_query.filter(or_(*report_stage_filters)).order_by(TravelExpenseReport.created_at.asc()).all()
         else:
             pending_reports = []
         
@@ -276,6 +276,9 @@ async def get_pending_approvals(
                 destination=destination,
                 status=report.status.value if report.status else "PENDING"
             ))
+        
+        # Sort the final combined list by request_date (oldest first)
+        pending_items.sort(key=lambda item: item.request_date)
         
         return PendingApprovalsList(
             items=pending_items,

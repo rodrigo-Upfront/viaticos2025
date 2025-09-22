@@ -537,7 +537,7 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
               {mode === 'edit' && prepayment?.justification_files && prepayment.justification_files.length > 0 && (
                 <Box sx={{ mt: 1 }}>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-{t('validation.existingFiles', { count: prepayment.justification_files.length })}
+{t('validation.existingFiles')}
                   </Typography>
                   {prepayment.justification_files.map((file, index) => (
                     <Box 
@@ -565,7 +565,7 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
                           {file.original_name || file.filename}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          {t('validation.clickToDownload', { number: index + 1 })}
+                          {t('validation.clickToDownload')}
                         </Typography>
                       </Box>
                       <IconButton 

@@ -17,6 +17,8 @@ import {
   ListItemButton,
   Badge,
   Chip,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -64,6 +66,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [mfaSettingsOpen, setMfaSettingsOpen] = useState(false);
   
   const [counts, setCounts] = useState<{ prepayments: number; expenses: number; reports: number }>({ prepayments: 0, expenses: 0, reports: 0 });
+  const [notification, setNotification] = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'info' | 'warning' }>({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -71,6 +78,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user, logout } = useAuth();
   const { language, changeLanguage } = useLanguage();
   
+
+  // Listen for notification events from AuthContext
+  useEffect(() => {
+    const handleNotification = (event: CustomEvent) => {
+      setNotification({
+        open: true,
+        message: event.detail.message,
+        severity: event.detail.severity
+      });
+    };
+
+    window.addEventListener('showNotification', handleNotification as EventListener);
+    return () => {
+      window.removeEventListener('showNotification', handleNotification as EventListener);
+    };
+  }, []);
 
   useEffect(() => {
     const loadCounts = async () => {
@@ -414,6 +437,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <Toolbar />
         {children}
       </Box>
+      
+      {/* Global notification snackbar */}
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={6000}
+        onClose={() => setNotification(prev => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert 
+          onClose={() => setNotification(prev => ({ ...prev, open: false }))} 
+          severity={notification.severity}
+          sx={{ width: '100%' }}
+        >
+          {notification.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

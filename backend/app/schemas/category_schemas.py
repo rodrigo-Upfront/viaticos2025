@@ -32,6 +32,7 @@ class CategoryUpdate(CategoryBase):
 class CategoryResponse(CategoryBase):
     """Schema for category response"""
     id: int
+    location_name: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
@@ -45,6 +46,7 @@ class CategoryResponse(CategoryBase):
             name=obj.name,
             account=obj.account,
             location_id=obj.location_id,
+            location_name=obj.location.name if obj.location else None,
             created_at=obj.created_at,
             updated_at=obj.updated_at
         )

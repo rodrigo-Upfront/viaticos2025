@@ -1038,7 +1038,7 @@ const ReportApprovalPage: React.FC = () => {
                 
                 {report.status === 'APPROVED_RETURNED_FUNDS' && (
                   <Alert severity="success" sx={{ mt: 2 }}>
-                    Fund return approved and processed.
+                    {t('reports.fundReturnApproved')}
                   </Alert>
                 )}
               </Box>

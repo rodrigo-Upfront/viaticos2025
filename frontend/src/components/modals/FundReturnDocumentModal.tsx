@@ -21,6 +21,7 @@ import {
   Delete as DeleteIcon,
   AttachFile as AttachFileIcon,
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 
 interface FundReturnDocumentModalProps {
   open: boolean;
@@ -35,6 +36,7 @@ const FundReturnDocumentModal: React.FC<FundReturnDocumentModalProps> = ({
   onSubmit,
   reportId
 }) => {
+  const { t } = useTranslation();
 
   const [documentNumber, setDocumentNumber] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -111,13 +113,13 @@ const FundReturnDocumentModal: React.FC<FundReturnDocumentModalProps> = ({
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
       <DialogTitle>
-        Submit Fund Return Documents
+        {t('reports.submitReturnDocuments')}
       </DialogTitle>
       
       <DialogContent>
         <Box sx={{ mb: 3 }}>
           <Typography variant="body2" color="text.secondary" gutterBottom>
-            Please provide the document reference number and upload supporting files for the fund return process.
+            {t('reports.returnDocumentsDescription')}
           </Typography>
         </Box>
 
@@ -130,10 +132,10 @@ const FundReturnDocumentModal: React.FC<FundReturnDocumentModalProps> = ({
         {/* Document Number Field */}
         <TextField
           fullWidth
-          label="Document Number"
+          label={t('reports.documentNumber')}
           value={documentNumber}
           onChange={(e) => setDocumentNumber(e.target.value)}
-          placeholder="Enter document reference number"
+          placeholder={t('reports.documentNumberPlaceholder')}
           sx={{ mb: 3 }}
           disabled={submitting}
           required
@@ -142,7 +144,7 @@ const FundReturnDocumentModal: React.FC<FundReturnDocumentModalProps> = ({
         {/* File Upload Section */}
         <Box sx={{ mb: 3 }}>
           <Typography variant="subtitle1" gutterBottom>
-            Supporting Documents
+            {t('reports.supportingDocuments')}
           </Typography>
           
           <Box

@@ -9,6 +9,8 @@ export interface Category {
   id: number;
   name: string;
   account: string;
+  location_id: number;
+  location_name?: string;
   created_at: string;
   updated_at: string;
 }

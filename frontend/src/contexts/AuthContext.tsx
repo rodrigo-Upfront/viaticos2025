@@ -175,8 +175,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser({ ...user, force_password_change: false });
     }
     
-    // Show success message (you can customize this with a toast/snackbar if preferred)
-    alert('Password has been updated successfully!');
+    // Show success message via custom event that can be caught by the Layout component
+    window.dispatchEvent(new CustomEvent('showNotification', {
+      detail: {
+        message: 'Password has been updated successfully!',
+        severity: 'success'
+      }
+    }));
   };
 
   const value = {
