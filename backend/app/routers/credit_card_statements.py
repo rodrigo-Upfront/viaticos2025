@@ -518,14 +518,14 @@ async def delete_credit_card_statement(
     
     try:
         # Delete related records first (in correct order due to foreign keys)
-        # Delete consolidated expenses first
-        db.query(CreditCardConsolidatedExpense).filter(
-            CreditCardConsolidatedExpense.statement_id == statement_id
-        ).delete()
-        
-        # Delete transactions
+        # Delete transactions first (they reference consolidated expenses)
         db.query(CreditCardTransaction).filter(
             CreditCardTransaction.statement_id == statement_id
+        ).delete()
+        
+        # Delete consolidated expenses after transactions
+        db.query(CreditCardConsolidatedExpense).filter(
+            CreditCardConsolidatedExpense.statement_id == statement_id
         ).delete()
         
         # Delete file from filesystem

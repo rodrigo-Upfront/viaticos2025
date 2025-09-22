@@ -494,9 +494,11 @@ const ReportsPage: React.FC = () => {
       await Promise.all([loadReports(), loadSummary(), loadFilterOptions()]);
       
     } catch (error: any) {
+      console.error('Failed to submit report:', error);
+      const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to submit report for approval';
       setSnackbar({
         open: true,
-        message: error.message || 'Failed to submit report for approval',
+        message: errorMessage,
         severity: 'error'
       });
     } finally {

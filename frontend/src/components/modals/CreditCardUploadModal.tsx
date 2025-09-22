@@ -103,7 +103,7 @@ const CreditCardUploadModal: React.FC<CreditCardUploadModalProps> = ({
         <DialogTitle>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <CloudUploadIcon />
-            Upload Credit Card Statement
+            {t('reports.uploadCreditCardStatement')}
           </Box>
         </DialogTitle>
         <DialogContent>
@@ -111,20 +111,20 @@ const CreditCardUploadModal: React.FC<CreditCardUploadModalProps> = ({
             {!uploadResult && (
               <>
                 <Typography variant="body1" gutterBottom>
-                  Upload a CSV file containing credit card transactions. The system will:
+                  {t('reports.csvFileContaining')}
                 </Typography>
                 <List dense>
                   <ListItem>
-                    <ListItemText primary="• Parse transactions and match users by credit card number" />
+                    <ListItemText primary={t('reports.parseTransactions')} />
                   </ListItem>
                   <ListItem>
-                    <ListItemText primary="• Consolidate CARGO fees by user and currency" />
+                    <ListItemText primary={t('reports.consolidateCargo')} />
                   </ListItem>
                   <ListItem>
-                    <ListItemText primary="• Group transactions for prepayment creation" />
+                    <ListItemText primary={t('reports.groupTransactions')} />
                   </ListItem>
                   <ListItem>
-                    <ListItemText primary="• Validate currencies and user matches" />
+                    <ListItemText primary={t('reports.validateCurrencies')} />
                   </ListItem>
                 </List>
 
@@ -149,10 +149,10 @@ const CreditCardUploadModal: React.FC<CreditCardUploadModalProps> = ({
                   />
                   <CloudUploadIcon sx={{ fontSize: 48, color: 'grey.400', mb: 1 }} />
                   <Typography variant="h6" gutterBottom>
-                    {selectedFile ? selectedFile.name : 'Click to select CSV file'}
+                    {selectedFile ? selectedFile.name : t('reports.clickToSelectFile')}
                   </Typography>
                   <Typography variant="body2" color="textSecondary">
-                    Only CSV files are supported (max 10MB)
+                    {t('reports.onlyCsvSupported')}
                   </Typography>
                 </Paper>
               </>

@@ -498,6 +498,24 @@ async def approve_prepayment(
                 db.add(report)
                 db.flush()  # get id
                 created_report_id = report.id
+                
+                # Check if this prepayment has associated credit card transactions
+                # Import here to avoid circular imports
+                from app.models.models import CreditCardConsolidatedExpense
+                from app.services.credit_card_service import CreditCardService
+                
+                credit_card_expenses = db.query(CreditCardConsolidatedExpense).filter(
+                    CreditCardConsolidatedExpense.associated_prepayment_id == prepayment.id
+                ).all()
+                
+                if credit_card_expenses:
+                    # Auto-create expenses from credit card transactions
+                    consolidated_expense_ids = [exp.id for exp in credit_card_expenses]
+                    CreditCardService.create_expenses_from_consolidated(
+                        consolidated_expense_ids, 
+                        report.id, 
+                        db
+                    )
             # Clear rejection reason on final approval
             prepayment.rejection_reason = None
         elif next_status == RequestStatus.REJECTED:
@@ -773,10 +791,11 @@ async def submit_report(
             incomplete_expenses.append(expense.id)
     
     if incomplete_expenses:
+        expense_list = ', '.join(map(str, incomplete_expenses))
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Cannot submit report with incomplete credit card expenses. "
-                   f"Please complete category, purpose, and document number for expenses: {', '.join(map(str, incomplete_expenses))}"
+            detail=f"No se puede enviar el reporte con gastos de tarjeta de crédito incompletos. "
+                   f"Por favor complete categoría, propósito y número de documento para los gastos: {expense_list}"
         )
 
     requester = report.requesting_user
@@ -1778,6 +1797,7 @@ async def set_treasury_sap_record(
             TravelExpenseReport.prepayment_id == prepayment.id
         ).first()
         
+        created_report_id = None
         if not existing_report:
             report = TravelExpenseReport(
                 prepayment_id=prepayment.id,
@@ -1785,6 +1805,25 @@ async def set_treasury_sap_record(
                 requesting_user_id=prepayment.requesting_user_id
             )
             db.add(report)
+            db.flush()  # Get report ID
+            created_report_id = report.id
+            
+            # Check if this prepayment has associated credit card transactions
+            from app.models.models import CreditCardConsolidatedExpense
+            from app.services.credit_card_service import CreditCardService
+            
+            credit_card_expenses = db.query(CreditCardConsolidatedExpense).filter(
+                CreditCardConsolidatedExpense.associated_prepayment_id == prepayment.id
+            ).all()
+            
+            if credit_card_expenses:
+                # Auto-create expenses from credit card transactions
+                consolidated_expense_ids = [exp.id for exp in credit_card_expenses]
+                CreditCardService.create_expenses_from_consolidated(
+                    consolidated_expense_ids, 
+                    report.id, 
+                    db
+                )
         
         db.commit()
         

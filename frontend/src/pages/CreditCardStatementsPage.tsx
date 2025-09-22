@@ -175,25 +175,14 @@ const CreditCardStatementsPage: React.FC = () => {
   };
 
   const getStatusText = (status: string): string => {
-    switch (status) {
-      case 'UPLOADED':
-        return 'Uploaded';
-      case 'PROCESSED':
-        return 'Processed';
-      case 'COMPLETED':
-        return 'Completed';
-      case 'VALIDATION_ERRORS':
-        return 'Validation Errors';
-      default:
-        return status;
-    }
+    return t(`reports.creditCardStatuses.${status}`) || status;
   };
 
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" component="h1">
-          Credit Card Statements
+          {t('reports.creditCardStatements')}
         </Typography>
         <Button
           variant="contained"
@@ -201,14 +190,14 @@ const CreditCardStatementsPage: React.FC = () => {
           onClick={() => setUploadModalOpen(true)}
           sx={{ minWidth: 200 }}
         >
-          Upload Statement
+          {t('reports.uploadStatement')}
         </Button>
       </Box>
 
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
         <Tabs value={tabValue} onChange={handleTabChange}>
-          <Tab icon={<CloudUploadIcon />} label="Dashboard" />
-          <Tab icon={<AssignmentIcon />} label="Statements" />
+          <Tab icon={<CloudUploadIcon />} label={t('navigation.dashboard')} />
+          <Tab icon={<AssignmentIcon />} label={t('reports.statements')} />
         </Tabs>
       </Box>
 
@@ -222,7 +211,7 @@ const CreditCardStatementsPage: React.FC = () => {
               <Card>
                 <CardContent>
                   <Typography color="textSecondary" gutterBottom>
-                    Total Statements
+                    {t('reports.totalStatements')}
                   </Typography>
                   <Typography variant="h4">
                     {dashboardStats.total_statements}
@@ -234,7 +223,7 @@ const CreditCardStatementsPage: React.FC = () => {
               <Card>
                 <CardContent>
                   <Typography color="textSecondary" gutterBottom>
-                    Pending Processing
+                    {t('reports.pendingProcessing')}
                   </Typography>
                   <Typography variant="h4" color="warning.main">
                     {dashboardStats.pending_processing}
@@ -246,7 +235,7 @@ const CreditCardStatementsPage: React.FC = () => {
               <Card>
                 <CardContent>
                   <Typography color="textSecondary" gutterBottom>
-                    Completed
+                    {t('reports.completed')}
                   </Typography>
                   <Typography variant="h4" color="success.main">
                     {dashboardStats.completed_processing}
@@ -258,7 +247,7 @@ const CreditCardStatementsPage: React.FC = () => {
               <Card>
                 <CardContent>
                   <Typography color="textSecondary" gutterBottom>
-                    Total Transactions
+                    {t('reports.totalTransactions')}
                   </Typography>
                   <Typography variant="h4">
                     {dashboardStats.total_transactions}
@@ -271,17 +260,17 @@ const CreditCardStatementsPage: React.FC = () => {
               <Card>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
-                    Recent Statements
+                    {t('reports.recentStatements')}
                   </Typography>
                   <TableContainer>
                     <Table>
                       <TableHead>
                         <TableRow>
-                          <TableCell>Filename</TableCell>
-                          <TableCell>Upload Date</TableCell>
-                          <TableCell>Status</TableCell>
-                          <TableCell>Records</TableCell>
-                          <TableCell>Actions</TableCell>
+                          <TableCell>{t('reports.filename')}</TableCell>
+                          <TableCell>{t('reports.uploadDate')}</TableCell>
+                          <TableCell>{t('reports.status')}</TableCell>
+                          <TableCell>{t('reports.records')}</TableCell>
+                          <TableCell>{t('reports.actions')}</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -339,20 +328,20 @@ const CreditCardStatementsPage: React.FC = () => {
         <Card>
           <CardContent>
             <Typography variant="h6" gutterBottom>
-              All Statements
+              {t('reports.allStatements')}
             </Typography>
             <TableContainer component={Paper}>
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>Filename</TableCell>
-                    <TableCell>Uploaded By</TableCell>
-                    <TableCell>Upload Date</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Records</TableCell>
-                    <TableCell>Transactions</TableCell>
-                    <TableCell>Expenses</TableCell>
-                    <TableCell>Actions</TableCell>
+                    <TableCell>{t('reports.filename')}</TableCell>
+                    <TableCell>{t('reports.uploadedBy')}</TableCell>
+                    <TableCell>{t('reports.uploadDate')}</TableCell>
+                    <TableCell>{t('reports.status')}</TableCell>
+                    <TableCell>{t('reports.records')}</TableCell>
+                    <TableCell>{t('reports.transactions')}</TableCell>
+                    <TableCell>{t('reports.expenses')}</TableCell>
+                    <TableCell>{t('reports.actions')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>

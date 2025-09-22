@@ -157,13 +157,13 @@ const CreditCardPrepaymentFormModal: React.FC<CreditCardPrepaymentFormModalProps
         <DialogTitle>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <AccountBalanceIcon />
-            Create Prepayments from Credit Card Statement
+            {t('reports.createPrepaymentsFromStatement')}
           </Box>
         </DialogTitle>
         <DialogContent>
           <Box sx={{ mt: 2 }}>
             <Typography variant="body1" gutterBottom>
-              Complete the prepayment information for each user-currency combination:
+              {t('reports.completePrepaymentInfo')}
             </Typography>
 
             {loading && <LinearProgress sx={{ mb: 2 }} />}
@@ -178,15 +178,15 @@ const CreditCardPrepaymentFormModal: React.FC<CreditCardPrepaymentFormModalProps
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>User</TableCell>
-                    <TableCell>Currency</TableCell>
-                    <TableCell>Amount</TableCell>
-                    <TableCell>Transactions</TableCell>
-                    <TableCell width="200">Reason *</TableCell>
-                    <TableCell width="150">Country *</TableCell>
-                    <TableCell width="150">Start Date *</TableCell>
-                    <TableCell width="150">End Date *</TableCell>
-                    <TableCell width="200">Comment</TableCell>
+                    <TableCell>{t('reports.user')}</TableCell>
+                    <TableCell>{t('reports.currency')}</TableCell>
+                    <TableCell>{t('reports.amount')}</TableCell>
+                    <TableCell>{t('reports.transactions')}</TableCell>
+                    <TableCell width="200">{t('prepayments.reason')} *</TableCell>
+                    <TableCell width="150">{t('common.country')} *</TableCell>
+                    <TableCell width="150">{t('common.startDate')} *</TableCell>
+                    <TableCell width="150">{t('common.endDate')} *</TableCell>
+                    <TableCell width="200">{t('common.comments')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>

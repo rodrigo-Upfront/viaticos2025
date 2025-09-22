@@ -101,6 +101,10 @@ const CreditCardDetailsModal: React.FC<CreditCardDetailsModalProps> = ({
     }
   };
 
+  const getStatusText = (status: string): string => {
+    return t(`reports.creditCardStatuses.${status}`) || status;
+  };
+
   useEffect(() => {
     if (open && statementId) {
       loadStatementDetails();
@@ -143,15 +147,15 @@ const CreditCardDetailsModal: React.FC<CreditCardDetailsModalProps> = ({
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xl" fullWidth>
       <DialogTitle>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <VisibilityIcon />
-            Credit Card Statement Details
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <VisibilityIcon />
+              {t('reports.creditCardStatementDetails')}
+            </Box>
+            <IconButton onClick={onClose}>
+              <CloseIcon />
+            </IconButton>
           </Box>
-          <IconButton onClick={onClose}>
-            <CloseIcon />
-          </IconButton>
-        </Box>
       </DialogTitle>
       <DialogContent>
         {loading && <LinearProgress sx={{ mb: 2 }} />}
@@ -167,12 +171,12 @@ const CreditCardDetailsModal: React.FC<CreditCardDetailsModalProps> = ({
             {/* Statement Overview */}
             <Paper sx={{ p: 2, mb: 3 }}>
               <Typography variant="h6" gutterBottom>
-                Statement Overview
+                {t('reports.statementOverview')}
               </Typography>
               <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 2 }}>
                 <Box>
                   <Typography variant="caption" color="textSecondary">
-                    Filename
+                    {t('reports.filename')}
                   </Typography>
                   <Typography variant="body2">
                     {statement.original_filename}
@@ -180,7 +184,7 @@ const CreditCardDetailsModal: React.FC<CreditCardDetailsModalProps> = ({
                 </Box>
                 <Box>
                   <Typography variant="caption" color="textSecondary">
-                    Upload Date
+                    {t('reports.uploadDate')}
                   </Typography>
                   <Typography variant="body2">
                     {format(new Date(statement.upload_date), 'MMM dd, yyyy HH:mm')}
@@ -188,19 +192,19 @@ const CreditCardDetailsModal: React.FC<CreditCardDetailsModalProps> = ({
                 </Box>
                 <Box>
                   <Typography variant="caption" color="textSecondary">
-                    Status
+                    {t('reports.status')}
                   </Typography>
                   <Box sx={{ mt: 0.5 }}>
                     <Chip
-                      label={statement.status}
-                            color={getDetailsStatusColor(statement.status)}
+                      label={getStatusText(statement.status)}
+                      color={getDetailsStatusColor(statement.status)}
                       size="small"
                     />
                   </Box>
                 </Box>
                 <Box>
                   <Typography variant="caption" color="textSecondary">
-                    Records
+                    {t('reports.records')}
                   </Typography>
                   <Typography variant="body2">
                     {statement.processed_records} / {statement.total_records}
@@ -208,7 +212,7 @@ const CreditCardDetailsModal: React.FC<CreditCardDetailsModalProps> = ({
                 </Box>
                 <Box>
                   <Typography variant="caption" color="textSecondary">
-                    Uploaded By
+                    {t('reports.uploadedBy')}
                   </Typography>
                   <Typography variant="body2">
                     {statement.uploaded_by_name}
@@ -238,8 +242,8 @@ const CreditCardDetailsModal: React.FC<CreditCardDetailsModalProps> = ({
             {/* Tabs for detailed views */}
             <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
               <Tabs value={tabValue} onChange={handleTabChange}>
-                <Tab icon={<AccountBalanceIcon />} label={`Consolidated (${consolidatedExpenses.length})`} />
-                <Tab icon={<ReceiptIcon />} label={`Transactions (${transactions.length})`} />
+                <Tab icon={<AccountBalanceIcon />} label={`${t('reports.consolidated')} (${consolidatedExpenses.length})`} />
+                <Tab icon={<ReceiptIcon />} label={`${t('reports.transactions')} (${transactions.length})`} />
               </Tabs>
             </Box>
 
@@ -249,16 +253,16 @@ const CreditCardDetailsModal: React.FC<CreditCardDetailsModalProps> = ({
                 <Table size="small">
                   <TableHead>
                     <TableRow>
-                      <TableCell>Date</TableCell>
-                      <TableCell>User</TableCell>
-                      <TableCell>Description</TableCell>
-                      <TableCell>Supplier</TableCell>
-                      <TableCell>Currency</TableCell>
-                      <TableCell align="right">Amount</TableCell>
-                      <TableCell align="center">Transactions</TableCell>
-                      <TableCell>Prepayment</TableCell>
-                      <TableCell>Expense</TableCell>
-                      <TableCell>Status</TableCell>
+                      <TableCell>{t('reports.date')}</TableCell>
+                      <TableCell>{t('reports.user')}</TableCell>
+                      <TableCell>{t('reports.description')}</TableCell>
+                      <TableCell>{t('reports.supplier')}</TableCell>
+                      <TableCell>{t('reports.currency')}</TableCell>
+                      <TableCell align="right">{t('reports.amount')}</TableCell>
+                      <TableCell align="center">{t('reports.transactions')}</TableCell>
+                      <TableCell>{t('reports.prepayment')}</TableCell>
+                      <TableCell>{t('reports.expense')}</TableCell>
+                      <TableCell>{t('reports.status')}</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -308,7 +312,7 @@ const CreditCardDetailsModal: React.FC<CreditCardDetailsModalProps> = ({
                             </Tooltip>
                           ) : (
                             <Typography variant="caption" color="textSecondary">
-                              Not created
+                              {t('reports.notCreated')}
                             </Typography>
                           )}
                         </TableCell>
@@ -323,13 +327,13 @@ const CreditCardDetailsModal: React.FC<CreditCardDetailsModalProps> = ({
                             </Tooltip>
                           ) : (
                             <Typography variant="caption" color="textSecondary">
-                              Not created
+                              {t('reports.notCreated')}
                             </Typography>
                           )}
                         </TableCell>
                         <TableCell>
                           <Chip
-                            label={expense.status}
+                            label={getStatusText(expense.status)}
                             color={getDetailsStatusColor(expense.status)}
                             size="small"
                           />
@@ -347,14 +351,14 @@ const CreditCardDetailsModal: React.FC<CreditCardDetailsModalProps> = ({
                 <Table size="small">
                   <TableHead>
                     <TableRow>
-                      <TableCell>Date</TableCell>
-                      <TableCell>Type</TableCell>
-                      <TableCell>User</TableCell>
-                      <TableCell>Merchant</TableCell>
-                      <TableCell>Currency</TableCell>
-                      <TableCell align="right">Amount</TableCell>
-                      <TableCell>Description</TableCell>
-                      <TableCell>Status</TableCell>
+                      <TableCell>{t('reports.date')}</TableCell>
+                      <TableCell>{t('reports.type')}</TableCell>
+                      <TableCell>{t('reports.user')}</TableCell>
+                      <TableCell>{t('reports.merchant')}</TableCell>
+                      <TableCell>{t('reports.currency')}</TableCell>
+                      <TableCell align="right">{t('reports.amount')}</TableCell>
+                      <TableCell>{t('reports.description')}</TableCell>
+                      <TableCell>{t('reports.status')}</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -398,7 +402,7 @@ const CreditCardDetailsModal: React.FC<CreditCardDetailsModalProps> = ({
                         </TableCell>
                         <TableCell>
                           <Chip
-                            label={transaction.status}
+                            label={getStatusText(transaction.status)}
                             color={getDetailsStatusColor(transaction.status)}
                             size="small"
                           />
@@ -412,9 +416,9 @@ const CreditCardDetailsModal: React.FC<CreditCardDetailsModalProps> = ({
           </Box>
         )}
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Close</Button>
-      </DialogActions>
+        <DialogActions>
+          <Button onClick={onClose}>{t('reports.close')}</Button>
+        </DialogActions>
     </Dialog>
   );
 };

@@ -424,6 +424,10 @@ class CreditCardService:
                     continue
                 
                 # Create expense with minimal required fields
+                # Inherit country and currency from report (which inherits from prepayment)
+                expense_country_id = report.country_id or report.prepayment.destination_country_id
+                expense_currency_id = report.currency_id or report.prepayment.currency_id
+                
                 expense = Expense(
                     category_id=None,  # Will be filled by user
                     travel_expense_report_id=travel_expense_report_id,
@@ -431,8 +435,8 @@ class CreditCardService:
                     document_type=DocumentType.BOLETA,  # Credit card transactions are BOLETA
                     boleta_supplier=consolidated_expense.supplier_name,
                     expense_date=consolidated_expense.expense_date,
-                    country_id=report.prepayment.destination_country_id,
-                    currency_id=report.prepayment.currency_id,
+                    country_id=expense_country_id,
+                    currency_id=expense_currency_id,
                     amount=consolidated_expense.total_amount,
                     document_number='',  # Will be filled by user
                     taxable=TaxableOption.NO,
