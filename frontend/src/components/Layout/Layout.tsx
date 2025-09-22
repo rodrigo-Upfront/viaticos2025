@@ -34,6 +34,7 @@ import {
   Language,
   Lock,
   Security,
+  CreditCard,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -167,6 +168,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { key: 'prepayments', icon: <Payment />, path: '/prepayments', count: counts.prepayments },
     { key: 'expenses', icon: <Receipt />, path: '/expenses', count: counts.expenses },
     { key: 'reports', icon: <Assessment />, path: '/reports', count: counts.reports },
+    { key: 'creditCardStatements', icon: <CreditCard />, path: '/credit-card-statements' },
   ];
 
   // Add admin/approver items

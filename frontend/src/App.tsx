@@ -22,6 +22,7 @@ import UsersPage from './pages/UsersPage';
 import SettingsPage from './pages/SettingsPage';
 import ReportApprovalPage from './pages/ReportApprovalPage';
 import ReportViewPage from './pages/ReportViewPage';
+import CreditCardStatementsPage from './pages/CreditCardStatementsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Import internationalization
@@ -71,6 +72,7 @@ function App() {
                           <Route path="/approvals/report/:reportId" element={<ReportApprovalPage />} />
                           <Route path="/users" element={<UsersPage />} />
                           <Route path="/settings" element={<SettingsPage />} />
+                          <Route path="/credit-card-statements" element={<CreditCardStatementsPage />} />
                         </Routes>
                       </Layout>
                     </ProtectedRoute>

@@ -16,7 +16,7 @@ from app.database.connection import engine, get_db
 from app.models import models
 from app.routers import (
     auth, users, countries, categories, suppliers, currencies,
-    prepayments, expense_reports, expenses, approvals, dashboard, category_alerts, mfa, locations, taxes, accounting_approval
+    prepayments, expense_reports, expenses, approvals, dashboard, category_alerts, mfa, locations, taxes, accounting_approval, credit_card_statements
 )
 from app.core.config import settings
 from sqlalchemy import text
@@ -307,6 +307,7 @@ app.include_router(mfa.router, prefix="/api/mfa", tags=["Multi-Factor Authentica
 app.include_router(locations.router, prefix="/api", tags=["Locations"])
 app.include_router(taxes.router, prefix="/api/taxes", tags=["Taxes"])
 app.include_router(accounting_approval.router, prefix="/api/accounting", tags=["Accounting Approval"])
+app.include_router(credit_card_statements.router, tags=["Credit Card Statements"])
 
 
 @app.get("/")

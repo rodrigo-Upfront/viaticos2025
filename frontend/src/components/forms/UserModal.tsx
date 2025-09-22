@@ -419,7 +419,7 @@ const UserModal: React.FC<UserModalProps> = ({
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
-                label="Credit Card Number"
+                label={t('reports.cardAccountNumber')}
                 value={formData.credit_card_number}
                 onChange={handleChange('credit_card_number')}
                 placeholder="Optional"

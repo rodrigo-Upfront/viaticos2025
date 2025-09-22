@@ -11,9 +11,9 @@ from decimal import Decimal
 
 class ExpenseBase(BaseModel):
     """Base expense schema"""
-    category_id: int = Field(..., description="Expense category ID")
+    category_id: Optional[int] = Field(None, description="Expense category ID (optional for credit card imports)")
     travel_expense_report_id: Optional[int] = Field(None, description="Travel expense report ID (omit or null for reimbursement)")
-    purpose: str = Field(..., min_length=1, max_length=500, description="Purpose of expense")
+    purpose: Optional[str] = Field(None, max_length=500, description="Purpose of expense (optional for credit card imports)")
     document_type: str = Field(..., description="Document type (Boleta/Factura)")
     boleta_supplier: Optional[str] = Field(None, max_length=200, description="Boleta supplier name")
     factura_supplier_id: Optional[int] = Field(None, description="Factura supplier ID")
@@ -21,11 +21,13 @@ class ExpenseBase(BaseModel):
     country_id: Optional[int] = Field(None, description="Country where expense occurred (required for reimbursement)")
     currency_id: Optional[int] = Field(None, description="Currency ID (required for reimbursement)")
     amount: Decimal = Field(..., gt=0, description="Expense amount")
-    document_number: str = Field(..., min_length=1, max_length=100, description="Document number")
+    document_number: Optional[str] = Field(None, max_length=100, description="Document number (optional for credit card imports)")
     taxable: Optional[str] = Field("No", description="Taxable option (Si/No)")
     tax_id: Optional[int] = Field(None, description="Tax ID for taxable invoices")
     document_file: Optional[str] = Field(None, max_length=500, description="Document file path")
     rejection_reason: Optional[str] = Field(None, max_length=300, description="Rejection reason")
+    import_source: Optional[str] = Field(None, description="Import source (MANUAL/CREDIT_CARD)")
+    credit_card_expense_id: Optional[int] = Field(None, description="Credit card expense ID if imported")
 
 
 class ExpenseCreate(ExpenseBase):

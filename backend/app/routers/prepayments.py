@@ -58,6 +58,10 @@ async def get_prepayments(
         else:
             # Default: users see only their own prepayments
             query = query.filter(Prepayment.requesting_user_id == current_user.id)
+    else:
+        # Superuser: apply user filter if provided
+        if user_id:
+            query = query.filter(Prepayment.requesting_user_id == user_id)
     
     # Apply search filter
     if search:

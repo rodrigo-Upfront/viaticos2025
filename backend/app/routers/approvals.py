@@ -760,6 +760,24 @@ async def submit_report(
             status_code=status.HTTP_400_BAD_REQUEST, 
             detail="Cannot submit report for approval without expenses. Please add at least one expense before submitting."
         )
+    
+    # Validate that all credit card imported expenses are complete
+    incomplete_expenses = []
+    for expense in report.expenses:
+        if (expense.import_source == 'CREDIT_CARD' and 
+            (not expense.category_id or 
+             not expense.purpose or 
+             expense.purpose.strip() == '' or
+             not expense.document_number or
+             expense.document_number.strip() == '')):
+            incomplete_expenses.append(expense.id)
+    
+    if incomplete_expenses:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot submit report with incomplete credit card expenses. "
+                   f"Please complete category, purpose, and document number for expenses: {', '.join(map(str, incomplete_expenses))}"
+        )
 
     requester = report.requesting_user
     if not requester or requester.supervisor_id is None:

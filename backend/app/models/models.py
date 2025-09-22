@@ -321,13 +321,85 @@ class TravelExpenseReport(Base):
 
 
 
+# Credit Card Statement Import Models
+class CreditCardStatement(Base):
+    __tablename__ = "credit_card_statements"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    filename = Column(String(255), nullable=False)
+    original_filename = Column(String(255), nullable=False)
+    upload_date = Column(DateTime(timezone=True), server_default=func.now())
+    uploaded_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    status = Column(String(50), default="UPLOADED", nullable=False)  # UPLOADED, PROCESSED, COMPLETED
+    total_records = Column(Integer, nullable=True)
+    processed_records = Column(Integer, nullable=True)
+    validation_errors = Column(JSON, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    uploaded_by = relationship("User")
+    transactions = relationship("CreditCardTransaction", back_populates="statement")
+    consolidated_expenses = relationship("CreditCardConsolidatedExpense", back_populates="statement")
+
+
+class CreditCardTransaction(Base):
+    __tablename__ = "credit_card_transactions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    statement_id = Column(Integer, ForeignKey("credit_card_statements.id"), nullable=False)
+    credit_card_number = Column(String(50), nullable=False)
+    transaction_type = Column(String(50), nullable=False)  # CONSUMO, CARGO ACUM.CPRA.EXTERIOR, etc.
+    currency_code = Column(String(10), nullable=False)
+    amount = Column(Numeric(12, 2), nullable=False)
+    transaction_date = Column(Date, nullable=False)
+    merchant = Column(String(255), nullable=True)
+    description = Column(Text, nullable=True)
+    raw_data = Column(JSON, nullable=True)  # Store all CSV columns
+    matched_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    consolidated_expense_id = Column(Integer, ForeignKey("credit_card_consolidated_expenses.id"), nullable=True)
+    status = Column(String(50), default="PENDING", nullable=False)  # PENDING, MATCHED, CONSOLIDATED, PROCESSED
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    statement = relationship("CreditCardStatement", back_populates="transactions")
+    matched_user = relationship("User")
+    consolidated_expense = relationship("CreditCardConsolidatedExpense", back_populates="source_transactions")
+
+
+class CreditCardConsolidatedExpense(Base):
+    __tablename__ = "credit_card_consolidated_expenses"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    statement_id = Column(Integer, ForeignKey("credit_card_statements.id"), nullable=False)
+    credit_card_number = Column(String(50), nullable=False)
+    currency_code = Column(String(10), nullable=False)
+    total_amount = Column(Numeric(12, 2), nullable=False)
+    expense_date = Column(Date, nullable=False)  # max date from group
+    expense_description = Column(String(500), nullable=False)
+    supplier_name = Column(String(200), nullable=False)
+    transaction_count = Column(Integer, nullable=False)
+    source_transaction_ids = Column(JSON, nullable=False)  # Array of transaction IDs
+    matched_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    associated_prepayment_id = Column(Integer, ForeignKey("prepayments.id"), nullable=True)
+    created_expense_id = Column(Integer, ForeignKey("expenses.id"), nullable=True)
+    status = Column(String(50), default="PENDING", nullable=False)  # PENDING, PREPAYMENT_CREATED, EXPENSE_CREATED
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    statement = relationship("CreditCardStatement", back_populates="consolidated_expenses")
+    matched_user = relationship("User")
+    associated_prepayment = relationship("Prepayment")
+    source_transactions = relationship("CreditCardTransaction", back_populates="consolidated_expense")
+
+
 class Expense(Base):
     __tablename__ = "expenses"
     
     id = Column(Integer, primary_key=True, index=True)
-    category_id = Column(Integer, ForeignKey("expense_categories.id"), nullable=False)
+    category_id = Column(Integer, ForeignKey("expense_categories.id"), nullable=True)  # Allow NULL for credit card imports
     travel_expense_report_id = Column(Integer, ForeignKey("travel_expense_reports.id"), nullable=True)
-    purpose = Column(String(500), nullable=False)
+    purpose = Column(String(500), nullable=True)  # Allow NULL for credit card imports
     document_type = Column(SQLEnum(DocumentType), nullable=False)
     boleta_supplier = Column(String(200), nullable=True)
     factura_supplier_id = Column(Integer, ForeignKey("factura_suppliers.id"), nullable=True)
@@ -335,12 +407,15 @@ class Expense(Base):
     country_id = Column(Integer, ForeignKey("countries.id"), nullable=False)
     currency_id = Column(Integer, ForeignKey("currencies.id"), nullable=False)
     amount = Column(Numeric(12, 2), nullable=False)
-    document_number = Column(String(100), nullable=False)
+    document_number = Column(String(100), nullable=True)  # Allow NULL for credit card imports
     taxable = Column(SQLEnum(TaxableOption), default=TaxableOption.NO, nullable=True)
     tax_id = Column(Integer, ForeignKey("taxes.id"), nullable=True)  # Tax for taxable invoices
     sap_invoice_number = Column(String(50), nullable=True)  # SAP invoice number for FACTURA expenses
     document_file = Column(String(500), nullable=True)
     rejection_reason = Column(String(300), nullable=True)
+    # Credit card import tracking fields
+    import_source = Column(String(50), nullable=True)  # 'MANUAL', 'CREDIT_CARD'
+    credit_card_expense_id = Column(Integer, ForeignKey("credit_card_consolidated_expenses.id"), nullable=True)
     status = Column(SQLEnum(ExpenseStatus), default=ExpenseStatus.PENDING, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

@@ -406,10 +406,11 @@ async def create_expense(
     """
     Create a new expense
     """
-    # Verify related entities exist
-    category = db.query(ExpenseCategory).filter(ExpenseCategory.id == expense_data.category_id).first()
-    if not category:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found")
+    # Verify related entities exist (category is optional for credit card imports)
+    if expense_data.category_id:
+        category = db.query(ExpenseCategory).filter(ExpenseCategory.id == expense_data.category_id).first()
+        if not category:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found")
     
     report = None
     if expense_data.travel_expense_report_id:
