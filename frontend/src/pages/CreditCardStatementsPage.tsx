@@ -389,6 +389,17 @@ const CreditCardStatementsPage: React.FC = () => {
                             <ViewIcon />
                           </IconButton>
                         </Tooltip>
+                        {statement.status === 'PROCESSED' && (
+                          <Tooltip title="Create Prepayments">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleViewDetails(statement.id)}
+                              color="primary"
+                            >
+                              <AccountBalanceIcon />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                         {(statement.status === 'UPLOADED' || statement.status === 'VALIDATION_ERRORS') && (
                           <Tooltip title="Delete">
                             <IconButton
