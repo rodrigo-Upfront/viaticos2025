@@ -85,13 +85,28 @@ const CreditCardPrepaymentFormModal: React.FC<CreditCardPrepaymentFormModalProps
     
     userCurrencyCombinations.forEach((combo) => {
       const key = `${combo.user_id}_${combo.currency_code}`;
+      
+      // Calculate min/max dates from consolidated expenses for this combination
+      const userExpenses = combo.consolidated_expenses || [];
+      let minDate = '';
+      let maxDate = '';
+      
+      if (userExpenses.length > 0) {
+        const dates = userExpenses.map(exp => new Date(exp.expense_date));
+        const minDateObj = new Date(Math.min(...dates.map(d => d.getTime())));
+        const maxDateObj = new Date(Math.max(...dates.map(d => d.getTime())));
+        
+        minDate = minDateObj.toISOString().split('T')[0];
+        maxDate = maxDateObj.toISOString().split('T')[0];
+      }
+      
       initialData[key] = {
         user_id: combo.user_id,
         currency_code: combo.currency_code,
         reason: '',
         country_id: 0,
-        start_date: '',
-        end_date: '',
+        start_date: minDate,
+        end_date: maxDate,
         comment: '',
       };
     });
@@ -183,10 +198,10 @@ const CreditCardPrepaymentFormModal: React.FC<CreditCardPrepaymentFormModalProps
                     <TableCell>{t('reports.amount')}</TableCell>
                     <TableCell>{t('reports.transactions')}</TableCell>
                     <TableCell width="200">{t('prepayments.reason')} *</TableCell>
-                    <TableCell width="150">{t('common.country')} *</TableCell>
-                    <TableCell width="150">{t('common.startDate')} *</TableCell>
-                    <TableCell width="150">{t('common.endDate')} *</TableCell>
-                    <TableCell width="200">{t('common.comments')}</TableCell>
+                    <TableCell width="150">{t('prepayments.country')} *</TableCell>
+                    <TableCell width="150">{t('prepayments.startDate')} *</TableCell>
+                    <TableCell width="150">{t('prepayments.endDate')} *</TableCell>
+                    <TableCell width="200">{t('prepayments.comments')}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
