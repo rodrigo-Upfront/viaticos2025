@@ -283,6 +283,7 @@ const CreditCardStatementsPage: React.FC = () => {
                       <TableHead>
                         <TableRow>
                           <TableCell>{t('reports.filename')}</TableCell>
+                          <TableCell>{t('reports.uploadedBy')}</TableCell>
                           <TableCell>{t('reports.uploadDate')}</TableCell>
                           <TableCell>{t('reports.status')}</TableCell>
                           <TableCell>{t('reports.records')}</TableCell>
@@ -295,6 +296,11 @@ const CreditCardStatementsPage: React.FC = () => {
                             <TableCell>
                               <Typography variant="body2" noWrap>
                                 {statement.original_filename}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2">
+                                {statement.uploaded_by_name || 'Unknown'}
                               </Typography>
                             </TableCell>
                             <TableCell>

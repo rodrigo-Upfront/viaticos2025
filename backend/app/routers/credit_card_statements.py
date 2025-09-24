@@ -12,7 +12,7 @@ from sqlalchemy import desc
 from app.database.connection import get_db
 from app.models.models import (
     User, CreditCardStatement, CreditCardTransaction, 
-    CreditCardConsolidatedExpense, Currency, Country
+    CreditCardConsolidatedExpense, Currency, Country, UserProfile
 )
 from app.schemas.credit_card_schemas import (
     CreditCardStatementCreate, CreditCardStatementResponse, CreditCardStatementList,
@@ -35,6 +35,13 @@ async def upload_credit_card_statement(
     """
     Upload a credit card statement CSV file
     """
+    # Check if user has access to credit card statements
+    if not (current_user.is_superuser or current_user.profile == UserProfile.TREASURY):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access to credit card statements is restricted to treasury and superusers"
+        )
+    
     # Validate file type
     if not file.filename.endswith('.csv'):
         raise HTTPException(
@@ -166,14 +173,17 @@ async def list_credit_card_statements(
     """
     List credit card statements
     """
-    # Build query based on user permissions
+    # Check if user has access to credit card statements
+    if not (current_user.is_superuser or current_user.profile == UserProfile.TREASURY):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access to credit card statements is restricted to treasury and superusers"
+        )
+    
+    # Build query - treasury and superusers can see all statements
     query = db.query(CreditCardStatement).options(
         joinedload(CreditCardStatement.uploaded_by)
     )
-    
-    # Non-superusers can only see their own statements
-    if not current_user.is_superuser:
-        query = query.filter(CreditCardStatement.uploaded_by_user_id == current_user.id)
     
     # Get total count
     total = query.count()
@@ -229,19 +239,19 @@ async def get_credit_card_statement(
     """
     Get credit card statement details
     """
+    # Check if user has access to credit card statements
+    if not (current_user.is_superuser or current_user.profile == UserProfile.TREASURY):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access to credit card statements is restricted to treasury and superusers"
+        )
+    
     statement = db.query(CreditCardStatement).options(
         joinedload(CreditCardStatement.uploaded_by)
     ).filter(CreditCardStatement.id == statement_id).first()
     
     if not statement:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Statement not found")
-    
-    # Check permissions
-    if not current_user.is_superuser and statement.uploaded_by_user_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions to view this statement"
-        )
     
     # Count related records
     transaction_count = db.query(CreditCardTransaction).filter(
@@ -279,19 +289,19 @@ async def get_user_currency_combinations(
     """
     Get user-currency combinations for prepayment form
     """
+    # Check if user has access to credit card statements
+    if not (current_user.is_superuser or current_user.profile == UserProfile.TREASURY):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access to credit card statements is restricted to treasury and superusers"
+        )
+    
     statement = db.query(CreditCardStatement).filter(
         CreditCardStatement.id == statement_id
     ).first()
     
     if not statement:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Statement not found")
-    
-    # Check permissions
-    if not current_user.is_superuser and statement.uploaded_by_user_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions to view this statement"
-        )
     
     combinations = CreditCardService.get_user_currency_combinations(statement_id, db)
     return combinations
@@ -306,19 +316,19 @@ async def get_statement_transactions(
     """
     Get transactions for a credit card statement
     """
+    # Check if user has access to credit card statements
+    if not (current_user.is_superuser or current_user.profile == UserProfile.TREASURY):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access to credit card statements is restricted to treasury and superusers"
+        )
+    
     statement = db.query(CreditCardStatement).filter(
         CreditCardStatement.id == statement_id
     ).first()
     
     if not statement:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Statement not found")
-    
-    # Check permissions
-    if not current_user.is_superuser and statement.uploaded_by_user_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions to view this statement"
-        )
     
     transactions = db.query(CreditCardTransaction).filter(
         CreditCardTransaction.statement_id == statement_id
@@ -360,19 +370,19 @@ async def get_statement_consolidated_expenses(
     """
     Get consolidated expenses for a credit card statement
     """
+    # Check if user has access to credit card statements
+    if not (current_user.is_superuser or current_user.profile == UserProfile.TREASURY):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access to credit card statements is restricted to treasury and superusers"
+        )
+    
     statement = db.query(CreditCardStatement).filter(
         CreditCardStatement.id == statement_id
     ).first()
     
     if not statement:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Statement not found")
-    
-    # Check permissions
-    if not current_user.is_superuser and statement.uploaded_by_user_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions to view this statement"
-        )
     
     consolidated_expenses = db.query(CreditCardConsolidatedExpense).filter(
         CreditCardConsolidatedExpense.statement_id == statement_id
@@ -382,6 +392,11 @@ async def get_statement_consolidated_expenses(
     for expense in consolidated_expenses:
         # Get related data manually to avoid relationship issues
         matched_user = db.query(User).filter(User.id == expense.matched_user_id).first() if expense.matched_user_id else None
+        prepayment_reason = None
+        if expense.associated_prepayment_id:
+            from app.models.models import Prepayment
+            prepayment = db.query(Prepayment).filter(Prepayment.id == expense.associated_prepayment_id).first()
+            prepayment_reason = prepayment.reason if prepayment else None
         
         response = CreditCardConsolidatedExpenseResponse(
             id=expense.id,
@@ -400,7 +415,7 @@ async def get_statement_consolidated_expenses(
             status=expense.status,
             created_at=expense.created_at,
             matched_user_name=f"{matched_user.name} {matched_user.surname}" if matched_user else None,
-            associated_prepayment_reason=None,  # Simplified for now
+            associated_prepayment_reason=prepayment_reason,
             created_expense_purpose=None  # Simplified for now
         )
         response_expenses.append(response)
@@ -416,10 +431,15 @@ async def get_dashboard_stats(
     """
     Get dashboard statistics for credit card statements
     """
-    # Build query based on user permissions
+    # Check if user has access to credit card statements
+    if not (current_user.is_superuser or current_user.profile == UserProfile.TREASURY):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access to credit card statements is restricted to treasury and superusers"
+        )
+    
+    # Build query - treasury and superusers can see all statements
     base_query = db.query(CreditCardStatement)
-    if not current_user.is_superuser:
-        base_query = base_query.filter(CreditCardStatement.uploaded_by_user_id == current_user.id)
     
     # Get statistics
     total_statements = base_query.count()

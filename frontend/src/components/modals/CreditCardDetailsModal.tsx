@@ -217,18 +217,18 @@ const CreditCardDetailsModal: React.FC<CreditCardDetailsModalProps> = ({
                 </Box>
                 <Box>
                   <Typography variant="caption" color="textSecondary">
-                    {t('reports.uploadedBy')}
+                    {t('reports.prepayment')}s
                   </Typography>
                   <Typography variant="body2">
-                    {statement.uploaded_by_name}
+                    {Array.from(new Set(consolidatedExpenses.filter(exp => exp.associated_prepayment_id).map(exp => exp.associated_prepayment_id))).length}
                   </Typography>
                 </Box>
                 <Box>
                   <Typography variant="caption" color="textSecondary">
-                    {t('reports.prepayment')}s
+                    {t('reports.uploadedBy')}
                   </Typography>
                   <Typography variant="body2">
-                    {consolidatedExpenses.filter(exp => exp.associated_prepayment_id).length}
+                    {statement.uploaded_by_name}
                   </Typography>
                 </Box>
               </Box>
@@ -253,19 +253,15 @@ const CreditCardDetailsModal: React.FC<CreditCardDetailsModalProps> = ({
             </Paper>
 
             {/* Tabs for detailed views */}
-            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+            <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Tabs value={tabValue} onChange={handleTabChange}>
                 <Tab icon={<AccountBalanceIcon />} label={`${t('reports.consolidated')} (${consolidatedExpenses.length})`} />
                 <Tab icon={<ReceiptIcon />} label={`${t('reports.transactions')} (${transactions.length})`} />
               </Tabs>
-            </Box>
-
-            <TabPanel value={tabValue} index={0}>
-              {/* Consolidated Expenses Tab */}
               
-              {/* Prepayment Filter */}
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-                <FormControl size="small" sx={{ minWidth: 200 }}>
+              {/* Prepayment Filter - only show on consolidated tab */}
+              {tabValue === 0 && (
+                <FormControl size="small" sx={{ minWidth: 200, mr: 2 }}>
                   <InputLabel>{t('reports.prepayment')} Filter</InputLabel>
                   <Select
                     value={selectedPrepaymentFilter}
@@ -289,8 +285,11 @@ const CreditCardDetailsModal: React.FC<CreditCardDetailsModalProps> = ({
                     })}
                   </Select>
                 </FormControl>
-              </Box>
-              
+              )}
+            </Box>
+
+            <TabPanel value={tabValue} index={0}>
+              {/* Consolidated Expenses Tab */}
               <TableContainer component={Paper}>
                 <Table size="small">
                   <TableHead>

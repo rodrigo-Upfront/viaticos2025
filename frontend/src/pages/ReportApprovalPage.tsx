@@ -109,6 +109,9 @@ interface Expense {
   country_name: string;
   document_number: string;
   taxable: string;
+  tax_id?: number;
+  tax_code?: string;
+  tax_regime?: string;
   document_file?: string;
   comments?: string;
   status: string;
@@ -575,6 +578,9 @@ const ReportApprovalPage: React.FC = () => {
       amount: parseFloat(expense.amount),
       document_number: expense.document_number,
       taxable: expense.taxable as 'Si' | 'No',
+      tax_id: expense.tax_id,
+      tax_code: expense.tax_code,
+      tax_regime: expense.tax_regime,
       document_file: expense.document_file,
       comments: expense.comments || expense.rejection_reason || undefined,
       status: (expense.status.toLowerCase() === 'rejected' ? 'pending' : expense.status.toLowerCase()) as 'pending' | 'in_process' | 'approved'

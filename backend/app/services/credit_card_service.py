@@ -91,8 +91,9 @@ class CreditCardService:
                         unmatched_cards[card_display] = unmatched_cards.get(card_display, 0) + 1
                         continue
                     
-                    # Validate currency
-                    currency_code = CreditCardService._map_currency_code(row['moneda_origen'])
+                    # Validate currency - use 'moneda' column, fallback to 'moneda_origen' if 'LOC'
+                    currency_source = row['moneda'] if row['moneda'] != 'LOC' else row['moneda_origen']
+                    currency_code = CreditCardService._map_currency_code(currency_source)
                     if currency_code not in currencies:
                         missing_currencies[currency_code] = missing_currencies.get(currency_code, 0) + 1
                         continue

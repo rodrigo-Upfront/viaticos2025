@@ -342,8 +342,11 @@
     "currency": "Moneda",
     "amount": "Monto",
     "close": "Cerrar",
-    "view": "Ver",
+    "view": "Ver", 
     "delete": "Eliminar",
+    "processedRecords": "Procesados {{count}} registros. Listo para crear anticipos.",
+    "readyForPrepaymentCreation": "Listo para Crear Anticipos:",
+    "notFound": "No encontrado",
     "creditCardStatuses": {
       "UPLOADED": "Subido",
       "PROCESSED": "Procesado", 

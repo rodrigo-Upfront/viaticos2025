@@ -175,8 +175,8 @@ const CreditCardUploadModal: React.FC<CreditCardUploadModalProps> = ({
                   sx={{ mb: 2 }}
                 >
                   <Typography variant="body2">
-                    Processed {uploadResult.total_records} records.
-                    {hasValidationErrors ? ' Some validation errors found.' : ' Ready to create prepayments.'}
+                    Procesados {uploadResult.total_records} registros.
+                    {hasValidationErrors ? ' Se encontraron errores de validación.' : ' Listo para crear anticipos.'}
                   </Typography>
                 </Alert>
 
@@ -215,7 +215,7 @@ const CreditCardUploadModal: React.FC<CreditCardUploadModalProps> = ({
                 {!hasValidationErrors && uploadResult.user_currency_combinations.length > 0 && (
                   <Paper sx={{ p: 2, bgcolor: 'success.50' }}>
                     <Typography variant="h6" color="success.main" gutterBottom>
-                      Ready for Prepayment Creation:
+                      Listo para Crear Anticipos:
                     </Typography>
                     {uploadResult.user_currency_combinations.map((combo, index) => (
                       <Typography key={index} variant="body2">
@@ -243,7 +243,7 @@ const CreditCardUploadModal: React.FC<CreditCardUploadModalProps> = ({
               variant="contained"
               startIcon={<CloudUploadIcon />}
             >
-              {uploading ? 'Uploading...' : 'Upload & Process'}
+              {uploading ? 'Subiendo...' : 'Subir y Procesar'}
             </Button>
           )}
           {canProceed && (

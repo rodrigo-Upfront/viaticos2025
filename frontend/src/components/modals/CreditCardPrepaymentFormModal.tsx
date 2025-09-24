@@ -198,7 +198,7 @@ const CreditCardPrepaymentFormModal: React.FC<CreditCardPrepaymentFormModalProps
                     <TableCell>{t('reports.amount')}</TableCell>
                     <TableCell>{t('reports.transactions')}</TableCell>
                     <TableCell width="200">{t('prepayments.reason')} *</TableCell>
-                    <TableCell width="150">{t('prepayments.country')} *</TableCell>
+                    <TableCell width="150">{t('common.country')} *</TableCell>
                     <TableCell width="150">{t('prepayments.startDate')} *</TableCell>
                     <TableCell width="150">{t('prepayments.endDate')} *</TableCell>
                     <TableCell width="200">{t('prepayments.comments')}</TableCell>
@@ -239,7 +239,7 @@ const CreditCardPrepaymentFormModal: React.FC<CreditCardPrepaymentFormModalProps
                           <TextField
                             size="small"
                             fullWidth
-                            placeholder="Travel purpose"
+                            placeholder="Propósito del viaje"
                             value={data.reason || ''}
                             onChange={(e) => updateFormData(key, 'reason', e.target.value)}
                             required
@@ -247,11 +247,11 @@ const CreditCardPrepaymentFormModal: React.FC<CreditCardPrepaymentFormModalProps
                         </TableCell>
                         <TableCell>
                           <FormControl size="small" fullWidth required>
-                            <InputLabel>Country</InputLabel>
+                            <InputLabel>País</InputLabel>
                             <Select
                               value={data.country_id || ''}
                               onChange={(e) => updateFormData(key, 'country_id', e.target.value)}
-                              label="Country"
+                              label="País"
                             >
                               {countries.map((country) => (
                                 <MenuItem key={country.id} value={country.id}>
@@ -291,7 +291,7 @@ const CreditCardPrepaymentFormModal: React.FC<CreditCardPrepaymentFormModalProps
                           <TextField
                             size="small"
                             fullWidth
-                            placeholder="Additional comments"
+                            placeholder="Comentarios adicionales"
                             value={data.comment || ''}
                             onChange={(e) => updateFormData(key, 'comment', e.target.value)}
                             multiline
@@ -325,7 +325,7 @@ const CreditCardPrepaymentFormModal: React.FC<CreditCardPrepaymentFormModalProps
             variant="contained"
             startIcon={<SaveIcon />}
           >
-            {processing ? 'Creating...' : 'Create Prepayments'}
+            {processing ? 'Creando...' : 'Crear Anticipos'}
           </Button>
         </DialogActions>
       </Dialog>

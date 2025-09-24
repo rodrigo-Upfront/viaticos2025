@@ -168,8 +168,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { key: 'prepayments', icon: <Payment />, path: '/prepayments', count: counts.prepayments },
     { key: 'expenses', icon: <Receipt />, path: '/expenses', count: counts.expenses },
     { key: 'reports', icon: <Assessment />, path: '/reports', count: counts.reports },
-    { key: 'creditCardStatements', icon: <CreditCard />, path: '/credit-card-statements' },
   ];
+
+  // Add credit card statements only for Treasury and Super Users
+  if (user?.is_superuser || user?.profile === 'TREASURY') {
+    navigationItems.push({ key: 'creditCardStatements', icon: <CreditCard />, path: '/credit-card-statements' });
+  }
 
   // Add admin/approver items
   const dynamicItems: NavItem[] = [];
