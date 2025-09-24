@@ -43,6 +43,7 @@ import creditCardService, {
 } from '../services/creditCardService';
 import CreditCardUploadModal from '../components/modals/CreditCardUploadModal';
 import CreditCardDetailsModal from '../components/modals/CreditCardDetailsModal';
+import CreditCardPrepaymentFormModal from '../components/modals/CreditCardPrepaymentFormModal';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -75,6 +76,8 @@ const CreditCardStatementsPage: React.FC = () => {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [selectedStatementId, setSelectedStatementId] = useState<number | null>(null);
+  const [continueProcessingModalOpen, setContinueProcessingModalOpen] = useState(false);
+  const [statementToContinue, setStatementToContinue] = useState<CreditCardStatement | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [statementToDelete, setStatementToDelete] = useState<CreditCardStatement | null>(null);
   const [snackbar, setSnackbar] = useState<{
@@ -129,6 +132,19 @@ const CreditCardStatementsPage: React.FC = () => {
   const handleViewDetails = (statementId: number) => {
     setSelectedStatementId(statementId);
     setDetailsModalOpen(true);
+  };
+
+  const handleContinueProcessing = async (statement: CreditCardStatement) => {
+    // For now, just open the details modal and let user see the consolidated expenses
+    // They can then manually create prepayments
+    setSelectedStatementId(statement.id);
+    setDetailsModalOpen(true);
+    
+    setSnackbar({
+      open: true,
+      message: 'View the Consolidated tab to see expenses ready for prepayment creation',
+      severity: 'info',
+    });
   };
 
   const handleDeleteClick = (statement: CreditCardStatement) => {
@@ -393,7 +409,7 @@ const CreditCardStatementsPage: React.FC = () => {
                           <Tooltip title="Create Prepayments">
                             <IconButton
                               size="small"
-                              onClick={() => handleViewDetails(statement.id)}
+                              onClick={() => handleContinueProcessing(statement)}
                               color="primary"
                             >
                               <AccountBalanceIcon />
@@ -444,6 +460,29 @@ const CreditCardStatementsPage: React.FC = () => {
         statementId={selectedStatementId}
         onProcessingComplete={loadData}
       />
+
+      {/* Continue Processing Modal */}
+      {statementToContinue && (
+        <CreditCardPrepaymentFormModal
+          open={continueProcessingModalOpen}
+          onClose={() => {
+            setContinueProcessingModalOpen(false);
+            setStatementToContinue(null);
+          }}
+          onSuccess={() => {
+            setContinueProcessingModalOpen(false);
+            setStatementToContinue(null);
+            loadData();
+            setSnackbar({
+              open: true,
+              message: 'Prepayments created successfully',
+              severity: 'success',
+            });
+          }}
+          statementId={statementToContinue.id}
+          userCurrencyCombinations={[]} // Will be loaded by the modal
+        />
+      )}
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>

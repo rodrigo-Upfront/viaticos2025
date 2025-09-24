@@ -21,6 +21,10 @@ import {
   LinearProgress,
   IconButton,
   Tooltip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import {
   Visibility as VisibilityIcon,
@@ -79,6 +83,7 @@ const CreditCardDetailsModal: React.FC<CreditCardDetailsModalProps> = ({
   const [consolidatedExpenses, setConsolidatedExpenses] = useState<CreditCardConsolidatedExpense[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
+  const [selectedPrepaymentFilter, setSelectedPrepaymentFilter] = useState<number | ''>('');
 
   const getDetailsStatusColor = (status: string): 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' => {
     switch (status) {
@@ -218,6 +223,14 @@ const CreditCardDetailsModal: React.FC<CreditCardDetailsModalProps> = ({
                     {statement.uploaded_by_name}
                   </Typography>
                 </Box>
+                <Box>
+                  <Typography variant="caption" color="textSecondary">
+                    {t('reports.prepayment')}s
+                  </Typography>
+                  <Typography variant="body2">
+                    {consolidatedExpenses.filter(exp => exp.associated_prepayment_id).length}
+                  </Typography>
+                </Box>
               </Box>
 
               {statement.validation_errors && (
@@ -249,6 +262,35 @@ const CreditCardDetailsModal: React.FC<CreditCardDetailsModalProps> = ({
 
             <TabPanel value={tabValue} index={0}>
               {/* Consolidated Expenses Tab */}
+              
+              {/* Prepayment Filter */}
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+                <FormControl size="small" sx={{ minWidth: 200 }}>
+                  <InputLabel>{t('reports.prepayment')} Filter</InputLabel>
+                  <Select
+                    value={selectedPrepaymentFilter}
+                    onChange={(e) => setSelectedPrepaymentFilter(e.target.value as number | '')}
+                    label={`${t('reports.prepayment')} Filter`}
+                  >
+                    <MenuItem value="">
+                      <em>All {t('reports.prepayment')}s</em>
+                    </MenuItem>
+                    {Array.from(new Set(
+                      consolidatedExpenses
+                        .filter(exp => exp.associated_prepayment_id)
+                        .map(exp => exp.associated_prepayment_id)
+                    )).map((prepaymentId) => {
+                      const expense = consolidatedExpenses.find(exp => exp.associated_prepayment_id === prepaymentId);
+                      return (
+                        <MenuItem key={prepaymentId} value={prepaymentId}>
+                          #{prepaymentId} {expense?.associated_prepayment_reason || 'No reason'}
+                        </MenuItem>
+                      );
+                    })}
+                  </Select>
+                </FormControl>
+              </Box>
+              
               <TableContainer component={Paper}>
                 <Table size="small">
                   <TableHead>
@@ -266,7 +308,12 @@ const CreditCardDetailsModal: React.FC<CreditCardDetailsModalProps> = ({
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {consolidatedExpenses.map((expense) => (
+                    {consolidatedExpenses
+                      .filter(expense => 
+                        selectedPrepaymentFilter === '' || 
+                        expense.associated_prepayment_id === selectedPrepaymentFilter
+                      )
+                      .map((expense) => (
                       <TableRow key={expense.id}>
                         <TableCell>
                           {format(new Date(expense.expense_date), 'MMM dd, yyyy')}
