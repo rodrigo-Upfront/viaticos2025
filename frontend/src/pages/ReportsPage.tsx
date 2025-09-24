@@ -571,16 +571,8 @@ const ReportsPage: React.FC = () => {
             variant="contained"
             startIcon={<AddIcon />}
             onClick={openCreateReimbursement}
-            sx={{ mr: 2 }}
           >
-{t('reports.createReimbursement')}
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<FileDownloadIcon />}
-            onClick={handleGenerateReport}
-          >
-{t('reports.generateReport')}
+            {t('reports.createReimbursement')}
           </Button>
         </Box>
       </Box>
@@ -871,20 +863,6 @@ const ReportsPage: React.FC = () => {
                         <SendIcon />
                       </IconButton>
                     )}
-                    <IconButton
-                      size="small"
-                      onClick={() => {
-                        setSnackbar({
-                          open: true,
-                          message: `Download individual report functionality not yet implemented. In production, this would download report #${report.id} as PDF.`,
-                          severity: 'info'
-                        });
-                      }}
-                      color="primary"
-                      disabled={loading.action}
-                    >
-                      <DownloadIcon />
-                    </IconButton>
                   </TableCell>
                 </TableRow>
               ))

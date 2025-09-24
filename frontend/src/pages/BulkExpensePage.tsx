@@ -39,6 +39,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import FileAttachmentModal from '../components/modals/FileAttachmentModal';
+import ExpenseAlertDialog from '../components/forms/ExpenseAlertDialog';
 import apiClient from '../services/apiClient';
 
 interface TravelExpenseReport {
@@ -141,6 +142,23 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
     budget_status: string;
     currency: string;
   } | null>(null);
+  const [alertDialog, setAlertDialog] = useState<{
+    open: boolean;
+    expenseAmount: number;
+    alertAmount: number;
+    categoryName: string;
+    countryName: string;
+    currencyCode: string;
+    alertMessage?: string;
+  }>({
+    open: false,
+    expenseAmount: 0,
+    alertAmount: 0,
+    categoryName: '',
+    countryName: '',
+    currencyCode: '',
+    alertMessage: ''
+  });
 
   const steps = [
     t('expenses.selectReport'),
@@ -853,6 +871,38 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                             type="number"
                             value={row.amount || ''}
                             onChange={(e) => updateRow(row.id, 'amount', parseFloat(e.target.value) || 0)}
+                            onBlur={async () => {
+                              // Check for category alert when amount field loses focus
+                              if (row.amount > 0 && row.category_id && row.country_id && row.currency_id) {
+                                try {
+                                  const { categoryAlertService } = await import('../services/categoryAlertService');
+                                  const alertResponse = await categoryAlertService.checkExpenseAlert(
+                                    row.category_id,
+                                    row.country_id,
+                                    row.currency_id,
+                                    row.amount
+                                  );
+                                  
+                                  if (alertResponse.has_alert && alertResponse.exceeds_alert) {
+                                    const category = categories.find(c => c.id === row.category_id);
+                                    const country = countries.find(c => c.id === row.country_id);
+                                    const currency = currencies.find(c => c.id === row.currency_id);
+                                    
+                                    setAlertDialog({
+                                      open: true,
+                                      expenseAmount: row.amount,
+                                      alertAmount: alertResponse.alert_amount || 0,
+                                      categoryName: category?.name || '',
+                                      countryName: country?.name || '',
+                                      currencyCode: currency?.code || '',
+                                      alertMessage: alertResponse.alert_message || ''
+                                    });
+                                  }
+                                } catch (error) {
+                                  console.warn('Alert check failed:', error);
+                                }
+                              }
+                            }}
                             error={!!row.errors.amount}
                             InputProps={{
                               startAdornment: <InputAdornment position="start">$</InputAdornment>
@@ -999,6 +1049,19 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
         onFileSelect={handleFileSelect}
         currentFile={fileModal.currentFile}
         rowId={fileModal.rowId}
+      />
+
+      {/* Category Alert Dialog */}
+      <ExpenseAlertDialog
+        open={alertDialog.open}
+        onClose={() => setAlertDialog(prev => ({ ...prev, open: false }))}
+        onProceed={() => setAlertDialog(prev => ({ ...prev, open: false }))}
+        expenseAmount={alertDialog.expenseAmount}
+        alertAmount={alertDialog.alertAmount}
+        categoryName={alertDialog.categoryName}
+        countryName={alertDialog.countryName}
+        currencyCode={alertDialog.currencyCode}
+        alertMessage={alertDialog.alertMessage}
       />
     </Box>
   );
