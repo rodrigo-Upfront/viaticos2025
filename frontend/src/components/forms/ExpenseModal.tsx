@@ -25,6 +25,7 @@ import {
   Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import InputMask from 'react-input-mask';
 import apiClient from '../../services/apiClient';
 import { Currency } from '../../services/currencyService';
 import { categoryAlertService } from '../../services/categoryAlertService';
@@ -848,15 +849,23 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
           {/* 6. Número del documento (1/2) & 7. Categoria del gasto (1/2) */}
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label={t('expenses.documentNumber')}
+              <InputMask
+                mask="99-99999-9999999"
                 value={formData.document_number}
                 onChange={handleChange('document_number')}
-                error={!!errors.document_number}
-                helperText={errors.document_number}
-                required
-              />
+              >
+                {(inputProps: any) => (
+                  <TextField
+                    {...inputProps}
+                    fullWidth
+                    label={t('expenses.documentNumber')}
+                    placeholder="00-00000-0000000"
+                    error={!!errors.document_number}
+                    helperText={errors.document_number}
+                    required
+                  />
+                )}
+              </InputMask>
             </Grid>
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth error={!!errors.category_id} required>

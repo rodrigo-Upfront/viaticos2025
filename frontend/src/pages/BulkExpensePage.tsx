@@ -38,6 +38,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
+import InputMask from 'react-input-mask';
 import FileAttachmentModal from '../components/modals/FileAttachmentModal';
 import ExpenseAlertDialog from '../components/forms/ExpenseAlertDialog';
 import apiClient from '../services/apiClient';
@@ -834,14 +835,21 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
 
                         {/* Document Number */}
                         <TableCell>
-                          <TextField
-                            size="small"
-                            fullWidth
+                          <InputMask
+                            mask="99-99999-9999999"
                             value={row.document_number}
                             onChange={(e) => updateRow(row.id, 'document_number', e.target.value)}
-                            error={!!row.errors.document_number}
-                            placeholder={t('expenses.enterDocNumber')}
-                          />
+                          >
+                            {(inputProps: any) => (
+                              <TextField
+                                {...inputProps}
+                                size="small"
+                                fullWidth
+                                error={!!row.errors.document_number}
+                                placeholder="00-00000-0000000"
+                              />
+                            )}
+                          </InputMask>
                         </TableCell>
 
                         {/* Category */}

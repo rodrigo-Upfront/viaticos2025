@@ -624,18 +624,18 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
           </Box>
         </Box>
 
-        {mode === 'edit' && formData.status.toLowerCase() === 'rejected' && (
-          <TextField
-            fullWidth
-            label={t('prepaymentModule.rejectionReason')}
-            value={formData.rejection_reason || ''}
-            onChange={handleChange('rejection_reason')}
-            margin="normal"
-            multiline
-            rows={2}
-            InputProps={{ readOnly: true }}
-            helperText={t('prepaymentModule.providedByApprover')}
-          />
+        {mode === 'edit' && formData.status.toLowerCase() === 'rejected' && formData.rejection_reason && (
+          <Box sx={{ mt: 2, p: 2, bgcolor: 'error.50', borderRadius: 1 }}>
+            <Typography variant="subtitle2" color="error.main" gutterBottom>
+              {t('prepaymentModule.rejectionReason')}
+            </Typography>
+            <Typography variant="body2" color="error.dark" sx={{ fontStyle: 'italic' }}>
+              {formData.rejection_reason}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+              {t('prepaymentModule.providedByApprover')}
+            </Typography>
+          </Box>
         )}
       </DialogContent>
       <DialogActions>
