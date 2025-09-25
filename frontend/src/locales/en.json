@@ -181,7 +181,7 @@
     },
     "approveTitle": "Approve",
     "approveMessage": "Approve this item?",
-    "rejectTitle": "Reject {itemName}",
+    "rejectTitle": "Reject {{itemName}}",
     "rejectMessage": "Please provide a reason for rejecting this item:",
     "rejectionReason": "Rejection Reason",
     "rejectionPlaceholder": "Enter reason for rejection...",

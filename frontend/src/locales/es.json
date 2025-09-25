@@ -204,7 +204,7 @@
     },
     "approveTitle": "Aprobar",
     "approveMessage": "¿Aprobar este elemento?",
-    "rejectTitle": "Rechazar {itemName}",
+    "rejectTitle": "Rechazar {{itemName}}",
     "rejectMessage": "Por favor proporcione una razón para rechazar este elemento:",
     "rejectionReason": "Motivo de Rechazo",
     "rejectionPlaceholder": "Ingrese el motivo del rechazo...",
