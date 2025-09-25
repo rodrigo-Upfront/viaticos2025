@@ -208,6 +208,7 @@
     "rejectMessage": "Por favor proporcione una razón para rechazar este elemento:",
     "rejectionReason": "Motivo de Rechazo",
     "rejectionPlaceholder": "Ingrese el motivo del rechazo...",
+    "rejectionReasonRequired": "El motivo de rechazo es obligatorio",
     "quickApprove": "Aprobación Rápida",
     "quickReject": "Rechazo Rápido",
     "quickApproveTitle": "Aprobación Rápida",

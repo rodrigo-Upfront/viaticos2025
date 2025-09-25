@@ -346,6 +346,17 @@ const ApprovalsPage: React.FC = () => {
 
   const handleRejectConfirm = async () => {
     const { itemId, itemType, reason } = rejectionDialog;
+    
+    // Validate that rejection reason is provided
+    if (!reason || reason.trim() === '') {
+      setSnackbar({
+        open: true,
+        message: t('approvals.rejectionReasonRequired'),
+        severity: 'error'
+      });
+      return;
+    }
+    
     const item = pendingItems.find(p => p.id === itemId);
     if (!item) return;
 
@@ -1038,9 +1049,12 @@ const ApprovalsPage: React.FC = () => {
             multiline
             rows={3}
             fullWidth
+            required
             value={rejectionDialog.reason}
             onChange={(e) => setRejectionDialog({ ...rejectionDialog, reason: e.target.value })}
             placeholder={t('approvals.rejectionPlaceholder')}
+            error={rejectionDialog.reason === '' && rejectionDialog.open}
+            helperText={rejectionDialog.reason === '' && rejectionDialog.open ? t('approvals.rejectionReasonRequired') : ''}
           />
         </DialogContent>
         <DialogActions>
@@ -1054,7 +1068,7 @@ const ApprovalsPage: React.FC = () => {
             onClick={handleRejectConfirm}
             color="error"
             variant="contained"
-            disabled={loading.action}
+            disabled={loading.action || !rejectionDialog.reason.trim()}
           >
             {loading.action ? <CircularProgress size={20} /> : t('common.reject')}
           </Button>

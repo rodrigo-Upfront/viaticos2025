@@ -185,6 +185,7 @@
     "rejectMessage": "Please provide a reason for rejecting this item:",
     "rejectionReason": "Rejection Reason",
     "rejectionPlaceholder": "Enter reason for rejection...",
+    "rejectionReasonRequired": "Rejection reason is required",
     "quickApprove": "Quick Approve",
     "quickReject": "Quick Reject",
     "quickApproveTitle": "Quick Approve",
