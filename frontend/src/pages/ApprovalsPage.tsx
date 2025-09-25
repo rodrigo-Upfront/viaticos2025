@@ -468,6 +468,22 @@ const ApprovalsPage: React.FC = () => {
     return 'quick_actions';
   };
 
+  // Helper function to get status color for chips
+  const getStatusColor = (status: string | undefined): 'default' | 'primary' | 'secondary' | 'success' | 'error' | 'info' | 'warning' => {
+    if (!status) return 'default';
+    
+    const lowerStatus = status.toLowerCase();
+    
+    if (lowerStatus.includes('pending')) return 'warning';
+    if (lowerStatus.includes('approved')) return 'success';
+    if (lowerStatus.includes('rejected')) return 'error';
+    if (lowerStatus.includes('treasury')) return 'info';
+    if (lowerStatus.includes('supervisor')) return 'primary';
+    if (lowerStatus.includes('accounting')) return 'secondary';
+    
+    return 'default';
+  };
+
   // Quick approve handler for supervisor/treasury
   const handleQuickApprove = async (reportId: number) => {
     setConfirmDialog({
@@ -642,6 +658,7 @@ const ApprovalsPage: React.FC = () => {
                   <TableCell>{t('tables.requester')}</TableCell>
                   <TableCell>{t('tables.description')}</TableCell>
                   <TableCell>{t('common.amount')}</TableCell>
+                  <TableCell>{t('common.status')}</TableCell>
                   <TableCell>{t('tables.requestDate')}</TableCell>
                   <TableCell>{t('common.actions')}</TableCell>
                 </TableRow>
@@ -649,7 +666,7 @@ const ApprovalsPage: React.FC = () => {
               <TableBody>
                 {loading.pendingItems ? (
                   <TableRow>
-                    <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                    <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
                       <CircularProgress />
                       <Typography variant="body2" sx={{ mt: 1 }}>
                         Loading pending approvals...
@@ -658,7 +675,7 @@ const ApprovalsPage: React.FC = () => {
                   </TableRow>
                 ) : allPendingItems.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                    <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
                       <Typography variant="body2" color="text.secondary">
                         No pending approvals found
                       </Typography>
@@ -687,6 +704,13 @@ const ApprovalsPage: React.FC = () => {
                           ? parseFloat(item.amount || '0').toLocaleString()
                           : parseFloat(item.total_expenses || '0').toLocaleString()
                         }
+                      </TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={t(`status.${item.status?.toLowerCase()}`) || item.status || 'Pending'}
+                          color={getStatusColor(item.status)}
+                          size="small"
+                        />
                       </TableCell>
                       <TableCell>
                         {item.request_date}
@@ -785,6 +809,7 @@ const ApprovalsPage: React.FC = () => {
                   <TableCell>{t('prepayments.reason')}</TableCell>
                   <TableCell>{t('prepayments.destination')}</TableCell>
                   <TableCell>{t('common.amount')}</TableCell>
+                  <TableCell>{t('common.status')}</TableCell>
                   <TableCell>{t('tables.requestDate')}</TableCell>
                   <TableCell>{t('common.actions')}</TableCell>
                 </TableRow>
@@ -792,13 +817,13 @@ const ApprovalsPage: React.FC = () => {
               <TableBody>
                 {loading.pendingItems ? (
                   <TableRow>
-                    <TableCell colSpan={7} align="center">
+                    <TableCell colSpan={8} align="center">
                       <CircularProgress />
                     </TableCell>
                   </TableRow>
                 ) : pendingPrepayments.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} align="center">
+                    <TableCell colSpan={8} align="center">
                       <Typography variant="body2" color="textSecondary">
                         No pending prepayments
                       </Typography>
@@ -813,6 +838,13 @@ const ApprovalsPage: React.FC = () => {
                       <TableCell>{item.destination || 'Unknown'}</TableCell>
                       <TableCell>
                         {item.currency} ${parseFloat(item.amount || '0').toLocaleString()}
+                      </TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={t(`status.${item.status?.toLowerCase()}`) || item.status || 'Pending'}
+                          color={getStatusColor(item.status)}
+                          size="small"
+                        />
                       </TableCell>
                       <TableCell>{item.request_date}</TableCell>
                       <TableCell>
@@ -865,6 +897,7 @@ const ApprovalsPage: React.FC = () => {
                   <TableCell>{t('tables.totalExpenses')}</TableCell>
                   <TableCell>{t('tables.prepaidAmount')}</TableCell>
                   <TableCell>{t('tables.budgetStatus')}</TableCell>
+                  <TableCell>{t('common.status')}</TableCell>
                   <TableCell>{t('common.date')}</TableCell>
                   <TableCell>{t('common.actions')}</TableCell>
                 </TableRow>
@@ -872,13 +905,13 @@ const ApprovalsPage: React.FC = () => {
               <TableBody>
                 {loading.pendingItems ? (
                   <TableRow>
-                    <TableCell colSpan={9} align="center">
+                    <TableCell colSpan={10} align="center">
                       <CircularProgress />
                     </TableCell>
                   </TableRow>
                 ) : pendingExpenseReports.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} align="center">
+                    <TableCell colSpan={10} align="center">
                       <Typography variant="body2" color="textSecondary">
                         No pending expense reports
                       </Typography>
@@ -943,6 +976,13 @@ const ApprovalsPage: React.FC = () => {
                         ) : (
                           '-'
                         )}
+                      </TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={t(`status.${item.status?.toLowerCase()}`) || item.status || 'Pending'}
+                          color={getStatusColor(item.status)}
+                          size="small"
+                        />
                       </TableCell>
                       <TableCell>{item.report_date || item.request_date}</TableCell>
                       <TableCell>
