@@ -193,6 +193,12 @@ class SAPService:
             if not expense.category or not expense.category.account:
                 raise SAPFileGenerationError(f"Expense category for expense ID {expense.id} does not have a SAP account configured")
             
+            # Validate FACTURA supplier has SAP code
+            if not expense.factura_supplier:
+                raise SAPFileGenerationError(f"FACTURA expense {expense.id} has no supplier assigned. Please assign a supplier and retry.")
+            if not expense.factura_supplier.sap_code:
+                raise SAPFileGenerationError(f"Supplier '{expense.factura_supplier.name}' has no SAP code assigned. Please assign a SAP code and retry.")
+            
             # Calculate tax amounts if taxable
             tax_amount = ""
             tax_code = ""
@@ -240,7 +246,7 @@ class SAPService:
                 expense.document_number,              # REF_DOC_NO
                 "0000000001",                        # ITEMNO_ACC
                 report_reason,                       # HEADER_TXT
-                user.sap_code,                       # USER_SAP_CODE (user SAP code)
+                expense.factura_supplier.sap_code,   # SUPPLIER_SAP_CODE (supplier SAP code instead of user)
                 "",                                  # PROFIT_CTR (always empty)
                 expense.currency.code,               # CURRENCY
                 amount_str,                          # AMT_DOCCUR (full expense amount, negative)

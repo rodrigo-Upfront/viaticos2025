@@ -484,6 +484,26 @@ const ApprovalsPage: React.FC = () => {
     return 'default';
   };
 
+  // Helper function to get user-friendly status label
+  const getStatusLabel = (status: string | undefined): string => {
+    if (!status) return t('status.pending');
+    
+    // Convert snake_case to camelCase for translation lookup
+    const camelCaseStatus = status.toLowerCase().replace(/_(.)/g, (_, letter) => letter.toUpperCase());
+    
+    // Try to get translation, fallback to formatted status
+    const translatedStatus = t(`status.${camelCaseStatus}`, { defaultValue: '' });
+    
+    if (translatedStatus) {
+      return translatedStatus;
+    }
+    
+    // If no translation found, format the status nicely
+    return status
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, letter => letter.toUpperCase());
+  };
+
   // Quick approve handler for supervisor/treasury
   const handleQuickApprove = async (reportId: number) => {
     setConfirmDialog({
@@ -707,7 +727,7 @@ const ApprovalsPage: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <Chip 
-                          label={t(`status.${item.status?.toLowerCase()}`) || item.status || 'Pending'}
+                          label={getStatusLabel(item.status)}
                           color={getStatusColor(item.status)}
                           size="small"
                         />
@@ -841,7 +861,7 @@ const ApprovalsPage: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <Chip 
-                          label={t(`status.${item.status?.toLowerCase()}`) || item.status || 'Pending'}
+                          label={getStatusLabel(item.status)}
                           color={getStatusColor(item.status)}
                           size="small"
                         />
@@ -979,7 +999,7 @@ const ApprovalsPage: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <Chip 
-                          label={t(`status.${item.status?.toLowerCase()}`) || item.status || 'Pending'}
+                          label={getStatusLabel(item.status)}
                           color={getStatusColor(item.status)}
                           size="small"
                         />
