@@ -364,6 +364,12 @@
     "submittedFiles": "Archivos Enviados",
     "documentsSubmittedReview": "Documentos enviados para revisión de tesorería."
   },
+  "validation": {
+    "fileExceedsLimit": "El archivo '{{fileName}}' excede el límite de 10MB",
+    "filesSelected": "{{count}} archivo{{plural}} seleccionado{{plural}}",
+    "chooseFiles": "Elegir Archivos (Máx. 5)",
+    "fileMaxSize": "Tamaño máximo de archivo: 10MB. Formatos permitidos: PDF, JPEG, PNG, GIF, BMP, WebP, DOC, DOCX, XLS, XLSX"
+  },
   "status": {
     "pending": "Pendiente de Aprobación",
     "pendingSubmit": "Pendiente Rendición de Gastos",

@@ -516,7 +516,13 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
                 startIcon={<InputAdornment position="start">📎</InputAdornment>}
                 color={errors.justification_files ? 'error' : 'primary'}
               >
-{selectedFiles.length > 0 ? t('validation.filesSelected', { count: selectedFiles.length, plural: selectedFiles.length > 1 ? 's' : '' }) : t('validation.chooseFiles')}
+                {selectedFiles.length > 0 ? 
+                  t('validation.filesSelected', { 
+                    count: selectedFiles.length, 
+                    plural: selectedFiles.length > 1 ? 's' : '' 
+                  }) : 
+                  t('validation.chooseFiles')
+                }
                 <input
                   type="file"
                   multiple

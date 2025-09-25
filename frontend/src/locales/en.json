@@ -328,6 +328,12 @@
     "submittedFiles": "Submitted Files",
     "documentsSubmittedReview": "Documents submitted for treasury review."
   },
+  "validation": {
+    "fileExceedsLimit": "The file '{{fileName}}' exceeds the 10MB limit",
+    "filesSelected": "{{count}} file{{plural}} selected",
+    "chooseFiles": "Choose Files (Max 5)",
+    "fileMaxSize": "Maximum file size: 10MB. Allowed formats: PDF, JPEG, PNG, GIF, BMP, WebP, DOC, DOCX, XLS, XLSX"
+  },
   "status": {
     "pending": "Pending",
     "pendingSubmit": "Pending Submit",
