@@ -775,11 +775,11 @@ const ReportViewPage: React.FC = () => {
             {report.status === 'FUNDS_RETURN_PENDING' && (
               <Box>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  Please submit supporting documents for fund return verification.
+                  {t('reports.submitSupportingDocuments')}
                 </Typography>
                 
                 <Alert severity="info" sx={{ mb: 3 }}>
-                  You need to submit documents to proceed with the fund return process.
+                  {t('reports.needToSubmitDocuments')}
                 </Alert>
                 
                 <Button

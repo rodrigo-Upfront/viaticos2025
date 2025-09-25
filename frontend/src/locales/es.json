@@ -266,6 +266,8 @@
     "submitForApproval": "Enviar para Aprobación",
     "fundReturnDocuments": "Documentos de Devolución",
     "fundReturnApproved": "Devolución de fondos aprobada y procesada.",
+    "submitSupportingDocuments": "Por favor envíe los documentos de respaldo para verificación de devolución de fondos.",
+    "needToSubmitDocuments": "Debe enviar documentos para continuar con el proceso de devolución de fondos.",
     "creditCardStatements": "Estados de Tarjeta de Crédito",
     "uploadStatement": "Subir Estado de Cuenta",
     "creditCardImport": "Importación de Tarjeta de Crédito",
