@@ -788,7 +788,7 @@ const ReportViewPage: React.FC = () => {
                   startIcon={<SendIcon />}
                   onClick={() => setFundReturnModalOpen(true)}
                 >
-                  Submit Return Documents
+                  {t('reports.submitReturnDocuments')}
                 </Button>
               </Box>
             )}

@@ -245,6 +245,7 @@
     "fundReturnApproved": "Fund return approved and processed.",
     "submitSupportingDocuments": "Please submit supporting documents for fund return verification.",
     "needToSubmitDocuments": "You need to submit documents to proceed with the fund return process.",
+    "submitReturnDocuments": "Submit Return Documents",
     "creditCardStatements": "Credit Card Statements",
     "uploadStatement": "Upload Statement",
     "creditCardImport": "Credit Card Import",
