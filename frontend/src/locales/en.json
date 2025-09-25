@@ -332,7 +332,9 @@
     "fileExceedsLimit": "The file '{{fileName}}' exceeds the 10MB limit",
     "filesSelected": "{{count}} file{{plural}} selected",
     "chooseFiles": "Choose Files (Max 5)",
-    "fileMaxSize": "Maximum file size: 10MB. Allowed formats: PDF, JPEG, PNG, GIF, BMP, WebP, DOC, DOCX, XLS, XLSX"
+    "fileMaxSize": "Maximum file size: 10MB. Allowed formats: PDF, JPEG, PNG, GIF, BMP, WebP, DOC, DOCX, XLS, XLSX",
+    "clickToDownload": "Click to download",
+    "existingFiles": "Existing files"
   },
   "status": {
     "pending": "Pending",
@@ -743,8 +745,7 @@
     "filesSelected": "{count} file{plural} selected",
     "existingFiles": "Existing files:",
     "existingFile": "Existing file {number} • Click to download",
-    "existingFileDownload": "Existing file • Click to download",
-    "clickToDownload": "Click to download"
+    "existingFileDownload": "Existing file • Click to download"
   }
 }
 
