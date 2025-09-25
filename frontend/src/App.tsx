@@ -23,6 +23,9 @@ import SettingsPage from './pages/SettingsPage';
 import ReportApprovalPage from './pages/ReportApprovalPage';
 import ReportViewPage from './pages/ReportViewPage';
 import CreditCardStatementsPage from './pages/CreditCardStatementsPage';
+import EmailTemplatesPage from './pages/EmailTemplatesPage';
+import SMTPSettingsPage from './pages/SMTPSettingsPage';
+import EmailLogsPage from './pages/EmailLogsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Import internationalization
@@ -73,6 +76,9 @@ function App() {
                           <Route path="/users" element={<UsersPage />} />
                           <Route path="/settings" element={<SettingsPage />} />
                           <Route path="/credit-card-statements" element={<CreditCardStatementsPage />} />
+                          <Route path="/email-templates" element={<EmailTemplatesPage />} />
+                          <Route path="/smtp-settings" element={<SMTPSettingsPage />} />
+                          <Route path="/email-logs" element={<EmailLogsPage />} />
                         </Routes>
                       </Layout>
                     </ProtectedRoute>

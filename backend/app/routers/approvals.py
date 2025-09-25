@@ -17,9 +17,10 @@ from app.database.connection import get_db
 from app.models.models import (
     User, Approval, Prepayment, TravelExpenseReport, Country, Expense, ExpenseStatus,
     ApprovalStatus, EntityType, RequestStatus, UserProfile, ApprovalHistory, ApprovalAction as HistoryAction,
-    ExpenseRejectionHistory, Location, LocationCurrency
+    ExpenseRejectionHistory, Location, LocationCurrency, EmailEventType
 )
 from app.services.auth_service import AuthService, get_current_user, get_current_approver
+from app.services.notification_service import NotificationService
 from app.schemas.approval_schemas import (
     ApprovalCreate, ApprovalResponse, ApprovalList, 
     ApprovalAction, PendingApprovalItem, PendingApprovalsList,
@@ -344,6 +345,19 @@ async def submit_prepayment(
         ))
 
         db.commit()
+
+        # Send email notification for pending approval
+        try:
+            notification_service = NotificationService(db)
+            notification_service.trigger_event(
+                EmailEventType.PREPAYMENT_PENDING,
+                prepayment=prepayment,
+                requesting_user=prepayment.requesting_user
+            )
+        except Exception as e:
+            # Log email error but don't fail the submission
+            print(f"Email notification error: {str(e)}")
+
         return {"message": "Prepayment submitted for supervisor approval", "new_status": prepayment.status.value}
     except Exception as e:
         db.rollback()
@@ -524,6 +538,29 @@ async def approve_prepayment(
                 prepayment.rejection_reason = action_data.rejection_reason
 
         db.commit()
+
+        # Send email notifications
+        try:
+            notification_service = NotificationService(db)
+            requesting_user = prepayment.requesting_user
+            
+            if next_status == RequestStatus.APPROVED:
+                # Prepayment approved - notify owner
+                notification_service.trigger_event(
+                    EmailEventType.PREPAYMENT_APPROVED,
+                    prepayment=prepayment,
+                    requesting_user=requesting_user
+                )
+            elif next_status == RequestStatus.REJECTED:
+                # Prepayment rejected - notify owner
+                notification_service.trigger_event(
+                    EmailEventType.PREPAYMENT_REJECTED,
+                    prepayment=prepayment,
+                    requesting_user=requesting_user
+                )
+        except Exception as e:
+            # Log email error but don't fail the approval process
+            print(f"Email notification error: {str(e)}")
 
         response = {
             "message": message,
@@ -1826,6 +1863,18 @@ async def set_treasury_sap_record(
                 )
         
         db.commit()
+
+        # Send email notification for prepayment approval
+        try:
+            notification_service = NotificationService(db)
+            notification_service.trigger_event(
+                EmailEventType.PREPAYMENT_APPROVED,
+                prepayment=prepayment,
+                requesting_user=prepayment.requesting_user
+            )
+        except Exception as e:
+            # Log email error but don't fail the approval process
+            print(f"Email notification error: {str(e)}")
         
         return TreasuryApprovalResponse(
             success=True,

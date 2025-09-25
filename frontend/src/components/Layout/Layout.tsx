@@ -35,6 +35,9 @@ import {
   Lock,
   Security,
   CreditCard,
+  Email,
+  MailOutline,
+  History,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -184,7 +187,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   if (user?.is_superuser) {
     dynamicItems.push(
       { key: 'users', icon: <People />, path: '/users' },
-      { key: 'settings', icon: <Settings />, path: '/settings' }
+      { key: 'settings', icon: <Settings />, path: '/settings' },
+      { key: 'emailTemplates', icon: <Email />, path: '/email-templates' },
+      { key: 'smtpSettings', icon: <MailOutline />, path: '/smtp-settings' },
+      { key: 'emailLogs', icon: <History />, path: '/email-logs' }
     );
   }
 
