@@ -835,21 +835,33 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
 
                         {/* Document Number */}
                         <TableCell>
-                          <InputMask
-                            mask="99-99999-9999999"
-                            value={row.document_number}
-                            onChange={(e) => updateRow(row.id, 'document_number', e.target.value)}
-                          >
-                            {(inputProps: any) => (
-                              <TextField
-                                {...inputProps}
-                                size="small"
-                                fullWidth
-                                error={!!row.errors.document_number}
-                                placeholder="00-00000-0000000"
-                              />
-                            )}
-                          </InputMask>
+                          {row.document_type === 'FACTURA' ? (
+                            <InputMask
+                              mask="**-*****-*******"
+                              value={row.document_number}
+                              onChange={(e) => updateRow(row.id, 'document_number', e.target.value)}
+                              maskChar=""
+                            >
+                              {(inputProps: any) => (
+                                <TextField
+                                  {...inputProps}
+                                  size="small"
+                                  fullWidth
+                                  error={!!row.errors.document_number}
+                                  placeholder="XX-XXXXX-XXXXXXX"
+                                />
+                              )}
+                            </InputMask>
+                          ) : (
+                            <TextField
+                              size="small"
+                              fullWidth
+                              value={row.document_number}
+                              onChange={(e) => updateRow(row.id, 'document_number', e.target.value)}
+                              error={!!row.errors.document_number}
+                              placeholder="Document number"
+                            />
+                          )}
                         </TableCell>
 
                         {/* Category */}

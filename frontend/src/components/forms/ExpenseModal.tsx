@@ -484,6 +484,14 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
     if (!formData.document_number.trim()) {
       newErrors.document_number = 'Document number is required';
+    } else if (formData.document_type === 'Factura') {
+      // Validate FACTURA document number format (XX-XXXXX-XXXXXXX)
+      const cleanNumber = formData.document_number.replace(/-/g, '');
+      if (cleanNumber.length !== 13) {
+        newErrors.document_number = 'FACTURA document number must be complete (XX-XXXXX-XXXXXXX format)';
+      } else if (!/^[A-Za-z0-9]{13}$/.test(cleanNumber)) {
+        newErrors.document_number = 'FACTURA document number must contain only letters and numbers';
+      }
     }
 
 
@@ -660,6 +668,14 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
     if (!formData.document_number.trim()) {
       newErrors.document_number = 'Document number is required';
+    } else if (formData.document_type === 'Factura') {
+      // Validate FACTURA document number format (XX-XXXXX-XXXXXXX)
+      const cleanNumber = formData.document_number.replace(/-/g, '');
+      if (cleanNumber.length !== 13) {
+        newErrors.document_number = 'FACTURA document number must be complete (XX-XXXXX-XXXXXXX format)';
+      } else if (!/^[A-Za-z0-9]{13}$/.test(cleanNumber)) {
+        newErrors.document_number = 'FACTURA document number must contain only letters and numbers';
+      }
     }
 
 
@@ -849,23 +865,36 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
           {/* 6. Número del documento (1/2) & 7. Categoria del gasto (1/2) */}
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={12} sm={6}>
-              <InputMask
-                mask="99-99999-9999999"
-                value={formData.document_number}
-                onChange={handleChange('document_number')}
-              >
-                {(inputProps: any) => (
-                  <TextField
-                    {...inputProps}
-                    fullWidth
-                    label={t('expenses.documentNumber')}
-                    placeholder="00-00000-0000000"
-                    error={!!errors.document_number}
-                    helperText={errors.document_number}
-                    required
-                  />
-                )}
-              </InputMask>
+              {formData.document_type === 'Factura' ? (
+                <InputMask
+                  mask="**-*****-*******"
+                  value={formData.document_number}
+                  onChange={handleChange('document_number')}
+                  maskChar=""
+                >
+                  {(inputProps: any) => (
+                    <TextField
+                      {...inputProps}
+                      fullWidth
+                      label={t('expenses.documentNumber')}
+                      placeholder="XX-XXXXX-XXXXXXX"
+                      error={!!errors.document_number}
+                      helperText={errors.document_number || 'Format: XX-XXXXX-XXXXXXX (letters and numbers)'}
+                      required
+                    />
+                  )}
+                </InputMask>
+              ) : (
+                <TextField
+                  fullWidth
+                  label={t('expenses.documentNumber')}
+                  value={formData.document_number}
+                  onChange={handleChange('document_number')}
+                  error={!!errors.document_number}
+                  helperText={errors.document_number}
+                  required
+                />
+              )}
             </Grid>
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth error={!!errors.category_id} required>
