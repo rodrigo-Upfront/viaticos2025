@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   TextField,
   Button,
   FormControlLabel,
@@ -20,13 +18,12 @@ import {
   Paper
 } from '@mui/material';
 import {
-  Email as EmailIcon,
   Settings as SettingsIcon,
   Send as SendIcon,
   CheckCircle as CheckIcon,
   Error as ErrorIcon,
   Save as SaveIcon,
-  Test as TestIcon
+  Science as TestIcon
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { emailService, SMTPSettings, SMTPSettingsCreate, SMTPSettingsUpdate, TestEmailRequest } from '../services/emailService';

@@ -109,6 +109,14 @@ class TemplateService:
                 ]
             ),
             TemplateVariableGroup(
+                category="recipient",
+                variables=[
+                    TemplateVariable(key="recipient.name", description="Email recipient's full name", category="recipient"),
+                    TemplateVariable(key="recipient.email", description="Email recipient's email address", category="recipient"),
+                    TemplateVariable(key="recipient.profile", description="Email recipient's profile/role", category="recipient"),
+                ]
+            ),
+            TemplateVariableGroup(
                 category="prepayment",
                 variables=[
                     TemplateVariable(key="prepayment.id", description="Prepayment ID", category="prepayment"),
@@ -121,6 +129,8 @@ class TemplateService:
                     TemplateVariable(key="prepayment.rejection_reason", description="Rejection reason", category="prepayment"),
                     TemplateVariable(key="prepayment.start_date", description="Trip start date", category="prepayment"),
                     TemplateVariable(key="prepayment.end_date", description="Trip end date", category="prepayment"),
+                    TemplateVariable(key="prepayment.view_url", description="Link to view prepayment details", category="prepayment"),
+                    TemplateVariable(key="prepayment.approval_url", description="Link to approve/review prepayment", category="prepayment"),
                 ]
             ),
             TemplateVariableGroup(
@@ -135,6 +145,8 @@ class TemplateService:
                     TemplateVariable(key="report.prepaid_amount", description="Prepaid amount", category="report"),
                     TemplateVariable(key="report.reimbursement_amount", description="Reimbursement amount", category="report"),
                     TemplateVariable(key="report.rejection_reason", description="Rejection reason", category="report"),
+                    TemplateVariable(key="report.view_url", description="Link to view report details", category="report"),
+                    TemplateVariable(key="report.approval_url", description="Link to approve/review report", category="report"),
                 ]
             ),
             TemplateVariableGroup(
@@ -204,8 +216,9 @@ class TemplateService:
             }
         
         if prepayment:
+            prepayment_id = getattr(prepayment, 'id', '')
             context["prepayment"] = {
-                "id": getattr(prepayment, 'id', ''),
+                "id": prepayment_id,
                 "reason": getattr(prepayment, 'reason', ''),
                 "amount": getattr(prepayment, 'amount', 0),
                 "currency": getattr(prepayment, 'currency', ''),
@@ -213,6 +226,8 @@ class TemplateService:
                 "rejection_reason": getattr(prepayment, 'rejection_reason', ''),
                 "start_date": getattr(prepayment, 'startDate', ''),
                 "end_date": getattr(prepayment, 'endDate', ''),
+                "approval_url": f"/approvals?type=prepayment&id={prepayment_id}",
+                "view_url": f"/prepayments/{prepayment_id}",
             }
             
             # Add requester info if available
@@ -223,14 +238,17 @@ class TemplateService:
                 }
         
         if report:
+            report_id = getattr(report, 'id', '')
             context["report"] = {
-                "id": getattr(report, 'id', ''),
+                "id": report_id,
                 "reason": getattr(report, 'reason', ''),
                 "total_expenses": getattr(report, 'total_expenses', 0),
                 "currency": getattr(report, 'currency', ''),
                 "prepaid_amount": getattr(report, 'prepaid_amount', 0),
                 "reimbursement_amount": getattr(report, 'reimbursement_amount', 0),
                 "rejection_reason": getattr(report, 'rejection_reason', ''),
+                "approval_url": f"/approvals?type=report&id={report_id}",
+                "view_url": f"/expense-reports/{report_id}",
             }
             
             # Add requester info if available

@@ -13,7 +13,7 @@ import uuid
 import shutil
 
 from app.database.connection import get_db
-from app.models.models import User, Prepayment, Country, Currency, RequestStatus, UserProfile
+from app.models.models import User, Prepayment, Country, Currency, RequestStatus, UserProfile, ApprovalHistory, EntityType, ApprovalAction
 from app.services.auth_service import AuthService, get_current_user, get_current_superuser
 from app.schemas.prepayment_schemas import (
     PrepaymentCreate, PrepaymentUpdate, PrepaymentResponse, 
@@ -92,7 +92,7 @@ async def get_prepayments(
     prepayments = query.order_by(Prepayment.created_at.desc()).offset(skip).limit(limit).all()
     
     return PrepaymentList(
-        prepayments=[PrepaymentResponse.from_orm(prepayment) for prepayment in prepayments],
+        prepayments=[PrepaymentResponse.from_orm(prepayment, rejecting_approver_name=None) for prepayment in prepayments],
         total=total,
         skip=skip,
         limit=limit
@@ -234,7 +234,22 @@ async def get_prepayment(
             detail="Not enough permissions"
         )
     
-    return PrepaymentResponse.from_orm(prepayment)
+    # Get rejecting approver if prepayment was rejected
+    rejecting_approver_name = None
+    if prepayment.status == RequestStatus.REJECTED:
+        rejection_history = db.query(ApprovalHistory, User).join(
+            User, ApprovalHistory.user_id == User.id
+        ).filter(
+            ApprovalHistory.entity_type == EntityType.PREPAYMENT,
+            ApprovalHistory.entity_id == prepayment.id,
+            ApprovalHistory.action == ApprovalAction.REJECTED
+        ).order_by(ApprovalHistory.created_at.desc()).first()
+        
+        if rejection_history:
+            _, rejecting_user = rejection_history
+            rejecting_approver_name = f"{rejecting_user.name} {rejecting_user.surname}"
+    
+    return PrepaymentResponse.from_orm(prepayment, rejecting_approver_name=rejecting_approver_name)
 
 
 @router.post("/", response_model=PrepaymentResponse)
@@ -287,7 +302,7 @@ async def create_prepayment(
             joinedload(Prepayment.currency)
         ).filter(Prepayment.id == prepayment.id).first()
         
-        return PrepaymentResponse.from_orm(prepayment)
+        return PrepaymentResponse.from_orm(prepayment, rejecting_approver_name=None)
         
     except Exception as e:
         db.rollback()
@@ -373,7 +388,7 @@ async def update_prepayment(
             joinedload(Prepayment.currency)
         ).filter(Prepayment.id == prepayment.id).first()
         
-        return PrepaymentResponse.from_orm(prepayment)
+        return PrepaymentResponse.from_orm(prepayment, rejecting_approver_name=None)
         
     except Exception as e:
         db.rollback()
@@ -427,7 +442,7 @@ async def update_prepayment_status(
             joinedload(Prepayment.currency)
         ).filter(Prepayment.id == prepayment.id).first()
         
-        return PrepaymentResponse.from_orm(prepayment)
+        return PrepaymentResponse.from_orm(prepayment, rejecting_approver_name=None)
         
     except ValueError:
         raise HTTPException(

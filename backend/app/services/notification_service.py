@@ -86,10 +86,18 @@ class NotificationService:
         """
         Create a notification record for a specific recipient
         """
+        # Add recipient information to context for template rendering
+        recipient_context = context.copy()
+        recipient_context["recipient"] = {
+            "name": getattr(recipient, 'name', ''),
+            "email": getattr(recipient, 'email', ''),
+            "profile": getattr(recipient, 'profile', ''),
+        }
+        
         # Render email template
         subject, body = self.template_service.render_email_template(
             event_type=event_type.value,
-            context=context,
+            context=recipient_context,
             language=language
         )
         

@@ -136,6 +136,7 @@
     "error": "Error",
     "success": "Éxito",
     "confirm": "Confirmar",
+    "unknownApprover": "Aprobador Desconocido",
     "yes": "Sí",
     "no": "No",
     "date": "Fecha",
@@ -365,7 +366,10 @@
       "EXPENSE_CREATED": "Gasto Creado"
     },
     "submittedFiles": "Archivos Enviados",
-    "documentsSubmittedReview": "Documentos enviados para revisión de tesorería."
+    "documentsSubmittedReview": "Documentos enviados para revisión de tesorería.",
+    "returnDocumentsDescription": "Por favor proporcione el número de documento y archivos de respaldo para la devolución de fondos.",
+    "documentNumberPlaceholder": "Ingrese el número de documento",
+    "supportingDocuments": "Documentos de Respaldo"
   },
   "emailTemplates": {
     "title": "Plantillas de Email",
@@ -525,7 +529,7 @@
     "selectCountry": "Seleccionar un país",
     "justificationFile": "Archivo de Justificación (Opcional)",
     "rejectionReason": "Motivo de Rechazo",
-    "providedByApprover": "Proporcionado por el aprobador al rechazar",
+    "providedByApprover": "Proporcionado por {approverName} al rechazar",
     "update": "Actualizar",
     "sendForApproval": "Enviar para Aprobación",
     "resubmitForApproval": "Reenviar para Aprobación",

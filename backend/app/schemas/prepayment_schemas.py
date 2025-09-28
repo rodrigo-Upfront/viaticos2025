@@ -56,12 +56,13 @@ class PrepaymentResponse(PrepaymentBase):
     currency_name: Optional[str] = None
     currency_code: Optional[str] = None
     requesting_user_name: Optional[str] = None
+    rejecting_approver_name: Optional[str] = None
 
     class Config:
         from_attributes = True
         
     @classmethod
-    def from_orm(cls, obj):
+    def from_orm(cls, obj, rejecting_approver_name=None):
         return cls(
             id=obj.id,
             reason=obj.reason,
@@ -80,7 +81,8 @@ class PrepaymentResponse(PrepaymentBase):
             destination_country_name=obj.destination_country.name if obj.destination_country else None,
             currency_name=obj.currency.name if obj.currency else None,
             currency_code=obj.currency.code if obj.currency else None,
-            requesting_user_name=f"{obj.requesting_user.name} {obj.requesting_user.surname}" if obj.requesting_user else None
+            requesting_user_name=f"{obj.requesting_user.name} {obj.requesting_user.surname}" if obj.requesting_user else None,
+            rejecting_approver_name=rejecting_approver_name
         )
 
 

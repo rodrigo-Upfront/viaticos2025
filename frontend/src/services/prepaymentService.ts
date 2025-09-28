@@ -23,6 +23,8 @@ export interface Prepayment {
   updated_at: string;
   destination_country_name?: string;
   requesting_user_name?: string;
+  rejection_reason?: string;
+  rejecting_approver_name?: string;
 }
 
 export interface PrepaymentCreate {

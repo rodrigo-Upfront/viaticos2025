@@ -415,17 +415,17 @@ async def approve_prepayment(
             if not (requester and requester.supervisor_id == current_user.id and current_user.is_approver):
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized for supervisor stage")
             if action_data.action == "approve":
-                # Check accounting approvers exist
+                # Check accounting approvers exist BEFORE making any changes
                 has_accounting = db.query(User).filter(
                     User.profile == UserProfile.ACCOUNTING,
                     User.is_approver == True
                 ).count() > 0
                 if not has_accounting:
-                    prepayment.status = RequestStatus.PENDING
-                    prepayment.updated_at = datetime.utcnow()
-                    prepayment.comment = (prepayment.comment or "") + "\nerrors on approval - missing accounting user"
-                    db.commit()
-                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Error - no accountants users available")
+                    # Don't change status - just return error
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST, 
+                        detail="Cannot approve: No accounting users are configured as approvers. Please contact system administrator to configure accounting approvers before proceeding."
+                    )
                 next_status = RequestStatus.ACCOUNTING_PENDING
                 message = "Prepayment approved by supervisor; pending accounting approval"
             else:
@@ -436,17 +436,17 @@ async def approve_prepayment(
             if not (current_user.is_approver and current_user.profile == UserProfile.ACCOUNTING):
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized for accounting stage")
             if action_data.action == "approve":
-                # Check treasury approvers exist
+                # Check treasury approvers exist BEFORE making any changes
                 has_treasury = db.query(User).filter(
                     User.profile == UserProfile.TREASURY,
                     User.is_approver == True
                 ).count() > 0
                 if not has_treasury:
-                    prepayment.status = RequestStatus.PENDING
-                    prepayment.updated_at = datetime.utcnow()
-                    prepayment.comment = (prepayment.comment or "") + "\nerrors on approval - missing treasury user"
-                    db.commit()
-                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Error - no treasury users available")
+                    # Don't change status - just return error
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST, 
+                        detail="Cannot approve: No treasury users are configured as approvers. Please contact system administrator to configure treasury approvers before proceeding."
+                    )
                 next_status = RequestStatus.TREASURY_PENDING
                 message = "Prepayment approved by accounting; pending treasury approval"
             else:

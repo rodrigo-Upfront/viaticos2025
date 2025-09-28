@@ -35,7 +35,7 @@ import {
 } from '@mui/material';
 import {
   Email as EmailIcon,
-  Retry as RetryIcon,
+  Replay as RetryIcon,
   Delete as DeleteIcon,
   Visibility as ViewIcon,
   Refresh as RefreshIcon,
@@ -43,7 +43,7 @@ import {
   Error as ErrorIcon,
   Schedule as PendingIcon,
   ExpandMore as ExpandMoreIcon,
-  Statistics as StatsIcon,
+  Analytics as StatsIcon,
   CleaningServices as CleanupIcon
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';

@@ -375,6 +375,19 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
         errors.factura_supplier_id = t('expenses.supplierRequired');
       }
 
+      // Document number validation
+      if (!row.document_number.trim()) {
+        errors.document_number = t('validation.documentNumberRequired');
+      } else if (row.document_type === 'FACTURA') {
+        // Validate FACTURA document number format (XX-XXXXX-XXXXXXX)
+        const cleanNumber = row.document_number.replace(/-/g, '');
+        if (cleanNumber.length !== 13) {
+          errors.document_number = 'FACTURA document number must be complete (XX-XXXXX-XXXXXXX format)';
+        } else if (!/^[A-Za-z0-9]{13}$/.test(cleanNumber)) {
+          errors.document_number = 'FACTURA document number must contain only letters and numbers';
+        }
+      }
+
       if (Object.keys(errors).length > 0) {
         hasErrors = true;
       }

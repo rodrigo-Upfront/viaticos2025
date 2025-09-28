@@ -135,6 +135,7 @@
     "error": "Error",
     "success": "Success",
     "confirm": "Confirm",
+    "unknownApprover": "Unknown Approver",
     "yes": "Yes",
     "no": "No",
     "date": "Date",
@@ -330,7 +331,10 @@
       "EXPENSE_CREATED": "Expense Created"
     },
     "submittedFiles": "Submitted Files",
-    "documentsSubmittedReview": "Documents submitted for treasury review."
+    "documentsSubmittedReview": "Documents submitted for treasury review.",
+    "returnDocumentsDescription": "Please provide the document number and supporting files for fund return.",
+    "documentNumberPlaceholder": "Enter document number",
+    "supportingDocuments": "Supporting Documents"
   },
   "emailTemplates": {
     "title": "Email Templates",
@@ -489,7 +493,7 @@
     "selectCountry": "Select a country",
     "justificationFile": "Justification File (Optional)",
     "rejectionReason": "Rejection Reason",
-    "providedByApprover": "Provided by approver upon rejection",
+    "providedByApprover": "Provided by {approverName} upon rejection",
     "update": "Update",
     "sendForApproval": "Send for Approval",
     "resubmitForApproval": "Resubmit for Approval",

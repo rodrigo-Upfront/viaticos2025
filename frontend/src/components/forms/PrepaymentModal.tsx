@@ -37,6 +37,7 @@ interface Prepayment {
   currency_id?: number;
   comment: string;
   rejection_reason?: string;
+  rejecting_approver_name?: string;
   justification_files?: Array<{filename: string, original_name: string, file_path: string}>;
   status: string;
 }
@@ -639,7 +640,9 @@ const PrepaymentModal: React.FC<PrepaymentModalProps> = ({
               {formData.rejection_reason}
             </Typography>
             <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-              {t('prepaymentModule.providedByApprover')}
+              {t('prepaymentModule.providedByApprover', { 
+                approverName: formData.rejecting_approver_name || t('common.unknownApprover') 
+              })}
             </Typography>
           </Box>
         )}

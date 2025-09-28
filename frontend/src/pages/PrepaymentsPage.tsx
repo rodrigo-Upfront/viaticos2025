@@ -55,6 +55,7 @@ interface Prepayment {
   justification_files?: Array<{filename: string, original_name: string, file_path: string}>;
   status: string;
   rejection_reason?: string;
+  rejecting_approver_name?: string;
   created_at?: string;
 }
 

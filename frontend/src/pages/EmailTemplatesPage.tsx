@@ -75,7 +75,7 @@ const EmailTemplatesPage: React.FC = () => {
   // Filters
   const [eventTypeFilter, setEventTypeFilter] = useState('');
   const [languageFilter, setLanguageFilter] = useState('');
-  const [enabledFilter, setEnabledFilter] = useState<boolean | ''>('');
+  const [enabledFilter, setEnabledFilter] = useState<string>('');
   
   // Modal states
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -107,7 +107,7 @@ const EmailTemplatesPage: React.FC = () => {
       const filters: any = {};
       if (eventTypeFilter) filters.event_type = eventTypeFilter;
       if (languageFilter) filters.language = languageFilter;
-      if (enabledFilter !== '') filters.enabled = enabledFilter;
+      if (enabledFilter !== '') filters.enabled = enabledFilter === 'true';
       
       const [templatesData, variablesData, eventTypesData] = await Promise.all([
         emailService.getEmailTemplates(filters),
@@ -312,13 +312,13 @@ const EmailTemplatesPage: React.FC = () => {
                 <Select
                   value={enabledFilter}
                   label={t('common.status')}
-                  onChange={(e) => setEnabledFilter(e.target.value as boolean | '')}
+                  onChange={(e) => setEnabledFilter(e.target.value as string)}
                 >
                   <MenuItem value="">
                     <em>{t('common.all')}</em>
                   </MenuItem>
-                  <MenuItem value={true}>{t('common.enabled')}</MenuItem>
-                  <MenuItem value={false}>{t('common.disabled')}</MenuItem>
+                  <MenuItem value="true">{t('common.enabled')}</MenuItem>
+                  <MenuItem value="false">{t('common.disabled')}</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
