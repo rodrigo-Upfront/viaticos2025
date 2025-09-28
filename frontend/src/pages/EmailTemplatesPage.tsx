@@ -458,7 +458,7 @@ const EmailTemplatesPage: React.FC = () => {
                         </Typography>
                       </Box>
                       <Typography variant="caption" color="text.secondary">
-                        {variable.description}
+                        {t(`emailTemplates.variableDescriptions.${variable.description}`) || variable.description}
                       </Typography>
                     </Card>
                   </Grid>
