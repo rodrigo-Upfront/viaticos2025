@@ -487,9 +487,9 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
     } else if (formData.document_type === 'Factura') {
       // Validate FACTURA document number format (XX-XXXXX-XXXXXXX)
       const cleanNumber = formData.document_number.replace(/-/g, '');
-      if (cleanNumber.length !== 13) {
+      if (cleanNumber.length !== 14) {
         newErrors.document_number = 'FACTURA document number must be complete (XX-XXXXX-XXXXXXX format)';
-      } else if (!/^[A-Za-z0-9]{13}$/.test(cleanNumber)) {
+      } else if (!/^[A-Za-z0-9]{14}$/.test(cleanNumber)) {
         newErrors.document_number = 'FACTURA document number must contain only letters and numbers';
       }
     }
@@ -671,9 +671,9 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
     } else if (formData.document_type === 'Factura') {
       // Validate FACTURA document number format (XX-XXXXX-XXXXXXX)
       const cleanNumber = formData.document_number.replace(/-/g, '');
-      if (cleanNumber.length !== 13) {
+      if (cleanNumber.length !== 14) {
         newErrors.document_number = 'FACTURA document number must be complete (XX-XXXXX-XXXXXXX format)';
-      } else if (!/^[A-Za-z0-9]{13}$/.test(cleanNumber)) {
+      } else if (!/^[A-Za-z0-9]{14}$/.test(cleanNumber)) {
         newErrors.document_number = 'FACTURA document number must contain only letters and numbers';
       }
     }

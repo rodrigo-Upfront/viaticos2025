@@ -663,8 +663,8 @@ const ReportViewPage: React.FC = () => {
                   <TableCell><strong>{t('reports.sendDate')}</strong></TableCell>
                   <TableCell align="right">{formatDate(report.reportDate)}</TableCell>
                 </TableRow>
-                {/* SAP Compensation Number - show for all users when it exists */}
-                {report.sap_compensation_number && (
+                {/* SAP Compensation Number - show for superusers, accounting, and treasury when it exists */}
+                {report.sap_compensation_number && user && (user.is_superuser || ['ACCOUNTING', 'TREASURY'].includes(user.profile)) && (
                   <TableRow>
                     <TableCell><strong>{t('accounting.sapCompensationNumber')}</strong></TableCell>
                     <TableCell align="right">
