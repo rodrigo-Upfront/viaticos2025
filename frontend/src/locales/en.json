@@ -139,6 +139,8 @@
     "inactive": "Inactive", 
     "refresh": "Refresh",
     "clearFilters": "Clear Filters",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
     "unknownApprover": "Unknown Approver",
     "yes": "Yes",
     "no": "No",

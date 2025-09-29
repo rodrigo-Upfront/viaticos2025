@@ -140,6 +140,8 @@
     "inactive": "Inactivo",
     "refresh": "Actualizar",
     "clearFilters": "Limpiar Filtros",
+    "enabled": "Habilitado",
+    "disabled": "Deshabilitado",
     "unknownApprover": "Aprobador Desconocido",
     "yes": "Sí",
     "no": "No",
