@@ -86,6 +86,7 @@ class PendingApprovalItem(BaseModel):
     total_expenses: Optional[str] = None  # For reports
     prepaid_amount: Optional[str] = None  # For reports
     report_date: Optional[str] = None  # For reports
+    sap_compensation_number: Optional[str] = None  # For reports with SAP compensation number
 
 
 class PendingApprovalsList(BaseModel):

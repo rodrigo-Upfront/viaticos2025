@@ -275,7 +275,8 @@ async def get_pending_approvals(
                 ),
                 reason=reason,
                 destination=destination,
-                status=report.status.value if report.status else "PENDING"
+                status=report.status.value if report.status else "PENDING",
+                sap_compensation_number=report.sap_compensation_number  # Add SAP compensation number
             ))
         
         # Sort the final combined list by request_date (oldest first)

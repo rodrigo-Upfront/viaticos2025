@@ -317,7 +317,18 @@ const PrepaymentsPage: React.FC = () => {
       
       // Fetch full prepayment details including rejecting_approver_name
       const response = await prepaymentService.getPrepayment(prepayment.id!);
-      setModal({ open: true, mode: 'edit', prepayment: response });
+      
+      // Transform API response to match modal interface
+      const transformedPrepayment: Prepayment = {
+        ...response,
+        startDate: response.start_date,
+        endDate: response.end_date,
+        destination: response.destination_country_name || prepayment.destination,
+        currency: response.currency_code || response.currency_name || prepayment.currency,
+        comment: response.comment || '',
+      };
+      
+      setModal({ open: true, mode: 'edit', prepayment: transformedPrepayment });
     } catch (error) {
       console.error('Error loading prepayment details:', error);
       // Fallback to the prepayment from the list
@@ -329,7 +340,18 @@ const PrepaymentsPage: React.FC = () => {
     try {
       // Fetch full prepayment details including rejecting_approver_name
       const response = await prepaymentService.getPrepayment(prepayment.id!);
-      setViewModal({ open: true, prepayment: response });
+      
+      // Transform API response to match modal interface
+      const transformedPrepayment: Prepayment = {
+        ...response,
+        startDate: response.start_date,
+        endDate: response.end_date,
+        destination: response.destination_country_name || prepayment.destination,
+        currency: response.currency_code || response.currency_name || prepayment.currency,
+        comment: response.comment || '',
+      };
+      
+      setViewModal({ open: true, prepayment: transformedPrepayment });
     } catch (error) {
       console.error('Error loading prepayment details:', error);
       // Fallback to the prepayment from the list

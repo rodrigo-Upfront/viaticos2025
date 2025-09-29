@@ -552,7 +552,8 @@
     "days": "días",
     "detailsTitle": "Detalles del Anticipo",
     "pendingPrepayments": "Anticipos Pendientes",
-    "pendingExpenseReports": "Reportes de Gastos Pendientes"
+    "pendingExpenseReports": "Reportes de Gastos Pendientes",
+    "prepaymentId": "Anticipo #{{id}}"
   },
   "tables": {
     "type": "Tipo",

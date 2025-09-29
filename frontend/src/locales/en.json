@@ -516,7 +516,8 @@
     "days": "days",
     "detailsTitle": "Prepayment Details",
     "pendingPrepayments": "Pending Prepayments",
-    "pendingExpenseReports": "Pending Expense Reports"
+    "pendingExpenseReports": "Pending Expense Reports",
+    "prepaymentId": "Prepayment #{{id}}"
   },
   "tables": {
     "type": "Type",
