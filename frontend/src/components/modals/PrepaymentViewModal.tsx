@@ -302,10 +302,15 @@ const PrepaymentViewModal: React.FC<PrepaymentViewModalProps> = ({ open, onClose
           {prepayment.status.toLowerCase() === 'rejected' && prepayment.rejection_reason && (
             <Grid item xs={12}>
               <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-                Rejection Reason
+                {t('prepaymentModule.rejectionReason')}
               </Typography>
               <Typography variant="body1" color="error" paragraph>
                 {prepayment.rejection_reason}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                {t('prepaymentModule.providedByApprover', { 
+                  approverName: prepayment.rejecting_approver_name || t('common.unknownApprover') 
+                })}
               </Typography>
             </Grid>
           )}

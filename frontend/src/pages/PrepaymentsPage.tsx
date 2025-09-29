@@ -312,12 +312,29 @@ const PrepaymentsPage: React.FC = () => {
   };
 
   const handleEdit = async (prepayment: Prepayment) => {
-    await Promise.all([loadCountries(), loadCurrencies()]);
-    setModal({ open: true, mode: 'edit', prepayment });
+    try {
+      await Promise.all([loadCountries(), loadCurrencies()]);
+      
+      // Fetch full prepayment details including rejecting_approver_name
+      const response = await prepaymentService.getPrepayment(prepayment.id!);
+      setModal({ open: true, mode: 'edit', prepayment: response });
+    } catch (error) {
+      console.error('Error loading prepayment details:', error);
+      // Fallback to the prepayment from the list
+      setModal({ open: true, mode: 'edit', prepayment });
+    }
   };
 
-  const handleView = (prepayment: Prepayment) => {
-    setViewModal({ open: true, prepayment });
+  const handleView = async (prepayment: Prepayment) => {
+    try {
+      // Fetch full prepayment details including rejecting_approver_name
+      const response = await prepaymentService.getPrepayment(prepayment.id!);
+      setViewModal({ open: true, prepayment: response });
+    } catch (error) {
+      console.error('Error loading prepayment details:', error);
+      // Fallback to the prepayment from the list
+      setViewModal({ open: true, prepayment });
+    }
   };
 
   const loadCurrencies = async () => {
