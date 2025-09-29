@@ -281,6 +281,46 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
     }));
   };
 
+  // Real-time alert checking for bulk expenses
+  const checkRealtimeAlert = async (row: BulkExpenseRow) => {
+    try {
+      // Only check if we have all required fields
+      if (!row.category_id || row.category_id === 0 || 
+          !row.country_id || row.country_id === 0 ||
+          !row.currency_id || row.currency_id === 0 ||
+          !row.amount || row.amount <= 0) {
+        return; // Not enough data to check alert
+      }
+
+      const { categoryAlertService } = await import('../services/categoryAlertService');
+      const alertResponse = await categoryAlertService.checkExpenseAlert(
+        row.category_id,
+        row.country_id,
+        row.currency_id,
+        row.amount
+      );
+      
+      if (alertResponse.has_alert && alertResponse.exceeds_alert) {
+        const category = categories.find(c => c.id === row.category_id);
+        const country = countries.find(c => c.id === row.country_id);
+        const currency = currencies.find(c => c.id === row.currency_id);
+        
+        setAlertDialog({
+          open: true,
+          expenseAmount: row.amount,
+          alertAmount: alertResponse.alert_amount || 0,
+          categoryName: category?.name || '',
+          countryName: country?.name || '',
+          currencyCode: currency?.code || '',
+          alertMessage: alertResponse.alert_message || ''
+        });
+      }
+    } catch (error) {
+      console.warn('Real-time alert check failed:', error);
+      // Fail silently for real-time checks
+    }
+  };
+
   const handleFileAttachment = (rowId: string) => {
     const row = expenseRows.find(r => r.id === rowId);
     setFileModal({
@@ -882,7 +922,21 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                           <FormControl size="small" fullWidth error={!!row.errors.category_id}>
                             <Select
                               value={row.category_id}
-                              onChange={(e) => updateRow(row.id, 'category_id', e.target.value)}
+                              onChange={(e) => {
+                                const categoryId = e.target.value;
+                                updateRow(row.id, 'category_id', categoryId);
+                                
+                                // Check for real-time alerts when category changes
+                                if (categoryId && categoryId !== 0) {
+                                  // Use setTimeout to allow state to update first
+                                  setTimeout(() => {
+                                    const updatedRow = expenseRows.find(r => r.id === row.id);
+                                    if (updatedRow) {
+                                      checkRealtimeAlert({ ...updatedRow, category_id: categoryId });
+                                    }
+                                  }, 100);
+                                }
+                              }}
                             >
                               <MenuItem value={0}>
                                 <em>{t('expenses.selectCategory')}</em>
@@ -903,9 +957,23 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                             fullWidth
                             type="number"
                             value={row.amount || ''}
-                            onChange={(e) => updateRow(row.id, 'amount', parseFloat(e.target.value) || 0)}
+                            onChange={(e) => {
+                              const amount = parseFloat(e.target.value) || 0;
+                              updateRow(row.id, 'amount', amount);
+                              
+                              // Check for real-time alerts when amount changes
+                              if (amount > 0) {
+                                // Use setTimeout to allow state to update first
+                                setTimeout(() => {
+                                  const updatedRow = expenseRows.find(r => r.id === row.id);
+                                  if (updatedRow) {
+                                    checkRealtimeAlert({ ...updatedRow, amount: amount });
+                                  }
+                                }, 100);
+                              }
+                            }}
                             onBlur={async () => {
-                              // Check for category alert when amount field loses focus
+                              // Keep the existing onBlur logic as a fallback
                               if (row.amount > 0 && row.category_id && row.country_id && row.currency_id) {
                                 try {
                                   const { categoryAlertService } = await import('../services/categoryAlertService');

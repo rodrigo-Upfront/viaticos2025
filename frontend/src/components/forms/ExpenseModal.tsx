@@ -234,9 +234,11 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
   const handleChange = (field: keyof Expense) => (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
+    const updatedData = { [field]: value };
+    
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      ...updatedData
     }));
     
     // Special validation for expense_date
@@ -255,34 +257,67 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
         }));
       }
     }
+
+    // Check for real-time alerts when amount changes
+    if (field === 'amount') {
+      // Use setTimeout to allow state to update first
+      setTimeout(() => {
+        checkRealtimeAlert(updatedData);
+      }, 100);
+    }
   };
 
   const handleSelectChange = (field: keyof Expense) => (event: any) => {
+    const value = event.target.value;
+    const updatedData = { [field]: value };
+    
     setFormData(prev => ({
       ...prev,
-      [field]: event.target.value
+      ...updatedData
     }));
+    
     if (errors[field]) {
       setErrors(prev => ({
         ...prev,
         [field]: ''
       }));
     }
+
+    // Check for real-time alerts when currency changes
+    if (field === 'currency') {
+      // Use setTimeout to allow state to update first
+      setTimeout(() => {
+        checkRealtimeAlert(updatedData);
+      }, 100);
+    }
   };
 
   const handleCategoryChange = (event: any) => {
     const categoryId = event.target.value;
     const selectedCategory = categories.find(c => c.id === categoryId);
-    setFormData(prev => ({
-      ...prev,
+    const updatedData = {
       category_id: categoryId,
       category: selectedCategory?.name || ''
+    };
+    
+    setFormData(prev => ({
+      ...prev,
+      ...updatedData
     }));
+    
     if (errors.category_id) {
       setErrors(prev => ({
         ...prev,
         category_id: ''
       }));
+    }
+
+    // Check for real-time alerts when category changes
+    if (categoryId && categoryId !== 0) {
+      // Use setTimeout to allow state to update first
+      setTimeout(() => {
+        checkRealtimeAlert(updatedData);
+      }, 100);
     }
   };
 
@@ -305,17 +340,30 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
   const handleCountryChange = (event: any) => {
     const countryId = event.target.value;
     const selectedCountry = countries.find(c => c.id === countryId);
+    const updatedData = {
+      country_id: countryId,
+      country: selectedCountry?.name || formData.country,
+      currency: formData.currency,
+    };
+    
     setFormData(prev => ({
       ...prev,
-      country_id: countryId,
-      country: selectedCountry?.name || prev.country,
-      currency: prev.currency,
+      ...updatedData
     }));
+    
     if ((errors as any).country_id) {
       setErrors(prev => ({
         ...prev,
         country_id: ''
       }));
+    }
+
+    // Check for real-time alerts when country changes
+    if (countryId && countryId !== 0) {
+      // Use setTimeout to allow state to update first
+      setTimeout(() => {
+        checkRealtimeAlert(updatedData);
+      }, 100);
     }
   };
 
@@ -544,6 +592,63 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
       console.error('Error checking expense alert:', error);
       // If alert check fails, proceed with save anyway
       proceedWithSave();
+    }
+  };
+
+  // Real-time alert checking (without proceeding to save)
+  const checkRealtimeAlert = async (updatedFormData?: Partial<Expense>) => {
+    try {
+      // Use updated form data if provided, otherwise use current formData
+      const currentData = updatedFormData ? { ...formData, ...updatedFormData } : formData;
+      
+      // Only check if we have all required fields
+      if (!currentData.category_id || currentData.category_id === 0 || 
+          !currentData.country_id || currentData.country_id === 0 ||
+          !currentData.currency || !currentData.amount) {
+        return; // Not enough data to check alert
+      }
+
+      // Get currency info
+      const selectedCurrency = currencies.find(c => c.code === currentData.currency);
+      const currencyId = selectedCurrency?.id;
+
+      if (!currencyId) {
+        return; // Currency not found, skip alert check
+      }
+
+      // Check for alert
+      const amountValue = typeof currentData.amount === 'string' ? parseFloat(currentData.amount) || 0 : currentData.amount;
+      
+      if (amountValue <= 0) {
+        return; // Invalid amount, skip alert check
+      }
+
+      const alertResponse = await categoryAlertService.checkExpenseAlert(
+        currentData.category_id,
+        currentData.country_id,
+        currencyId,
+        amountValue
+      );
+
+      if (alertResponse.has_alert && alertResponse.exceeds_alert) {
+        // Show alert dialog (real-time warning)
+        const categoryName = categories.find(c => c.id === currentData.category_id)?.name || '';
+        const countryName = countries.find(c => c.id === currentData.country_id)?.name || '';
+        const currencyCode = currentData.currency || 'USD';
+        
+        setAlertDialog({
+          open: true,
+          expenseAmount: amountValue,
+          alertAmount: alertResponse.alert_amount || 0,
+          categoryName,
+          countryName,
+          currencyCode,
+          alertMessage: alertResponse.alert_message || ''
+        });
+      }
+    } catch (error) {
+      console.error('Error checking real-time expense alert:', error);
+      // Fail silently for real-time checks
     }
   };
 
