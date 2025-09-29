@@ -136,6 +136,8 @@
     "error": "Error",
     "success": "Éxito",
     "confirm": "Confirmar",
+    "active": "Activo",
+    "inactive": "Inactivo",
     "unknownApprover": "Aprobador Desconocido",
     "yes": "Sí",
     "no": "No",

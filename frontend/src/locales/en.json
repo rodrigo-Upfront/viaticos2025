@@ -135,6 +135,8 @@
     "error": "Error",
     "success": "Success",
     "confirm": "Confirm",
+    "active": "Active",
+    "inactive": "Inactive",
     "unknownApprover": "Unknown Approver",
     "yes": "Yes",
     "no": "No",
