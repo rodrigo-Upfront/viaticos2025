@@ -340,7 +340,13 @@
     "documentsSubmittedReview": "Documents submitted for treasury review.",
     "returnDocumentsDescription": "Please provide the document number and supporting files for fund return.",
     "documentNumberPlaceholder": "Enter document number",
-    "supportingDocuments": "Supporting Documents"
+    "supportingDocuments": "Supporting Documents",
+    "chooseFiles": "Choose Files",
+    "fileUploadHint": "Maximum file size: 10MB per file. All file types accepted.",
+    "selectedFiles": "Selected Files",
+    "uploadingDocuments": "Uploading documents...",
+    "submitDocuments": "Submit Documents",
+    "submitting": "Submitting..."
   },
   "emailTemplates": {
     "title": "Email Templates",

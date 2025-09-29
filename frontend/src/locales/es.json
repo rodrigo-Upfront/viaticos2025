@@ -375,7 +375,13 @@
     "documentsSubmittedReview": "Documentos enviados para revisión de tesorería.",
     "returnDocumentsDescription": "Por favor proporcione el número de documento y archivos de respaldo para la devolución de fondos.",
     "documentNumberPlaceholder": "Ingrese el número de documento",
-    "supportingDocuments": "Documentos de Respaldo"
+    "supportingDocuments": "Documentos de Respaldo",
+    "chooseFiles": "Elegir Archivos",
+    "fileUploadHint": "Tamaño máximo de archivo: 10MB por archivo. Se aceptan todos los tipos de archivo.",
+    "selectedFiles": "Archivos Seleccionados",
+    "uploadingDocuments": "Subiendo documentos...",
+    "submitDocuments": "Enviar Documentos",
+    "submitting": "Enviando..."
   },
   "emailTemplates": {
     "title": "Plantillas de Email",

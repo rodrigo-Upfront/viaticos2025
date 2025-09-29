@@ -173,11 +173,11 @@ const FundReturnDocumentModal: React.FC<FundReturnDocumentModalProps> = ({
                 startIcon={<CloudUploadIcon />}
                 disabled={submitting}
               >
-                Choose Files
+                {t('reports.chooseFiles')}
               </Button>
             </label>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              Maximum file size: 10MB per file. All file types accepted.
+              {t('reports.fileUploadHint')}
             </Typography>
           </Box>
 
@@ -185,7 +185,7 @@ const FundReturnDocumentModal: React.FC<FundReturnDocumentModalProps> = ({
           {selectedFiles.length > 0 && (
             <Box>
               <Typography variant="subtitle2" gutterBottom>
-                Selected Files ({selectedFiles.length})
+                {t('reports.selectedFiles')} ({selectedFiles.length})
               </Typography>
               <List dense>
                 {selectedFiles.map((file, index) => (
@@ -215,7 +215,7 @@ const FundReturnDocumentModal: React.FC<FundReturnDocumentModalProps> = ({
         {submitting && (
           <Box sx={{ mb: 2 }}>
             <Typography variant="body2" color="text.secondary" gutterBottom>
-              Uploading documents...
+              {t('reports.uploadingDocuments')}
             </Typography>
             <LinearProgress />
           </Box>
@@ -224,14 +224,14 @@ const FundReturnDocumentModal: React.FC<FundReturnDocumentModalProps> = ({
       
       <DialogActions>
         <Button onClick={handleClose} disabled={submitting}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button
           onClick={handleSubmit}
           variant="contained"
           disabled={submitting || !documentNumber.trim() || selectedFiles.length === 0}
         >
-          {submitting ? 'Submitting...' : 'Submit Documents'}
+          {submitting ? t('reports.submitting') : t('reports.submitDocuments')}
         </Button>
       </DialogActions>
     </Dialog>
