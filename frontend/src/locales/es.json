@@ -279,6 +279,7 @@
     "submitSupportingDocuments": "Por favor envíe los documentos de respaldo para verificación de devolución de fondos.",
     "needToSubmitDocuments": "Debe enviar documentos para continuar con el proceso de devolución de fondos.",
     "submitReturnDocuments": "Enviar Documentos de Devolución",
+    "documentNumber": "Número de Documento",
     "creditCardStatements": "Estados de Tarjeta de Crédito",
     "uploadStatement": "Subir Estado de Cuenta",
     "creditCardImport": "Importación de Tarjeta de Crédito",
