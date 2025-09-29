@@ -12,7 +12,7 @@ class TemplateService:
         self, 
         template_content: str, 
         context: Dict[str, Any],
-        app_url: str = "http://localhost:3000"
+        app_url: str = "https://amcor-viaticos2025.tech-labs.org"
     ) -> str:
         """
         Render a template by replacing variables with actual values
@@ -79,7 +79,7 @@ class TemplateService:
         event_type: str,
         context: Dict[str, Any],
         language: LanguageCode = LanguageCode.SPANISH,
-        app_url: str = "http://localhost:3000"
+        app_url: str = "https://amcor-viaticos2025.tech-labs.org"
     ) -> tuple[Optional[str], Optional[str]]:
         """
         Render both subject and body for an email template
