@@ -138,6 +138,8 @@
     "confirm": "Confirmar",
     "active": "Activo",
     "inactive": "Inactivo",
+    "refresh": "Actualizar",
+    "clearFilters": "Limpiar Filtros",
     "unknownApprover": "Aprobador Desconocido",
     "yes": "Sí",
     "no": "No",
