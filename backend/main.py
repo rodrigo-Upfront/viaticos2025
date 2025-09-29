@@ -5,11 +5,15 @@ Main FastAPI Application
 
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBearer
 import uvicorn
 import os
 from contextlib import asynccontextmanager
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import Response
 
 # Import modules
 from app.database.connection import engine, get_db
@@ -21,6 +25,28 @@ from app.routers import (
 )
 from app.core.config import settings
 from sqlalchemy import text
+
+
+class ProxyHeadersMiddleware(BaseHTTPMiddleware):
+    """
+    Middleware to handle proxy headers for proper URL generation.
+    This ensures FastAPI generates HTTPS URLs when behind a reverse proxy.
+    """
+    async def dispatch(self, request: Request, call_next):
+        # Check if we're behind a proxy with HTTPS
+        forwarded_proto = request.headers.get("x-forwarded-proto")
+        forwarded_host = request.headers.get("x-forwarded-host") or request.headers.get("host")
+        
+        if forwarded_proto == "https":
+            # Modify the request to use HTTPS scheme
+            request.scope["scheme"] = "https"
+            
+        if forwarded_host:
+            # Update the host header
+            request.scope["server"] = (forwarded_host.split(":")[0], 443 if forwarded_proto == "https" else 80)
+            
+        response = await call_next(request)
+        return response
 
 
 @asynccontextmanager
@@ -278,6 +304,9 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
     lifespan=lifespan
 )
+
+# Add proxy headers middleware (must be added before CORS)
+app.add_middleware(ProxyHeadersMiddleware)
 
 # Configure CORS
 app.add_middleware(
