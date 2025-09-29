@@ -59,6 +59,11 @@ async def lifespan(app: FastAPI):
     models.Base.metadata.create_all(bind=engine)
     print("📊 Database tables created")
     
+    # Start async email worker
+    from app.services.async_notification_service import start_async_email_worker, stop_async_email_worker
+    start_async_email_worker()
+    print("📧 Async email worker started")
+    
     # Ensure DB enums include new RequestStatus values
     try:
         with engine.connect() as conn:
@@ -291,7 +296,9 @@ async def lifespan(app: FastAPI):
     yield
     
     # Shutdown
-    print("🔥 Shutting down Viaticos 2025...")
+    print("🛑 Shutting down Viaticos 2025...")
+    stop_async_email_worker()
+    print("📧 Async email worker stopped")
 
 
 # Create FastAPI application
