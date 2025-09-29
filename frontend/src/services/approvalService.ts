@@ -47,6 +47,7 @@ export interface PendingApprovalItem {
   total_expenses?: string; // For reports
   prepaid_amount?: string; // For reports
   report_date?: string; // For reports
+  sap_compensation_number?: string; // For reports with SAP compensation number
 }
 
 export interface PendingApprovalsList {

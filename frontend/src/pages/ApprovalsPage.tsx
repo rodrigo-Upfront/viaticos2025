@@ -917,6 +917,7 @@ const ApprovalsPage: React.FC = () => {
                   <TableCell>{t('tables.totalExpenses')}</TableCell>
                   <TableCell>{t('tables.prepaidAmount')}</TableCell>
                   <TableCell>{t('tables.budgetStatus')}</TableCell>
+                  <TableCell>{t('accounting.sapCompensationNumber')}</TableCell>
                   <TableCell>{t('common.status')}</TableCell>
                   <TableCell>{t('common.date')}</TableCell>
                   <TableCell>{t('common.actions')}</TableCell>
@@ -925,13 +926,13 @@ const ApprovalsPage: React.FC = () => {
               <TableBody>
                 {loading.pendingItems ? (
                   <TableRow>
-                    <TableCell colSpan={10} align="center">
+                    <TableCell colSpan={11} align="center">
                       <CircularProgress />
                     </TableCell>
                   </TableRow>
                 ) : pendingExpenseReports.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} align="center">
+                    <TableCell colSpan={11} align="center">
                       <Typography variant="body2" color="textSecondary">
                         No pending expense reports
                       </Typography>
@@ -993,6 +994,16 @@ const ApprovalsPage: React.FC = () => {
                               );
                             }
                           })()
+                        ) : (
+                          '-'
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {/* SAP Compensation Number - show for superusers, accounting, and treasury when it exists */}
+                        {item.sap_compensation_number && user && (user.is_superuser || ['ACCOUNTING', 'TREASURY'].includes(user.profile)) ? (
+                          <Typography fontWeight="bold" color="primary.main" variant="body2">
+                            {item.sap_compensation_number}
+                          </Typography>
                         ) : (
                           '-'
                         )}
