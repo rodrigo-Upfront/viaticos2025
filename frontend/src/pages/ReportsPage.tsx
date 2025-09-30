@@ -62,6 +62,7 @@ interface ExpenseReport {
   budgetStatus: string;
   status: string;
   expenseCount: number;
+  requesting_user_id: number;
   // Reimbursement-specific fields
   report_type?: string;
   reimbursement_reason?: string;
@@ -138,6 +139,17 @@ const ReportsPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
+  // Helper functions for friendly labels
+  const getBudgetStatusLabel = (status: string) => {
+    const key = status.toUpperCase().replace(' ', '_');
+    return t(`reports.budgetStatusLabels.${key}`, status);
+  };
+
+  const getReportTypeLabel = (type: string) => {
+    const key = type.toUpperCase();
+    return t(`reports.reportTypes.${key}`, type);
+  };
+
   // Loading state
   const [loading, setLoading] = useState({
     reports: true,
@@ -174,7 +186,7 @@ const ReportsPage: React.FC = () => {
 
   // User filter state (for accounting/treasury users)
   const { user } = useAuth();
-  const [filterUserId, setFilterUserId] = useState<number | ''>(user?.id || '');
+  const [filterUserIds, setFilterUserIds] = useState<(number | string)[]>([user?.id || ''].filter(Boolean) as number[]);
   const [availableUsers, setAvailableUsers] = useState<{id: number, name: string, email: string, profile: string}[]>([]);
   
   // Check if user can filter by other users
@@ -197,11 +209,18 @@ const ReportsPage: React.FC = () => {
     if (canFilterByUser) {
       loadReports();
     }
-  }, [filterUserId, canFilterByUser]);
+  }, [JSON.stringify(filterUserIds), canFilterByUser]);
 
   // Filter reports based on search criteria
   useEffect(() => {
     let filtered = expenseReports;
+
+    // Filter by multiple users if applicable
+    if (canFilterByUser && filterUserIds.length > 1) {
+      filtered = filtered.filter(report => 
+        filterUserIds.includes(report.requesting_user_id)
+      );
+    }
 
     if (searchFilters.reason) {
       filtered = filtered.filter(report => {
@@ -262,6 +281,7 @@ const ReportsPage: React.FC = () => {
       budgetStatus: (parseFloat(apiReport.total_expenses || '0') > parseFloat(apiReport.prepayment_amount || '0')) ? 'Over-Budget' : 'Under-Budget',
       status: apiReport.status,
       expenseCount: (apiReport as any).expense_count || 0,
+      requesting_user_id: (apiReport as any).requesting_user_id || 0,
       // Include reimbursement-specific fields
       report_type: (apiReport as any).report_type,
       reimbursement_reason: (apiReport as any).reimbursement_reason,
@@ -280,7 +300,8 @@ const ReportsPage: React.FC = () => {
       setLoading(prev => ({ ...prev, reports: true }));
       const response = await reportService.getReports({
         // Only send user_id filter if user has permission to filter by user
-        ...(canFilterByUser && filterUserId ? { user_id: filterUserId as number } : {} as any),
+        // For multi-select: if only one user selected, send as single ID, otherwise fetch all and filter client-side
+        ...(canFilterByUser && filterUserIds.length === 1 ? { user_id: filterUserIds[0] as number } : {} as any),
       });
       const mappedReports = response.reports.map(mapApiToFrontend);
       
@@ -377,10 +398,6 @@ const ReportsPage: React.FC = () => {
     return status === 'Under-Budget' ? 'success' : 'error';
   };
 
-  const getBudgetStatusLabel = (status: string) => {
-    return status === 'Under-Budget' ? t('reports.withinBudget') : t('reports.overBudget');
-  };
-
   const REPORT_STATUS_LABELS: Record<string, { en: string; es: string }> = {
     pending: { en: "Pending Submit", es: "Pendiente Rendición de Gastos" },
     supervisor_pending: { en: "Supervisor Review", es: "Revisión Jefatura" },
@@ -432,13 +449,6 @@ const ReportsPage: React.FC = () => {
 
 
 
-
-  const getReportTypeLabel = (reportType?: string) => {
-    if (reportType === 'REIMBURSEMENT') {
-      return t('approvals.types.reimbursement');
-    }
-    return t('approvals.types.expenseReport');
-  };
 
   const handleViewReport = (report: typeof expenseReports[0]) => {
     navigate(`/reports/view/${report.id}`);
@@ -663,19 +673,13 @@ const ReportsPage: React.FC = () => {
           {/* User filter - only for accounting/treasury users */}
           {canFilterByUser && (
             <Grid item xs={6} sm={4} md={2}>
-              <FormControl fullWidth size="small">
-                <InputLabel>{t('common.user')}</InputLabel>
-                <Select
-                  value={filterUserId}
-                  label={t('common.user')}
-                  onChange={(e) => setFilterUserId(e.target.value as number | '')}
-                >
-                  <MenuItem value={user?.id}>{t('common.myRecords')}</MenuItem>
-                  {availableUsers.map(u => (
-                    <MenuItem key={u.id} value={u.id}>{u.name}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <MultiSelectFilter
+                label={t('common.user')}
+                value={filterUserIds}
+                onChange={(value) => setFilterUserIds(value as number[])}
+                options={availableUsers.map(u => ({ id: u.id, name: u.name }))}
+                size="small"
+              />
             </Grid>
           )}
           
@@ -732,16 +736,16 @@ const ReportsPage: React.FC = () => {
               label={t('reports.budgetStatus')}
               value={searchFilters.budgetStatuses}
               onChange={(value) => setSearchFilters(prev => ({ ...prev, budgetStatuses: value as string[] }))}
-              options={filterOptions.budget_statuses.map(status => ({ id: status, name: status.replace('_', ' ') }))}
+              options={filterOptions.budget_statuses.map(status => ({ id: status, name: getBudgetStatusLabel(status) }))}
               size="small"
             />
           </Grid>
           <Grid item xs={6} sm={4} md={2}>
             <MultiSelectFilter
-              label="Type"
+              label={t('reports.type')}
               value={searchFilters.types}
               onChange={(value) => setSearchFilters(prev => ({ ...prev, types: value as string[] }))}
-              options={filterOptions.types.map(type => ({ id: type, name: type }))}
+              options={filterOptions.types.map(type => ({ id: type, name: getReportTypeLabel(type) }))}
               size="small"
             />
           </Grid>

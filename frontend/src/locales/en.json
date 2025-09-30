@@ -220,6 +220,16 @@
     "reason": "Reason or ID",
     "reportDate": "Report Date",
     "prepaidAmount": "Prepaid Amount",
+    "type": "Type",
+    "reportTypes": {
+      "PREPAYMENT": "Prepayment",
+      "REIMBURSEMENT": "Reimbursement"
+    },
+    "budgetStatusLabels": {
+      "OVER_BUDGET": "Over Budget",
+      "UNDER_BUDGET": "Under Budget",
+      "ON_BUDGET": "On Budget"
+    },
     "createReimbursement": "CREATE REIMBURSEMENT",
     "exportAll": "EXPORT ALL",
     "generateReport": "GENERATE REPORT",

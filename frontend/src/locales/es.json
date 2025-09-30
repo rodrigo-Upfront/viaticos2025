@@ -243,6 +243,16 @@
     "reason": "Motivo o ID",
     "reportDate": "Fecha Reporte",
     "prepaidAmount": "Monto Anticipado",
+    "type": "Tipo",
+    "reportTypes": {
+      "PREPAYMENT": "Anticipo",
+      "REIMBURSEMENT": "Reembolso"
+    },
+    "budgetStatusLabels": {
+      "OVER_BUDGET": "Excede Presupuesto",
+      "UNDER_BUDGET": "Dentro del Presupuesto",
+      "ON_BUDGET": "Igual al Presupuesto"
+    },
     "createReimbursement": "CREAR REEMBOLSO",
     "exportAll": "EXPORTAR TODO",
     "generateReport": "GENERAR REPORTE",

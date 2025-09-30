@@ -58,6 +58,7 @@ interface Prepayment {
   rejection_reason?: string;
   rejecting_approver_name?: string;
   created_at?: string;
+  requesting_user_id: number;
 }
 
 interface Country {
@@ -124,7 +125,7 @@ const PrepaymentsPage: React.FC = () => {
     reason: '',
     countryIds: [] as (string | number)[], // Changed to array for multi-select
     statuses: [] as string[], // Changed to array for multi-select
-    userId: user?.id || '' as number | ''
+    userIds: [user?.id || ''].filter(Boolean) as number[] // Changed to array for multi-select
   });
   
   const [availableUsers, setAvailableUsers] = useState<{id: number, name: string, email: string, profile: string}[]>([]);
@@ -169,9 +170,10 @@ const PrepaymentsPage: React.FC = () => {
       );
     }
 
-    if (searchFilters.userId && canFilterByUser) {
-      // Note: This will be handled by backend API call, but we keep the filter state for UI consistency
-      // The actual filtering by userId happens in loadPrepayments()
+    if (searchFilters.userIds.length > 0 && canFilterByUser) {
+      filtered = filtered.filter(prepayment => 
+        searchFilters.userIds.includes(prepayment.requesting_user_id)
+      );
     }
 
     // Sort by creation date descending (newest first)
@@ -183,12 +185,12 @@ const PrepaymentsPage: React.FC = () => {
     setFilteredPrepayments(sortedFiltered);
   }, [prepayments, searchFilters, canFilterByUser]);
 
-  // Reload prepayments when userId filter changes (for backend filtering)
+  // Reload prepayments when userIds filter changes (for backend filtering)
   useEffect(() => {
     if (canFilterByUser) {
       loadPrepayments();
     }
-  }, [searchFilters.userId, canFilterByUser]);
+  }, [JSON.stringify(searchFilters.userIds), canFilterByUser]);
 
   // Helper function to convert API prepayment to frontend format
   const mapApiToFrontend = (apiPrepayment: ApiPrepayment): Prepayment => {
@@ -206,7 +208,9 @@ const PrepaymentsPage: React.FC = () => {
       justification_files: apiPrepayment.justification_files,
       status: apiPrepayment.status,
       rejection_reason: (apiPrepayment as any).rejection_reason,
+      rejecting_approver_name: (apiPrepayment as any).rejecting_approver_name,
       created_at: apiPrepayment.created_at,
+      requesting_user_id: apiPrepayment.requesting_user_id,
     };
   };
 
@@ -584,21 +588,13 @@ const PrepaymentsPage: React.FC = () => {
         
         {/* User filter - only for accounting/treasury users */}
         {canFilterByUser && (
-          <FormControl size="small" sx={{ minWidth: 200 }}>
-            <InputLabel>{t('common.user')}</InputLabel>
-            <Select
-              value={searchFilters.userId}
-              label={t('common.user')}
-              onChange={(e) => 
-                setSearchFilters(prev => ({ ...prev, userId: e.target.value as number | '' }))
-              }
-            >
-              <MenuItem value={user?.id}>{t('common.myRecords')}</MenuItem>
-              {availableUsers.map(u => (
-                <MenuItem key={u.id} value={u.id}>{u.name}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <MultiSelectFilter
+            label={t('common.user')}
+            value={searchFilters.userIds}
+            onChange={(value) => setSearchFilters(prev => ({ ...prev, userIds: value as number[] }))}
+            options={availableUsers.map(u => ({ id: u.id, name: u.name }))}
+            minWidth={200}
+          />
         )}
         
         <MultiSelectFilter
@@ -622,7 +618,7 @@ const PrepaymentsPage: React.FC = () => {
               reason: '', 
               countryIds: [], 
               statuses: [], 
-              userId: user?.id || '' 
+              userIds: [user?.id || ''].filter(Boolean) as number[]
             })
           }
         >
