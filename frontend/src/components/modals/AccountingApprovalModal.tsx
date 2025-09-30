@@ -570,12 +570,9 @@ const AccountingApprovalModal: React.FC<AccountingApprovalModalProps> = ({
             variant="contained"
             onClick={handleGenerateExpensesFile}
             disabled={state.loading}
-            startIcon={<ReceiptIcon />}
+            startIcon={state.loading ? <CircularProgress size={20} color="inherit" /> : <ReceiptIcon />}
           >
-            {state.loading ? (
-              <CircularProgress size={20} sx={{ mr: 1 }} />
-            ) : null}
-            {t('accounting.generateExpensesFile')}
+            {state.loading ? t('common.processing') : t('accounting.generateExpensesFile')}
           </Button>
         )}
 
@@ -584,11 +581,9 @@ const AccountingApprovalModal: React.FC<AccountingApprovalModalProps> = ({
             variant="contained"
             onClick={handleUpdateInvoiceNumbers}
             disabled={state.loading || state.facturaExpenses.some(exp => !exp.sap_invoice_number.trim())}
+            startIcon={state.loading ? <CircularProgress size={20} color="inherit" /> : null}
           >
-            {state.loading ? (
-              <CircularProgress size={20} sx={{ mr: 1 }} />
-            ) : null}
-            {t('accounting.saveInvoiceNumbers')}
+            {state.loading ? t('common.processing') : t('accounting.saveInvoiceNumbers')}
           </Button>
         )}
 
@@ -597,12 +592,9 @@ const AccountingApprovalModal: React.FC<AccountingApprovalModalProps> = ({
             variant="contained"
             onClick={handleGenerateCompensationFile}
             disabled={state.loading}
-            startIcon={<ReceiptIcon />}
+            startIcon={state.loading ? <CircularProgress size={20} color="inherit" /> : <ReceiptIcon />}
           >
-            {state.loading ? (
-              <CircularProgress size={20} sx={{ mr: 1 }} />
-            ) : null}
-            {t('accounting.generateCompensationFile')}
+            {state.loading ? t('common.processing') : t('accounting.generateCompensationFile')}
           </Button>
         )}
 
@@ -612,11 +604,9 @@ const AccountingApprovalModal: React.FC<AccountingApprovalModalProps> = ({
             color="success"
             onClick={handleCompleteApproval}
             disabled={state.loading || !state.sapCompensationNumber.trim()}
+            startIcon={state.loading ? <CircularProgress size={20} color="inherit" /> : null}
           >
-            {state.loading ? (
-              <CircularProgress size={20} sx={{ mr: 1 }} />
-            ) : null}
-            {t('accounting.completeApproval')}
+            {state.loading ? t('common.processing') : t('accounting.completeApproval')}
           </Button>
         )}
       </DialogActions>
