@@ -52,7 +52,10 @@ const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
     const selectedValue = typeof event.target.value === 'string' 
       ? event.target.value.split(',') 
       : event.target.value;
-    onChange(selectedValue);
+    
+    // Filter out 'select-all' if it somehow gets included
+    const filteredValue = selectedValue.filter(v => v !== 'select-all');
+    onChange(filteredValue);
   };
 
   const renderValue = (selected: (string | number)[]) => {
@@ -120,8 +123,9 @@ const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
         
         {/* Select All option */}
         <MenuItem
-          disableRipple
+          value="select-all"
           onClick={(e) => {
+            e.preventDefault();
             e.stopPropagation();
             if (value.length === options.length) {
               onChange([]);
