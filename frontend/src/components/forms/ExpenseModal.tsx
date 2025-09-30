@@ -147,6 +147,9 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
     currencyCode: '',
     alertMessage: ''
   });
+
+  // Track which alert has been shown to prevent duplicates
+  const [shownAlertKey, setShownAlertKey] = useState<string>('');
   const [fileUploading, setFileUploading] = useState(false);
 
   // Load taxes on component mount
@@ -260,6 +263,8 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
     // Check for real-time alerts when amount changes
     if (field === 'amount') {
+      // Clear alert tracking since amount changed
+      setShownAlertKey('');
       // Use setTimeout to allow state to update first
       setTimeout(() => {
         checkRealtimeAlert(updatedData);
@@ -285,6 +290,8 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
     // Check for real-time alerts when currency changes
     if (field === 'currency') {
+      // Clear alert tracking since currency changed
+      setShownAlertKey('');
       // Use setTimeout to allow state to update first
       setTimeout(() => {
         checkRealtimeAlert(updatedData);
@@ -314,6 +321,8 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
     // Check for real-time alerts when category changes
     if (categoryId && categoryId !== 0) {
+      // Clear alert tracking since category changed
+      setShownAlertKey('');
       // Use setTimeout to allow state to update first
       setTimeout(() => {
         checkRealtimeAlert(updatedData);
@@ -360,6 +369,8 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
     // Check for real-time alerts when country changes
     if (countryId && countryId !== 0) {
+      // Clear alert tracking since country changed
+      setShownAlertKey('');
       // Use setTimeout to allow state to update first
       setTimeout(() => {
         checkRealtimeAlert(updatedData);
@@ -623,6 +634,14 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
         return; // Invalid amount, skip alert check
       }
 
+      // Create a unique key for this alert based on the alert-triggering data
+      const alertKey = `${currentData.category_id}-${currentData.country_id}-${currencyId}-${amountValue}`;
+      
+      // Check if we've already shown this exact alert
+      if (shownAlertKey === alertKey) {
+        return; // Don't show the same alert twice
+      }
+
       const alertResponse = await categoryAlertService.checkExpenseAlert(
         currentData.category_id,
         currentData.country_id,
@@ -635,6 +654,9 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
         const categoryName = categories.find(c => c.id === currentData.category_id)?.name || '';
         const countryName = countries.find(c => c.id === currentData.country_id)?.name || '';
         const currencyCode = currentData.currency || 'USD';
+        
+        // Mark this alert as shown
+        setShownAlertKey(alertKey);
         
         setAlertDialog({
           open: true,
@@ -663,12 +685,14 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
     onClose();
   };
 
-  const handleAlertProceed = () => {
+  // Handle alert dialog actions
+  const handleAlertCancel = () => {
     setAlertDialog(prev => ({ ...prev, open: false }));
-    proceedWithSave();
   };
 
-  const handleAlertCancel = () => {
+  const handleAlertProceed = () => {
+    // User chose to proceed despite the alert - just close the alert dialog
+    // DO NOT save automatically - let user continue editing and save manually
     setAlertDialog(prev => ({ ...prev, open: false }));
   };
 

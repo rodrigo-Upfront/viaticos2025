@@ -161,6 +161,9 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
     alertMessage: ''
   });
 
+  // Track which alerts have been shown to prevent duplicates
+  const [shownAlerts, setShownAlerts] = useState<Map<string, string>>(new Map());
+
   const steps = [
     t('expenses.selectReport'),
     t('expenses.enterExpenses')
@@ -292,6 +295,14 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
         return; // Not enough data to check alert
       }
 
+      // Create a unique key for this alert based on the alert-triggering data
+      const alertKey = `${row.id}-${row.category_id}-${row.country_id}-${row.currency_id}-${row.amount}`;
+      
+      // Check if we've already shown this exact alert
+      if (shownAlerts.has(alertKey)) {
+        return; // Don't show the same alert twice
+      }
+
       const { categoryAlertService } = await import('../services/categoryAlertService');
       const alertResponse = await categoryAlertService.checkExpenseAlert(
         row.category_id,
@@ -304,6 +315,9 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
         const category = categories.find(c => c.id === row.category_id);
         const country = countries.find(c => c.id === row.country_id);
         const currency = currencies.find(c => c.id === row.currency_id);
+        
+        // Mark this alert as shown
+        setShownAlerts(prev => new Map(prev).set(alertKey, alertKey));
         
         setAlertDialog({
           open: true,
@@ -319,6 +333,20 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
       console.warn('Real-time alert check failed:', error);
       // Fail silently for real-time checks
     }
+  };
+
+  // Clear alert tracking for a specific row when alert-relevant data changes
+  const clearAlertTracking = (rowId: string) => {
+    setShownAlerts(prev => {
+      const newMap = new Map(prev);
+      // Remove all alerts for this row (they start with rowId-)
+      for (const key of newMap.keys()) {
+        if (key.startsWith(`${rowId}-`)) {
+          newMap.delete(key);
+        }
+      }
+      return newMap;
+    });
   };
 
   const handleFileAttachment = (rowId: string) => {
@@ -923,8 +951,11 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                             <Select
                               value={row.category_id}
                               onChange={(e) => {
-                                const categoryId = e.target.value;
+                                const categoryId = Number(e.target.value);
                                 updateRow(row.id, 'category_id', categoryId);
+                                
+                                // Clear alert tracking since category changed
+                                clearAlertTracking(row.id);
                                 
                                 // Check for real-time alerts when category changes
                                 if (categoryId && categoryId !== 0) {
@@ -960,6 +991,9 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                             onChange={(e) => {
                               const amount = parseFloat(e.target.value) || 0;
                               updateRow(row.id, 'amount', amount);
+                              
+                              // Clear alert tracking since amount changed
+                              clearAlertTracking(row.id);
                               
                               // Check for real-time alerts when amount changes
                               if (amount > 0) {
