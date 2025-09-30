@@ -606,7 +606,7 @@
     "selectCountry": "Seleccionar un país",
     "justificationFile": "Archivo de Justificación (Opcional)",
     "rejectionReason": "Motivo de Rechazo",
-    "providedByApprover": "Proporcionado por {approverName} al rechazar",
+    "providedByApprover": "Proporcionado por {{approverName}} al rechazar",
     "update": "Actualizar",
     "sendForApproval": "Enviar para Aprobación",
     "resubmitForApproval": "Reenviar para Aprobación",

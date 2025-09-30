@@ -570,7 +570,7 @@
     "selectCountry": "Select a country",
     "justificationFile": "Justification File (Optional)",
     "rejectionReason": "Rejection Reason",
-    "providedByApprover": "Provided by {approverName} upon rejection",
+    "providedByApprover": "Provided by {{approverName}} upon rejection",
     "update": "Update",
     "sendForApproval": "Send for Approval",
     "resubmitForApproval": "Resubmit for Approval",
