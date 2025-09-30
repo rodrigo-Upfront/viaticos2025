@@ -53,9 +53,18 @@ const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
       ? event.target.value.split(',') 
       : event.target.value;
     
-    // Filter out 'select-all' if it somehow gets included
-    const filteredValue = selectedValue.filter(v => v !== 'select-all');
-    onChange(filteredValue);
+    // Check if 'select-all' was clicked
+    if (selectedValue.includes('select-all')) {
+      // Toggle: if all are selected, deselect all; otherwise select all
+      if (value.length === options.length) {
+        onChange([]);
+      } else {
+        onChange(options.map(opt => opt.id));
+      }
+      return;
+    }
+    
+    onChange(selectedValue);
   };
 
   const renderValue = (selected: (string | number)[]) => {
@@ -122,20 +131,9 @@ const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
         </MenuItem>
         
         {/* Select All option */}
-        <MenuItem
-          value="select-all"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (value.length === options.length) {
-              onChange([]);
-            } else {
-              onChange(options.map(opt => opt.id));
-            }
-          }}
-        >
+        <MenuItem value="select-all">
           <Checkbox 
-            checked={value.length === options.length}
+            checked={value.length === options.length && options.length > 0}
             indeterminate={value.length > 0 && value.length < options.length}
           />
           <ListItemText primary={t('common.selectAll')} />
