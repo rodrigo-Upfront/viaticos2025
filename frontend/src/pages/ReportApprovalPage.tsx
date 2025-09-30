@@ -968,7 +968,7 @@ const ReportApprovalPage: React.FC = () => {
                                   if (!reason.trim()) {
                                     // Expand the row to show rejection reason field
                                     setExpandedRows(prev => new Set(Array.from(prev).concat([expense.id])));
-                                    setError('Please enter a rejection reason in the expanded section');
+                                    setError(t('approvals.pleaseEnterRejectionReason'));
                                   } else {
                                     handleExpenseReject(expense.id, reason);
                                   }
@@ -1023,7 +1023,7 @@ const ReportApprovalPage: React.FC = () => {
         {isAccountingUser && (
           <Box mt={3} textAlign="center">
             <Typography variant="body1" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-              Approve or reject individual expenses above. The report will be automatically processed when all expenses are reviewed.
+              {t('approvals.accountingInstructions')}
             </Typography>
           </Box>
         )}

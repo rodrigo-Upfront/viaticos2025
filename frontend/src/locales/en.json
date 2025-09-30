@@ -192,6 +192,8 @@
     "rejectReportButton": "Reject Report",
     "expenseRejectionReason": "Expense Rejection Reason",
     "enterRejectionReason": "Enter rejection reason (max 300 characters)",
+    "pleaseEnterRejectionReason": "Please enter a rejection reason in the expanded section",
+    "accountingInstructions": "Approve or reject individual expenses above. The report will be automatically processed when all expenses are reviewed.",
     "characters": "characters",
     "types": {
       "prepayment": "Prepayment",

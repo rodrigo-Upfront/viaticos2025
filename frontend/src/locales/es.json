@@ -215,6 +215,8 @@
     "rejectReportButton": "Rechazar Reporte",
     "expenseRejectionReason": "Motivo del Rechazo del Gasto",
     "enterRejectionReason": "Ingrese el motivo del rechazo (máximo 300 caracteres)",
+    "pleaseEnterRejectionReason": "Por favor ingrese un motivo de rechazo en la sección expandida",
+    "accountingInstructions": "Apruebe o rechace los gastos individuales arriba. El reporte será procesado automáticamente cuando todos los gastos sean revisados.",
     "characters": "caracteres",
     "types": {
       "prepayment": "Anticipo",
