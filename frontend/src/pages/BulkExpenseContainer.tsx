@@ -121,7 +121,7 @@ const BulkExpenseContainer: React.FC = () => {
     }
   };
 
-  const handleBulkSave = async (expenseRows: BulkExpenseRow[], reportId: number) => {
+  const handleBulkSave = async (expenseRows: BulkExpenseRow[], reportId: number, acknowledgedAlerts?: Map<string, string>) => {
     try {
       setActionLoading(true);
       
@@ -139,6 +139,14 @@ const BulkExpenseContainer: React.FC = () => {
           // Find currency for the alert check
           const currency = data.currencies.find(c => c.id === row.currency_id);
           const currencyCode = currency?.code || '';
+          
+          // Create the same alert key used in real-time checking
+          const alertKey = `${row.id}-${row.category_id}-${row.country_id}-${row.currency_id}-${row.amount}`;
+          
+          // Skip this alert if it was already acknowledged during real-time editing
+          if (acknowledgedAlerts && acknowledgedAlerts.has(alertKey)) {
+            continue;
+          }
           
           const alertResponse = await categoryAlertService.checkExpenseAlert(
             row.category_id,

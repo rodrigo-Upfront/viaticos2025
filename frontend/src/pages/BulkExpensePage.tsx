@@ -113,7 +113,7 @@ interface BulkExpensePageProps {
   currencies: Currency[];
   suppliers: Supplier[];
   taxes: Tax[];
-  onSave: (expenses: BulkExpenseRow[], reportId: number) => Promise<void>;
+  onSave: (expenses: BulkExpenseRow[], reportId: number, acknowledgedAlerts?: Map<string, string>) => Promise<void>;
   loading?: boolean;
 }
 
@@ -340,11 +340,13 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
     setShownAlerts(prev => {
       const newMap = new Map(prev);
       // Remove all alerts for this row (they start with rowId-)
-      for (const key of newMap.keys()) {
+      const keysToDelete: string[] = [];
+      newMap.forEach((value, key) => {
         if (key.startsWith(`${rowId}-`)) {
-          newMap.delete(key);
+          keysToDelete.push(key);
         }
-      }
+      });
+      keysToDelete.forEach(key => newMap.delete(key));
       return newMap;
     });
   };
@@ -473,7 +475,7 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
     }
 
     try {
-      await onSave(expenseRows, selectedReportId);
+      await onSave(expenseRows, selectedReportId, shownAlerts);
       navigate('/expenses');
     } catch (error) {
       console.error('Error saving bulk expenses:', error);
