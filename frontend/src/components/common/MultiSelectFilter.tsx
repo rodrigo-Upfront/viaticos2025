@@ -120,9 +120,9 @@ const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
         
         {/* Select All option */}
         <MenuItem
-          value="all"
+          disableRipple
           onClick={(e) => {
-            e.preventDefault();
+            e.stopPropagation();
             if (value.length === options.length) {
               onChange([]);
             } else {
