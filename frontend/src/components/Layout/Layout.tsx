@@ -373,17 +373,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <Typography variant="caption" color="text.secondary">{user?.email}</Typography>
             </MenuItem>
             <Divider />
-            <MenuItem onClick={handleClose}>
-              <ListItemIcon>
-                <AccountCircle fontSize="small" />
-              </ListItemIcon>
-              Profile
-            </MenuItem>
             <MenuItem onClick={handlePasswordChange}>
               <ListItemIcon>
                 <Lock fontSize="small" />
               </ListItemIcon>
-              Change Password
+              {t('auth.changePassword')}
             </MenuItem>
             <MenuItem onClick={handleMFASettings}>
               <ListItemIcon>

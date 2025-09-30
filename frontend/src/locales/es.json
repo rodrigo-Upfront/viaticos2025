@@ -6,6 +6,7 @@
   "auth": {
     "login": "Iniciar Sesión",
     "logout": "Cerrar Sesión",
+    "changePassword": "Cambiar Contraseña",
     "email": "Correo Electrónico",
     "password": "Contraseña",
     "loginButton": "Ingresar",
@@ -209,6 +210,12 @@
     "prepaymentsPending": "Anticipos Pendientes",
     "reportsPending": "Reportes Pendientes",
     "totalValue": "Valor Total",
+    "rejectionReasonLabel": "Motivo del Rechazo",
+    "rejectionReasonRequired": "El motivo del rechazo es obligatorio",
+    "rejectReportButton": "Rechazar Reporte",
+    "expenseRejectionReason": "Motivo del Rechazo del Gasto",
+    "enterRejectionReason": "Ingrese el motivo del rechazo (máximo 300 caracteres)",
+    "characters": "caracteres",
     "types": {
       "prepayment": "Anticipo",
       "expenseReport": "Reporte de Gastos",

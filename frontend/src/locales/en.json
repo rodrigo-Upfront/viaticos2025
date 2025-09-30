@@ -6,6 +6,7 @@
   "auth": {
     "login": "Login",
     "logout": "Logout",
+    "changePassword": "Change Password",
     "email": "Email",
     "password": "Password",
     "loginButton": "Sign In",
@@ -186,6 +187,12 @@
     "prepaymentsPending": "Prepayments Pending",
     "reportsPending": "Reports Pending",
     "totalValue": "Total Value",
+    "rejectionReasonLabel": "Rejection Reason",
+    "rejectionReasonRequired": "Rejection reason is required",
+    "rejectReportButton": "Reject Report",
+    "expenseRejectionReason": "Expense Rejection Reason",
+    "enterRejectionReason": "Enter rejection reason (max 300 characters)",
+    "characters": "characters",
     "types": {
       "prepayment": "Prepayment",
       "expenseReport": "Expense Report",

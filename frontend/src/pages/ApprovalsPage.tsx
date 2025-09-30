@@ -1162,7 +1162,7 @@ const ApprovalsPage: React.FC = () => {
             fullWidth
             multiline
             rows={4}
-            label="Rejection Reason"
+            label={t('approvals.rejectionReasonLabel')}
             value={quickRejectionDialog.rejectionReason}
             onChange={(e) => setQuickRejectionDialog(prev => ({ 
               ...prev, 
@@ -1170,7 +1170,7 @@ const ApprovalsPage: React.FC = () => {
             }))}
             required
             error={!quickRejectionDialog.rejectionReason.trim()}
-            helperText={!quickRejectionDialog.rejectionReason.trim() ? "Rejection reason is required" : ""}
+            helperText={!quickRejectionDialog.rejectionReason.trim() ? t('approvals.rejectionReasonRequired') : ""}
           />
         </DialogContent>
         <DialogActions>
@@ -1178,7 +1178,7 @@ const ApprovalsPage: React.FC = () => {
             onClick={() => setQuickRejectionDialog({ open: false, reportId: null, rejectionReason: '' })}
             disabled={loading.action}
           >
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button 
             onClick={handleQuickRejectConfirm}
@@ -1186,7 +1186,7 @@ const ApprovalsPage: React.FC = () => {
             variant="contained"
             disabled={loading.action || !quickRejectionDialog.rejectionReason.trim()}
           >
-            {loading.action ? <CircularProgress size={20} /> : 'Reject Report'}
+            {loading.action ? <CircularProgress size={20} /> : t('approvals.rejectReportButton')}
           </Button>
         </DialogActions>
       </Dialog>

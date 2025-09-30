@@ -989,13 +989,13 @@ const ReportApprovalPage: React.FC = () => {
                         <Collapse in={expandedRows.has(expense.id)} timeout="auto" unmountOnExit>
                           <Box sx={{ p: 2, backgroundColor: '#f5f5f5' }}>
                             <Typography variant="subtitle2" gutterBottom>
-                              {isAccountingUser ? 'Expense Rejection Reason' : 'Rejection Reason'}
+                              {isAccountingUser ? t('approvals.expenseRejectionReason') : t('approvals.rejectionReasonLabel')}
                             </Typography>
                             <TextField
                               fullWidth
                               multiline
                               rows={3}
-                              placeholder={expense.rejection_reason || "Enter rejection reason (max 300 characters)"}
+                              placeholder={expense.rejection_reason || t('approvals.enterRejectionReason')}
                               value={isAccountingUser ? (expenseRejectionReasons[expense.id] || '') : (rejectionReasons[expense.id] || '')}
                               onChange={(e) => {
                                 if (isAccountingUser) {
@@ -1005,7 +1005,7 @@ const ReportApprovalPage: React.FC = () => {
                                 }
                               }}
                               inputProps={{ maxLength: 300 }}
-                              helperText={`${(rejectionReasons[expense.id] || '').length}/300 characters`}
+                              helperText={`${(isAccountingUser ? (expenseRejectionReasons[expense.id] || '') : (rejectionReasons[expense.id] || '')).length}/300 ${t('approvals.characters')}`}
                               size="small"
                             />
                           </Box>
