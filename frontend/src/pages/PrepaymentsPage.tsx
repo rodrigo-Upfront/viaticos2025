@@ -58,7 +58,7 @@ interface Prepayment {
   rejection_reason?: string;
   rejecting_approver_name?: string;
   created_at?: string;
-  requesting_user_id: number;
+  requesting_user_id?: number;
 }
 
 interface Country {
@@ -172,7 +172,7 @@ const PrepaymentsPage: React.FC = () => {
 
     if (searchFilters.userIds.length > 0 && canFilterByUser) {
       filtered = filtered.filter(prepayment => 
-        searchFilters.userIds.includes(prepayment.requesting_user_id)
+        prepayment.requesting_user_id && searchFilters.userIds.includes(prepayment.requesting_user_id)
       );
     }
 
@@ -235,7 +235,8 @@ const PrepaymentsPage: React.FC = () => {
       setLoading(prev => ({ ...prev, prepayments: true }));
       const response = await prepaymentService.getPrepayments({
         // Only pass user_id filter to backend if user has permission to filter by user
-        ...(canFilterByUser && searchFilters.userId ? { user_id: searchFilters.userId as number } : {} as any),
+        // For multi-select: if only one user selected, send as single ID, otherwise fetch all and filter client-side
+        ...(canFilterByUser && searchFilters.userIds.length === 1 ? { user_id: searchFilters.userIds[0] as number } : {} as any),
       } as any);
       const mappedPrepayments = response.prepayments.map(mapApiToFrontend);
       // Sort by creation date descending (newest first)

@@ -62,7 +62,7 @@ interface ExpenseReport {
   budgetStatus: string;
   status: string;
   expenseCount: number;
-  requesting_user_id: number;
+  requesting_user_id?: number;
   // Reimbursement-specific fields
   report_type?: string;
   reimbursement_reason?: string;
@@ -218,7 +218,7 @@ const ReportsPage: React.FC = () => {
     // Filter by multiple users if applicable
     if (canFilterByUser && filterUserIds.length > 1) {
       filtered = filtered.filter(report => 
-        filterUserIds.includes(report.requesting_user_id)
+        report.requesting_user_id && filterUserIds.includes(report.requesting_user_id)
       );
     }
 
@@ -791,7 +791,7 @@ const ReportsPage: React.FC = () => {
                   <TableCell>{report.id}</TableCell>
                   <TableCell>
                     <Chip
-                      label={getReportTypeLabel(report.report_type)}
+                      label={getReportTypeLabel(report.report_type || 'PREPAYMENT')}
                       color={report.report_type === 'REIMBURSEMENT' ? 'secondary' : 'primary'}
                       size="small"
                       variant="filled"
