@@ -1030,20 +1030,20 @@ const ReportApprovalPage: React.FC = () => {
       
       {/* Fund Return Document Section */}
       {(report.status === 'REVIEW_RETURN' || (report.return_document_number && report.return_document_files)) && (
-        <Paper sx={{ borderRadius: 2, boxShadow: 1, mb: 3 }}>
+        <Paper sx={{ borderRadius: 2, boxShadow: 1, mb: 3, mt: 4 }}>
           <Box sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
-              Fund Return Documents
+              {t('reports.fundReturnDocuments')}
             </Typography>
             
             {report.return_document_number && report.return_document_files && (
               <Box>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  Document Number: <strong>{report.return_document_number}</strong>
+                  {t('reports.documentNumber')}: <strong>{report.return_document_number}</strong>
                 </Typography>
                 
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  Submitted Files:
+                  {t('reports.submittedFiles')}:
                 </Typography>
                 
                 {report.return_document_files.map((file: any, index: number) => (
