@@ -240,7 +240,7 @@
     "totalExpenses": "Total Gastos",
     "overBudget": "Exceden Presupuesto",
     "searchAndFilter": "Buscar y Filtrar",
-    "reason": "Motivo",
+    "reason": "Motivo o ID",
     "reportDate": "Fecha Reporte",
     "prepaidAmount": "Monto Anticipado",
     "createReimbursement": "CREAR REEMBOLSO",
@@ -574,7 +574,7 @@
   "prepaymentModule": {
     "title": "Anticipos",
     "createPrepayment": "CREAR ANTICIPO",
-    "searchReason": "Buscar motivo...",
+    "searchReason": "Buscar motivo o ID...",
     "destination": "Destino",
     "startDate": "Fecha de Inicio",
     "endDate": "Fecha de Fin",
@@ -722,7 +722,7 @@
   "expenses": {
     "title": "Gastos",
     "createExpense": "CREAR GASTO",
-    "searchPurpose": "Buscar propósito...",
+    "searchPurpose": "Buscar propósito o ID...",
     "searchAndFilter": "Buscar y Filtrar",
     "from": "Desde",
     "to": "Hasta",

@@ -217,7 +217,7 @@
     "totalExpenses": "Total Expenses",
     "overBudget": "Over Budget",
     "searchAndFilter": "Search & Filter",
-    "reason": "Reason",
+    "reason": "Reason or ID",
     "reportDate": "Report Date",
     "prepaidAmount": "Prepaid Amount",
     "createReimbursement": "CREATE REIMBURSEMENT",
@@ -538,7 +538,7 @@
   "prepaymentModule": {
     "title": "Prepayments",
     "createPrepayment": "CREATE PREPAYMENT",
-    "searchReason": "Search reason...",
+    "searchReason": "Search reason or ID...",
     "destination": "Destination",
     "startDate": "Start Date",
     "endDate": "End Date",
@@ -686,7 +686,7 @@
   "expenses": {
     "title": "Expenses",
     "createExpense": "CREATE EXPENSE",
-    "searchPurpose": "Search purpose...",
+    "searchPurpose": "Search purpose or ID...",
     "searchAndFilter": "Search and Filter",
     "from": "From",
     "to": "To",

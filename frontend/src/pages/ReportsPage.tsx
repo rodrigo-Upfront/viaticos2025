@@ -207,7 +207,8 @@ const ReportsPage: React.FC = () => {
         const reason = report.report_type === 'REIMBURSEMENT' 
           ? report.reimbursement_reason 
           : report.prepayment_reason;
-        return reason?.toLowerCase().includes(searchFilters.reason.toLowerCase());
+        return reason?.toLowerCase().includes(searchFilters.reason.toLowerCase()) ||
+               report.id?.toString().includes(searchFilters.reason);
       });
     }
 

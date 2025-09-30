@@ -159,7 +159,8 @@ const ExpensesPage: React.FC = () => {
 
     if (searchFilters.purpose) {
       filtered = filtered.filter(expense => 
-        expense.purpose.toLowerCase().includes(searchFilters.purpose.toLowerCase())
+        expense.purpose.toLowerCase().includes(searchFilters.purpose.toLowerCase()) ||
+        expense.id?.toString().includes(searchFilters.purpose)
       );
     }
 

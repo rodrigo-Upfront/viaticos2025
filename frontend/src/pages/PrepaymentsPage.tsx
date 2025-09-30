@@ -149,7 +149,8 @@ const PrepaymentsPage: React.FC = () => {
 
     if (searchFilters.reason) {
       filtered = filtered.filter(prepayment => 
-        prepayment.reason.toLowerCase().includes(searchFilters.reason.toLowerCase())
+        prepayment.reason.toLowerCase().includes(searchFilters.reason.toLowerCase()) ||
+        prepayment.id?.toString().includes(searchFilters.reason)
       );
     }
 
