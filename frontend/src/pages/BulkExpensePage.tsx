@@ -452,9 +452,9 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
             // Validate FACTURA document number format (XX-XXXXX-XXXXXXX)
             const cleanNumber = row.document_number.replace(/-/g, '');
             if (cleanNumber.length !== 14) {
-              errors.document_number = 'FACTURA document number must be complete (XX-XXXXX-XXXXXXX format)';
+              errors.document_number = t('expenses.facturaFormatError');
             } else if (!/^[A-Za-z0-9]{14}$/.test(cleanNumber)) {
-              errors.document_number = 'FACTURA document number must contain only letters and numbers';
+              errors.document_number = t('expenses.facturaCharacterError');
             }
           }
 

@@ -147,6 +147,8 @@
     "date": "Date",
     "amount": "Amount",
     "status": "Status",
+    "selectAll": "Select All",
+    "noResults": "No results found",
     "uncategorized": "Uncategorized",
     "actions": "Actions",
     "confirmDelete": "Are you sure you want to delete",
@@ -782,7 +784,10 @@
     "historyAction": "Action",
     "historyFrom": "From",
     "historyTo": "To",
-    "historyComments": "Comments"
+    "historyComments": "Comments",
+    "documentNumberFormat": "Format: XX-XXXXX-XXXXXXX (letters and numbers)",
+    "facturaFormatError": "FACTURA document number must be complete (XX-XXXXX-XXXXXXX format)",
+    "facturaCharacterError": "FACTURA document number must contain only letters and numbers"
   },
   "suppliers": {
     "taxName": "Tax Name / RUC"

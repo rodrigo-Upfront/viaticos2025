@@ -547,9 +547,9 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
       // Validate FACTURA document number format (XX-XXXXX-XXXXXXX)
       const cleanNumber = formData.document_number.replace(/-/g, '');
       if (cleanNumber.length !== 14) {
-        newErrors.document_number = 'FACTURA document number must be complete (XX-XXXXX-XXXXXXX format)';
+        newErrors.document_number = t('expenses.facturaFormatError');
       } else if (!/^[A-Za-z0-9]{14}$/.test(cleanNumber)) {
-        newErrors.document_number = 'FACTURA document number must contain only letters and numbers';
+        newErrors.document_number = t('expenses.facturaCharacterError');
       }
     }
 
@@ -801,9 +801,9 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
       // Validate FACTURA document number format (XX-XXXXX-XXXXXXX)
       const cleanNumber = formData.document_number.replace(/-/g, '');
       if (cleanNumber.length !== 14) {
-        newErrors.document_number = 'FACTURA document number must be complete (XX-XXXXX-XXXXXXX format)';
+        newErrors.document_number = t('expenses.facturaFormatError');
       } else if (!/^[A-Za-z0-9]{14}$/.test(cleanNumber)) {
-        newErrors.document_number = 'FACTURA document number must contain only letters and numbers';
+        newErrors.document_number = t('expenses.facturaCharacterError');
       }
     }
 
@@ -1008,7 +1008,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
                       label={t('expenses.documentNumber')}
                       placeholder="XX-XXXXX-XXXXXXX"
                       error={!!errors.document_number}
-                      helperText={errors.document_number || 'Format: XX-XXXXX-XXXXXXX (letters and numbers)'}
+                      helperText={errors.document_number || t('expenses.documentNumberFormat')}
                       required
                     />
                   )}

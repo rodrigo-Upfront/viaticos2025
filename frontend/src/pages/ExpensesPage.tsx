@@ -36,6 +36,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import ExpenseModal from '../components/forms/ExpenseModal';
+import MultiSelectFilter from '../components/common/MultiSelectFilter';
 import { currencyService, Currency } from '../services/currencyService';
 import ExpenseViewModal from '../components/modals/ExpenseViewModal';
 import ConfirmDialog from '../components/forms/ConfirmDialog';
@@ -133,9 +134,9 @@ const ExpensesPage: React.FC = () => {
   // Filters/search state - changed to object like reports module
   const [searchFilters, setSearchFilters] = useState({
     purpose: '',
-    categoryId: '',
-    countryId: '',
-    reportId: '',
+    categoryIds: [] as (string | number)[], // Changed to array for multi-select
+    countryIds: [] as (string | number)[], // Changed to array for multi-select
+    reportIds: [] as (string | number)[], // Changed to array for multi-select
     startDate: '',
     endDate: '',
     statuses: ['pending', 'in_process', 'rejected'] as string[] // Default: all except approved
@@ -162,21 +163,21 @@ const ExpensesPage: React.FC = () => {
       );
     }
 
-    if (searchFilters.categoryId) {
+    if (searchFilters.categoryIds.length > 0) {
       filtered = filtered.filter(expense => 
-        expense.category_id === Number(searchFilters.categoryId)
+        searchFilters.categoryIds.includes(expense.category_id)
       );
     }
 
-    if (searchFilters.countryId) {
+    if (searchFilters.countryIds.length > 0) {
       filtered = filtered.filter(expense => 
-        expense.country_id === Number(searchFilters.countryId)
+        searchFilters.countryIds.includes(expense.country_id)
       );
     }
 
-    if (searchFilters.reportId) {
+    if (searchFilters.reportIds.length > 0) {
       filtered = filtered.filter(expense => 
-        expense.travel_expense_report_id === Number(searchFilters.reportId)
+        searchFilters.reportIds.includes(expense.travel_expense_report_id)
       );
     }
 
@@ -692,50 +693,29 @@ const ExpensesPage: React.FC = () => {
             </Select>
           </FormControl>
 
-          <TextField
-            select
-            size="small"
+          <MultiSelectFilter
             label={t('common.category')}
-            value={searchFilters.categoryId}
-            onChange={(e) => setSearchFilters(prev => ({ ...prev, categoryId: e.target.value }))}
-            sx={{ minWidth: 200 }}
-            SelectProps={{ native: true }}
-          >
-            <option value=""></option>
-            {filterOptions.categories.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </TextField>
+            value={searchFilters.categoryIds}
+            onChange={(value) => setSearchFilters(prev => ({ ...prev, categoryIds: value }))}
+            options={filterOptions.categories.map(c => ({ id: c.id, name: c.name }))}
+            minWidth={200}
+          />
           
-          <TextField
-            select
-            size="small"
+          <MultiSelectFilter
             label={t('common.country')}
-            value={searchFilters.countryId}
-            onChange={(e) => setSearchFilters(prev => ({ ...prev, countryId: e.target.value }))}
-            sx={{ minWidth: 200 }}
-            SelectProps={{ native: true }}
-          >
-            <option value=""></option>
-            {filterOptions.countries.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </TextField>
+            value={searchFilters.countryIds}
+            onChange={(value) => setSearchFilters(prev => ({ ...prev, countryIds: value }))}
+            options={filterOptions.countries.map(c => ({ id: c.id, name: c.name }))}
+            minWidth={200}
+          />
           
-          <TextField
-            select
-            size="small"
+          <MultiSelectFilter
             label={t('common.report')}
-            value={searchFilters.reportId}
-            onChange={(e) => setSearchFilters(prev => ({ ...prev, reportId: e.target.value }))}
-            sx={{ minWidth: 200 }}
-            SelectProps={{ native: true }}
-          >
-            <option value=""></option>
-            {filterOptions.reports.map(r => (
-              <option key={r.id} value={r.id}>{r.name}</option>
-            ))}
-          </TextField>
+            value={searchFilters.reportIds}
+            onChange={(value) => setSearchFilters(prev => ({ ...prev, reportIds: value }))}
+            options={filterOptions.reports.map(r => ({ id: r.id, name: r.name }))}
+            minWidth={200}
+          />
           
           <TextField
             label={t('expenses.from')}
@@ -759,9 +739,9 @@ const ExpensesPage: React.FC = () => {
             variant="text" 
             onClick={() => setSearchFilters({
               purpose: '',
-              categoryId: '',
-              countryId: '',
-              reportId: '',
+              categoryIds: [],
+              countryIds: [],
+              reportIds: [],
               startDate: '',
               endDate: '',
               statuses: ['pending', 'in_process', 'rejected']

@@ -148,6 +148,8 @@
     "date": "Fecha",
     "amount": "Monto",
     "status": "Estado",
+    "selectAll": "Seleccionar Todo",
+    "noResults": "No se encontraron resultados",
     "uncategorized": "Sin Categoría",
     "actions": "Acciones",
     "confirmDelete": "¿Está seguro que desea eliminar",
@@ -818,7 +820,10 @@
     "historyAction": "Acción",
     "historyFrom": "De",
     "historyTo": "A",
-    "historyComments": "Comentarios"
+    "historyComments": "Comentarios",
+    "documentNumberFormat": "Formato: XX-XXXXX-XXXXXXX (letras y números)",
+    "facturaFormatError": "El número de documento FACTURA debe estar completo (formato XX-XXXXX-XXXXXXX)",
+    "facturaCharacterError": "El número de documento FACTURA debe contener solo letras y números"
   },
   "suppliers": {
     "taxName": "Nombre Fiscal / RUC"
