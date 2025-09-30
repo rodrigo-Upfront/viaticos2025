@@ -1008,36 +1008,10 @@ const BulkExpensePage: React.FC<BulkExpensePageProps> = ({
                                 }, 100);
                               }
                             }}
-                            onBlur={async () => {
-                              // Keep the existing onBlur logic as a fallback
-                              if (row.amount > 0 && row.category_id && row.country_id && row.currency_id) {
-                                try {
-                                  const { categoryAlertService } = await import('../services/categoryAlertService');
-                                  const alertResponse = await categoryAlertService.checkExpenseAlert(
-                                    row.category_id,
-                                    row.country_id,
-                                    row.currency_id,
-                                    row.amount
-                                  );
-                                  
-                                  if (alertResponse.has_alert && alertResponse.exceeds_alert) {
-                                    const category = categories.find(c => c.id === row.category_id);
-                                    const country = countries.find(c => c.id === row.country_id);
-                                    const currency = currencies.find(c => c.id === row.currency_id);
-                                    
-                                    setAlertDialog({
-                                      open: true,
-                                      expenseAmount: row.amount,
-                                      alertAmount: alertResponse.alert_amount || 0,
-                                      categoryName: category?.name || '',
-                                      countryName: country?.name || '',
-                                      currencyCode: currency?.code || '',
-                                      alertMessage: alertResponse.alert_message || ''
-                                    });
-                                  }
-                                } catch (error) {
-                                  console.warn('Alert check failed:', error);
-                                }
+                            onBlur={() => {
+                              // Use the same checkRealtimeAlert function that respects shownAlerts
+                              if (row.amount > 0) {
+                                checkRealtimeAlert(row);
                               }
                             }}
                             error={!!row.errors.amount}
