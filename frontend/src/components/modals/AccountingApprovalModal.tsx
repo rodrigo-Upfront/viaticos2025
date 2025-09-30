@@ -304,9 +304,9 @@ const AccountingApprovalModal: React.FC<AccountingApprovalModalProps> = ({
         throw new Error(data.detail || t('accounting.completeError'));
       }
 
+      // Show success message but keep loading=true to prevent button re-enable
       setState(prev => ({
         ...prev,
-        loading: false,
         success: t('accounting.approvalComplete')
       }));
 
