@@ -35,6 +35,7 @@ import { useAuth } from '../contexts/AuthContext';
 import PrepaymentModal from '../components/forms/PrepaymentModal';
 import PrepaymentViewModal from '../components/modals/PrepaymentViewModal';
 import ConfirmDialog from '../components/forms/ConfirmDialog';
+import MultiSelectFilter from '../components/common/MultiSelectFilter';
 import apiClient from '../services/apiClient';
 import { prepaymentService, Prepayment as ApiPrepayment } from '../services/prepaymentService';
 import { currencyService, Currency } from '../services/currencyService';
@@ -121,8 +122,8 @@ const PrepaymentsPage: React.FC = () => {
   const { user } = useAuth();
   const [searchFilters, setSearchFilters] = useState({
     reason: '',
-    countryId: '' as string | number,
-    status: '',
+    countryIds: [] as (string | number)[], // Changed to array for multi-select
+    statuses: [] as string[], // Changed to array for multi-select
     userId: user?.id || '' as number | ''
   });
   
@@ -154,15 +155,17 @@ const PrepaymentsPage: React.FC = () => {
       );
     }
 
-    if (searchFilters.countryId) {
+    if (searchFilters.countryIds.length > 0) {
       filtered = filtered.filter(prepayment => 
-        prepayment.destination_country_id === Number(searchFilters.countryId)
+        searchFilters.countryIds.includes(prepayment.destination_country_id)
       );
     }
 
-    if (searchFilters.status) {
+    if (searchFilters.statuses.length > 0) {
       filtered = filtered.filter(prepayment => 
-        prepayment.status.toLowerCase() === searchFilters.status.toLowerCase()
+        searchFilters.statuses.some(status => 
+          prepayment.status.toLowerCase() === status.toLowerCase()
+        )
       );
     }
 
@@ -598,45 +601,27 @@ const PrepaymentsPage: React.FC = () => {
           </FormControl>
         )}
         
-        <TextField
-          select
-          size="small"
+        <MultiSelectFilter
           label={t('common.country')}
-          value={searchFilters.countryId}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
-            setSearchFilters(prev => ({ ...prev, countryId: e.target.value === '' ? '' : Number(e.target.value) }))
-          }
-          sx={{ minWidth: 200 }}
-          SelectProps={{ native: true }}
-        >
-          <option value=""></option>
-          {filterOptions.countries.map(c => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
-        </TextField>
-        <TextField
-          select
-          size="small"
+          value={searchFilters.countryIds}
+          onChange={(value) => setSearchFilters(prev => ({ ...prev, countryIds: value }))}
+          options={filterOptions.countries.map(c => ({ id: c.id, name: c.name }))}
+          minWidth={200}
+        />
+        <MultiSelectFilter
           label={t('common.status')}
-          value={searchFilters.status}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
-            setSearchFilters(prev => ({ ...prev, status: e.target.value }))
-          }
-          sx={{ minWidth: 220 }}
-          SelectProps={{ native: true }}
-        >
-          <option value=""></option>
-          {filterOptions.statuses.map(status => (
-            <option key={status} value={status}>{getStatusLabel(status)}</option>
-          ))}
-        </TextField>
+          value={searchFilters.statuses}
+          onChange={(value) => setSearchFilters(prev => ({ ...prev, statuses: value as string[] }))}
+          options={filterOptions.statuses.map(status => ({ id: status, name: getStatusLabel(status) }))}
+          minWidth={220}
+        />
         <Button 
           variant="text" 
           onClick={() => 
             setSearchFilters({ 
               reason: '', 
-              countryId: '', 
-              status: '', 
+              countryIds: [], 
+              statuses: [], 
               userId: user?.id || '' 
             })
           }

@@ -47,6 +47,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import ConfirmDialog from '../components/forms/ConfirmDialog';
+import MultiSelectFilter from '../components/common/MultiSelectFilter';
 import { reportService, ExpenseReport as ApiReport, ExpenseReportSummary, ExpenseReportManualCreate } from '../services/reportService';
 import { countryService, Country as ApiCountry } from '../services/countryService';
 import { currencyService, Currency } from '../services/currencyService';
@@ -165,10 +166,10 @@ const ReportsPage: React.FC = () => {
   // Search state
   const [searchFilters, setSearchFilters] = useState({
     reason: '',
-    country: '',
-    budgetStatus: '',
-    type: '',
-    status: [] as string[], // Changed to array for multiple selection
+    countries: [] as (string | number)[], // Changed to array for multi-select
+    budgetStatuses: [] as string[], // Changed to array for multi-select
+    types: [] as string[], // Changed to array for multi-select
+    status: [] as string[], // Already array for multiple selection
   });
 
   // User filter state (for accounting/treasury users)
@@ -212,24 +213,30 @@ const ReportsPage: React.FC = () => {
       });
     }
 
-    if (searchFilters.country) {
+    if (searchFilters.countries.length > 0) {
       filtered = filtered.filter(report => {
         const country = report.report_type === 'REIMBURSEMENT' 
           ? report.reimbursement_country 
           : report.prepayment_destination;
-        return country?.toLowerCase().includes(searchFilters.country.toLowerCase());
+        return searchFilters.countries.some(c => 
+          country?.toLowerCase().includes(String(c).toLowerCase())
+        );
       });
     }
 
-    if (searchFilters.budgetStatus) {
+    if (searchFilters.budgetStatuses.length > 0) {
       filtered = filtered.filter(report => 
-        report.budgetStatus?.toLowerCase().includes(searchFilters.budgetStatus.toLowerCase())
+        searchFilters.budgetStatuses.some(status =>
+          report.budgetStatus?.toLowerCase().includes(status.toLowerCase())
+        )
       );
     }
 
-    if (searchFilters.type) {
+    if (searchFilters.types.length > 0) {
       filtered = filtered.filter(report => 
-        (report.report_type || 'PREPAYMENT').toLowerCase().includes(searchFilters.type.toLowerCase())
+        searchFilters.types.some(type =>
+          (report.report_type || 'PREPAYMENT').toLowerCase().includes(type.toLowerCase())
+        )
       );
     }
 
@@ -712,49 +719,31 @@ const ReportsPage: React.FC = () => {
             </FormControl>
           </Grid>
           <Grid item xs={6} sm={4} md={2}>
-            <FormControl fullWidth size="small">
-              <InputLabel>{t('common.country')}</InputLabel>
-              <Select
-                value={searchFilters.country}
-                label={t('common.country')}
-                onChange={(e) => setSearchFilters(prev => ({ ...prev, country: e.target.value }))}
-              >
-                <MenuItem value=""><em>All</em></MenuItem>
-                {filterOptions.countries.map(country => (
-                  <MenuItem key={country.id} value={country.name}>{country.name}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <MultiSelectFilter
+              label={t('common.country')}
+              value={searchFilters.countries}
+              onChange={(value) => setSearchFilters(prev => ({ ...prev, countries: value }))}
+              options={filterOptions.countries.map(country => ({ id: country.name, name: country.name }))}
+              size="small"
+            />
           </Grid>
           <Grid item xs={6} sm={4} md={2}>
-            <FormControl fullWidth size="small">
-              <InputLabel>{t('reports.budgetStatus')}</InputLabel>
-              <Select
-                value={searchFilters.budgetStatus}
-                label={t('reports.budgetStatus')}
-                onChange={(e) => setSearchFilters(prev => ({ ...prev, budgetStatus: e.target.value }))}
-              >
-                <MenuItem value=""><em>All</em></MenuItem>
-                {filterOptions.budget_statuses.map(status => (
-                  <MenuItem key={status} value={status}>{status.replace('_', ' ')}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <MultiSelectFilter
+              label={t('reports.budgetStatus')}
+              value={searchFilters.budgetStatuses}
+              onChange={(value) => setSearchFilters(prev => ({ ...prev, budgetStatuses: value as string[] }))}
+              options={filterOptions.budget_statuses.map(status => ({ id: status, name: status.replace('_', ' ') }))}
+              size="small"
+            />
           </Grid>
           <Grid item xs={6} sm={4} md={2}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Type</InputLabel>
-              <Select
-                value={searchFilters.type}
-                label="Type"
-                onChange={(e) => setSearchFilters(prev => ({ ...prev, type: e.target.value }))}
-              >
-                <MenuItem value=""><em>All</em></MenuItem>
-                {filterOptions.types.map(type => (
-                  <MenuItem key={type} value={type}>{type}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <MultiSelectFilter
+              label="Type"
+              value={searchFilters.types}
+              onChange={(value) => setSearchFilters(prev => ({ ...prev, types: value as string[] }))}
+              options={filterOptions.types.map(type => ({ id: type, name: type }))}
+              size="small"
+            />
           </Grid>
         </Grid>
       </Paper>
