@@ -324,19 +324,19 @@ class SAPService:
         
         # Determine compensation type and amount to return
         if prepayment_amount == 0:
-            compensation_type = "COMPENSACIÓN"
+            compensation_type = "COMPENSACION"
             compensation_subtype = "Gastos Aprobados"
             amount_to_return = 0.0
         elif prepayment_amount > total_expenses:
-            compensation_type = "COMPENSACIÓN"
+            compensation_type = "COMPENSACION"
             compensation_subtype = "Pendiente de Devolución"
             amount_to_return = prepayment_amount - total_expenses
         elif prepayment_amount < total_expenses:
-            compensation_type = "COMPENSACIÓN"
+            compensation_type = "COMPENSACION"
             compensation_subtype = "Aprobado para Reembolso"
             amount_to_return = total_expenses - prepayment_amount
         else:  # Equal amounts
-            compensation_type = "COMPENSACIÓN"
+            compensation_type = "COMPENSACION"
             compensation_subtype = "Gastos Aprobados"
             amount_to_return = 0.0
         
@@ -348,10 +348,18 @@ class SAPService:
         else:
             report_reason = f"Expense Report {report.id}"
         
+        # Sort expenses by document type: FACTURA first, then BOLETA
+        sorted_expenses = sorted(approved_expenses, key=lambda exp: (exp.document_type != DocumentType.FACTURA, exp.document_type.value))
+        
+        # Determine provider to return based on compensation subtype
+        # If "Gastos Aprobados" (equal amounts or reimbursement), leave empty
+        # Otherwise, use the requesting user's SAP code
+        provider_to_return = "" if compensation_subtype == "Gastos Aprobados" else (user.sap_code or "")
+        
         # Generate file content - one line per expense
         file_lines = []
         
-        for expense in approved_expenses:
+        for expense in sorted_expenses:
             # Calculate net amount (expense amount - tax amount for taxable expenses)
             expense_amount = float(expense.amount)
             if expense.taxable == TaxableOption.SI and expense.tax and expense.tax.rate:
@@ -392,7 +400,7 @@ class SAPService:
                 
                 # Fields 17-18: Common fields for all expenses
                 f"{amount_to_return:.0f}" if amount_to_return > 0 else "",  # 17. Importe a devolver
-                "TBD"                                    # 18. Proveedor a devolver
+                provider_to_return                       # 18. Proveedor a devolver
             ]
             
             # Ensure empty fields are preserved with separators
