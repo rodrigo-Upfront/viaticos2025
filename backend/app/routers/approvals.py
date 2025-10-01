@@ -502,11 +502,21 @@ async def approve_prepayment(
         if next_status == RequestStatus.APPROVED:
             existing_report = db.query(TravelExpenseReport).filter(TravelExpenseReport.prepayment_id == prepayment.id).first()
             if not existing_report:
-                report = TravelExpenseReport(
-                    prepayment_id=prepayment.id,
-                    status=RequestStatus.PENDING,
-                    requesting_user_id=prepayment.requesting_user_id
-                )
+                # Use reserved report_id if available (set during SAP file generation)
+                if prepayment.report_id:
+                    report = TravelExpenseReport(
+                        id=prepayment.report_id,  # Use reserved ID
+                        prepayment_id=prepayment.id,
+                        status=RequestStatus.PENDING,
+                        requesting_user_id=prepayment.requesting_user_id
+                    )
+                else:
+                    # Fallback: auto-increment (shouldn't happen if SAP file was generated)
+                    report = TravelExpenseReport(
+                        prepayment_id=prepayment.id,
+                        status=RequestStatus.PENDING,
+                        requesting_user_id=prepayment.requesting_user_id
+                    )
                 db.add(report)
                 db.flush()  # get id
                 created_report_id = report.id
@@ -1832,11 +1842,21 @@ async def set_treasury_sap_record(
         
         created_report_id = None
         if not existing_report:
-            report = TravelExpenseReport(
-                prepayment_id=prepayment.id,
-                status=RequestStatus.PENDING,
-                requesting_user_id=prepayment.requesting_user_id
-            )
+            # Use reserved report_id if available (set during SAP file generation)
+            if prepayment.report_id:
+                report = TravelExpenseReport(
+                    id=prepayment.report_id,  # Use reserved ID
+                    prepayment_id=prepayment.id,
+                    status=RequestStatus.PENDING,
+                    requesting_user_id=prepayment.requesting_user_id
+                )
+            else:
+                # Fallback: auto-increment (shouldn't happen if SAP file was generated)
+                report = TravelExpenseReport(
+                    prepayment_id=prepayment.id,
+                    status=RequestStatus.PENDING,
+                    requesting_user_id=prepayment.requesting_user_id
+                )
             db.add(report)
             db.flush()  # Get report ID
             created_report_id = report.id

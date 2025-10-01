@@ -14,6 +14,7 @@ from app.models.models import (
     DocumentType, TaxableOption
 )
 from app.core.config import settings
+from sqlalchemy import text
 
 
 class SAPFileGenerationError(Exception):
@@ -68,6 +69,14 @@ class SAPService:
             currency_code = prepayment.currency.code if prepayment.currency else "Unknown"
             raise SAPFileGenerationError(f"Location {location.name} does not have account configured for currency {currency_code}. Please configure the account and retry.")
         
+        # Reserve report_id if not already set (only on first SAP file generation)
+        if not prepayment.report_id:
+            # Get next sequence value from travel_expense_reports
+            next_report_id = db.execute(text("SELECT nextval('travel_expense_reports_id_seq')")).scalar()
+            prepayment.report_id = next_report_id
+            db.commit()
+            db.refresh(prepayment)
+        
         # Generate SAP file content
         today = datetime.now()
         date_str = today.strftime("%d.%m.%Y")
@@ -79,6 +88,9 @@ class SAPService:
         else:
             amount_str = f"-{amount:.2f}"
         
+        # Build header text with format: "reportid-reason"
+        header_text = f"{prepayment.report_id}-{prepayment.reason}"
+        
         # Build SAP file fields
         fields = [
             location.sap_code,                    # COMP_CODE
@@ -86,7 +98,7 @@ class SAPService:
             date_str,                            # PSTNG_DATE
             deposit_number,                      # REF_DOC_NO
             "0000000001",                        # ITEMNO_ACC
-            prepayment.reason,                   # HEADER_TXT
+            header_text,                         # HEADER_TXT (reportid-reason)
             user.sap_code,                       # VENDOR_NO
             location.cost_center,                # PROFIT_CTR
             prepayment.currency.code,            # CURRENCY

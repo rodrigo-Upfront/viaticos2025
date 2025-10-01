@@ -272,6 +272,8 @@ class Prepayment(Base):
     deposit_number = Column(String(20), nullable=True)
     sap_prepayment_file = Column(String(500), nullable=True)  # File path to SAP file
     sap_record_number = Column(String(20), nullable=True)
+    # Reserved report ID (populated when SAP file is generated, used when creating the report)
+    report_id = Column(Integer, nullable=True)
     status = Column(SQLEnum(RequestStatus), default=RequestStatus.PENDING, nullable=False)
     requesting_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

@@ -48,6 +48,7 @@ class PrepaymentResponse(PrepaymentBase):
     deposit_number: Optional[str] = Field(None, description="Treasury deposit number")
     sap_prepayment_file: Optional[str] = Field(None, description="SAP prepayment file path")
     sap_record_number: Optional[str] = Field(None, description="SAP record number")
+    report_id: Optional[int] = Field(None, description="Reserved report ID (set when SAP file is generated)")
     created_at: datetime
     updated_at: datetime
     
@@ -76,6 +77,10 @@ class PrepaymentResponse(PrepaymentBase):
             rejection_reason=getattr(obj, 'rejection_reason', None),
             status=obj.status.value if obj.status else "pending",
             requesting_user_id=obj.requesting_user_id,
+            deposit_number=getattr(obj, 'deposit_number', None),
+            sap_prepayment_file=getattr(obj, 'sap_prepayment_file', None),
+            sap_record_number=getattr(obj, 'sap_record_number', None),
+            report_id=getattr(obj, 'report_id', None),
             created_at=obj.created_at,
             updated_at=obj.updated_at,
             destination_country_name=obj.destination_country.name if obj.destination_country else None,

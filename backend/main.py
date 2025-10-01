@@ -275,6 +275,26 @@ async def lifespan(app: FastAPI):
             except Exception:
                 pass
             
+            # Add report_id column to prepayments and backfill from existing reports
+            try:
+                conn.execute(text("ALTER TABLE prepayments ADD COLUMN IF NOT EXISTS report_id INTEGER"))
+                conn.commit()
+                # Backfill report_id for prepayments that have linked reports
+                conn.execute(text(
+                    """
+                    UPDATE prepayments p
+                    SET report_id = ter.id
+                    FROM travel_expense_reports ter
+                    WHERE ter.prepayment_id = p.id
+                      AND p.report_id IS NULL
+                    """
+                ))
+                conn.commit()
+                print("✅ Added report_id column to prepayments and backfilled existing data")
+            except Exception as e:
+                conn.rollback()
+                print(f"⚠️ Skipped prepayment report_id migration: {e}")
+            
             conn.commit()
             print("✅ Expense table supports reimbursements")
     except Exception as e:
