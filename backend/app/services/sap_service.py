@@ -250,6 +250,9 @@ class SAPService:
             else:
                 report_reason = f"Expense Report {report.id}"
             
+            # Build header text with report ID
+            header_text = f"{report.id}-{report_reason}"
+            
             # Build SAP file fields for this expense
             fields = [
                 location.sap_code,                    # COMP_CODE
@@ -257,7 +260,7 @@ class SAPService:
                 processing_date,                      # PSTNG_DATE (processing date)
                 expense.document_number,              # REF_DOC_NO
                 "0000000001",                        # ITEMNO_ACC
-                report_reason,                       # HEADER_TXT
+                header_text,                         # HEADER_TXT (with report ID)
                 expense.factura_supplier.sap_code,   # SUPPLIER_SAP_CODE (supplier SAP code instead of user)
                 "",                                  # PROFIT_CTR (always empty)
                 expense.currency.code,               # CURRENCY
@@ -360,6 +363,14 @@ class SAPService:
         else:
             report_reason = f"Expense Report {report.id}"
         
+        # Build header text with report ID for various fields
+        report_id_with_reason = f"{report.id}-{report_reason}"
+        
+        # For prepayment name field, include prepayment reason with report ID if prepayment exists
+        prepayment_name = ""
+        if report.prepayment:
+            prepayment_name = f"{report.id}-{report.prepayment.reason}"
+        
         # Sort expenses by document type: FACTURA first, then BOLETA
         sorted_expenses = sorted(approved_expenses, key=lambda exp: (exp.document_type != DocumentType.FACTURA, exp.document_type.value))
         
@@ -391,18 +402,18 @@ class SAPService:
                 
                 # Fields 4-6: Prepayment info (only if prepayment exists)
                 report.prepayment.sap_record_number or "" if report.prepayment else "",  # 4. No Partida SAP Anticipo
-                report.prepayment.reason or "" if report.prepayment else "",             # 5. Nombre Anticipo
+                prepayment_name,                                                          # 5. Nombre Anticipo (with report ID)
                 "ANTICIPO" if report.prepayment else "",                                 # 6. Indicador de Anticipo
                 
                 # Fields 7-9: FACTURA-specific fields (empty for BOLETA)
                 expense.sap_invoice_number or "" if expense.document_type == DocumentType.FACTURA else "",  # 7. No Partida SAP Factura
-                report_reason if expense.document_type == DocumentType.FACTURA else "",  # 8. Nombre Factura
+                report_id_with_reason if expense.document_type == DocumentType.FACTURA else "",  # 8. Nombre Factura (with report ID)
                 "FACTURA" if expense.document_type == DocumentType.FACTURA else "",      # 9. Indicador de Factura
                 
                 # Fields 10-12: BOLETA-specific fields (empty for FACTURA)
                 "40" if expense.document_type == DocumentType.BOLETA else "",            # 10. Clave del Gasto
                 expense.category.account if expense.document_type == DocumentType.BOLETA else "",  # 11. Cuenta mayor
-                report_reason if expense.document_type == DocumentType.BOLETA else "",   # 12. Identificador de Viaje
+                report_id_with_reason if expense.document_type == DocumentType.BOLETA else "",   # 12. Identificador de Viaje (with report ID)
                 
                 # Fields 13-16: BOLETA-specific fields (empty for FACTURA)
                 f"{net_amount:.2f}" if expense.document_type == DocumentType.BOLETA else "",     # 13. Importe
