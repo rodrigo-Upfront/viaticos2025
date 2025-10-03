@@ -338,7 +338,13 @@ class SAPService:
         prepayment_amount = float(report.prepayment.amount) if report.prepayment else 0.0
         
         # Determine compensation type and amount to return
-        if prepayment_amount == 0:
+        # Priority 1: Check if this is a REIMBURSEMENT report (no prepayment by design)
+        if report.report_type == ReportType.REIMBURSEMENT:
+            compensation_type = "COMPENSACION"
+            compensation_subtype = "Aprobado para Reembolso"
+            amount_to_return = total_expenses
+        # Priority 2: Check if prepayment equals expenses (exact match)
+        elif prepayment_amount == total_expenses:
             compensation_type = "COMPENSACION"
             compensation_subtype = "Gastos Aprobados"
             amount_to_return = 0.0
@@ -350,7 +356,7 @@ class SAPService:
             compensation_type = "COMPENSACION"
             compensation_subtype = "Aprobado para Reembolso"
             amount_to_return = total_expenses - prepayment_amount
-        else:  # Equal amounts
+        else:  # Fallback (shouldn't happen)
             compensation_type = "COMPENSACION"
             compensation_subtype = "Gastos Aprobados"
             amount_to_return = 0.0
@@ -410,10 +416,10 @@ class SAPService:
                 report_id_with_reason if expense.document_type == DocumentType.FACTURA else "",  # 8. Nombre Factura (with report ID)
                 "FACTURA" if expense.document_type == DocumentType.FACTURA else "",      # 9. Indicador de Factura
                 
-                # Fields 10-12: BOLETA-specific fields (empty for FACTURA)
+                # Fields 10-12: BOLETA-specific fields (empty for FACTURA), except Field 12
                 "40" if expense.document_type == DocumentType.BOLETA else "",            # 10. Clave del Gasto
                 expense.category.account if expense.document_type == DocumentType.BOLETA else "",  # 11. Cuenta mayor
-                report_id_with_reason if expense.document_type == DocumentType.BOLETA else "",   # 12. Identificador de Viaje (with report ID)
+                report_id_with_reason,                                                   # 12. Identificador de Viaje (with report ID) - ALL expense types
                 
                 # Fields 13-16: BOLETA-specific fields (empty for FACTURA)
                 f"{net_amount:.2f}" if expense.document_type == DocumentType.BOLETA else "",     # 13. Importe
