@@ -29,6 +29,11 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "480"))  # 8 hours for development
     REFRESH_TOKEN_EXPIRE_DAYS: int = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
     
+    # Email Settings
+    # Note: Primary email toggle is in SMTP settings (is_active field via UI)
+    # This is an optional override for deployment-level control
+    EMAIL_ENABLED: bool = os.getenv("EMAIL_ENABLED", "true").lower() == "true"
+    
     # SMTP Settings
     SMTP_SERVER: str = os.getenv("SMTP_SERVER", "localhost")
     SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))

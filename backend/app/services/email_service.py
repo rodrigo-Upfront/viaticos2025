@@ -9,6 +9,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from app.models.models import SMTPSettings, EmailNotification, EmailNotificationStatus
 from app.schemas.email_schemas import TestEmailRequest
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,20 @@ class EmailService:
         self._smtp_settings = None
         return self.get_smtp_settings()
     
+    def is_email_enabled(self) -> bool:
+        """
+        Check if email sending is enabled
+        Returns True if SMTP settings are active AND EMAIL_ENABLED env var is true
+        """
+        smtp_settings = self.get_smtp_settings()
+        if not smtp_settings or not smtp_settings.is_active:
+            return False
+        
+        if not settings.EMAIL_ENABLED:
+            return False
+        
+        return True
+    
     def send_email(
         self, 
         recipient_email: str, 
@@ -45,6 +60,16 @@ class EmailService:
         smtp_settings = self.get_smtp_settings()
         if not smtp_settings:
             return False, "No SMTP settings configured"
+        
+        # Check if SMTP settings are active (PRIMARY TOGGLE - controlled via UI)
+        if not smtp_settings.is_active:
+            logger.info(f"📧 Email sending is DISABLED (SMTP is_active=false). Skipping email to {recipient_email}")
+            return False, "Email sending is disabled in SMTP settings"
+        
+        # Check if emails are globally enabled (OPTIONAL OVERRIDE - for deployment control)
+        if not settings.EMAIL_ENABLED:
+            logger.info(f"📧 Email sending is DISABLED by environment (EMAIL_ENABLED=false). Skipping email to {recipient_email}")
+            return False, "Email sending is disabled globally via EMAIL_ENABLED setting"
         
         try:
             # Create message
@@ -166,13 +191,29 @@ class EmailService:
     def send_test_email(self, test_request: TestEmailRequest) -> tuple[bool, Optional[str]]:
         """
         Send a test email to verify SMTP configuration
+        This bypasses the EMAIL_ENABLED check to allow testing SMTP settings
         """
-        return self.send_email(
-            recipient_email=test_request.recipient_email,
-            subject=test_request.subject,
-            body=test_request.body,
-            is_html=True
-        )
+        smtp_settings = self.get_smtp_settings()
+        if not smtp_settings:
+            return False, "No SMTP settings configured"
+        
+        # For test emails, we ignore the EMAIL_ENABLED setting but still respect is_active
+        if not smtp_settings.is_active:
+            logger.warning(f"⚠️ Sending test email even though SMTP is_active=false")
+        
+        # Temporarily enable emails for testing
+        original_enabled = settings.EMAIL_ENABLED
+        try:
+            settings.EMAIL_ENABLED = True
+            result = self.send_email(
+                recipient_email=test_request.recipient_email,
+                subject=test_request.subject,
+                body=test_request.body,
+                is_html=True
+            )
+            return result
+        finally:
+            settings.EMAIL_ENABLED = original_enabled
     
     def get_pending_notifications(self, limit: int = 100) -> List[EmailNotification]:
         """

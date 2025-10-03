@@ -25,6 +25,7 @@ services:
       SECRET_KEY: your-super-secret-key-change-in-production-2024
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      EMAIL_ENABLED: true
     depends_on:
       - database
     ports:

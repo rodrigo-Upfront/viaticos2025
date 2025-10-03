@@ -38,7 +38,7 @@ const SMTPSettingsPage: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
   
   // Form state
-  const [formData, setFormData] = useState<SMTPSettingsCreate>({
+  const [formData, setFormData] = useState<SMTPSettingsCreate & { is_active?: boolean }>({
     smtp_host: '',
     smtp_port: 587,
     smtp_user: '',
@@ -46,7 +46,8 @@ const SMTPSettingsPage: React.FC = () => {
     use_tls: true,
     use_ssl: false,
     from_email: '',
-    from_name: 'Viaticos System'
+    from_name: 'Viaticos System',
+    is_active: true
   });
   
   // Test email modal
@@ -77,7 +78,8 @@ const SMTPSettingsPage: React.FC = () => {
           use_tls: settingsData.use_tls,
           use_ssl: settingsData.use_ssl,
           from_email: settingsData.from_email,
-          from_name: settingsData.from_name
+          from_name: settingsData.from_name,
+          is_active: settingsData.is_active
         });
       }
     } catch (error: any) {
@@ -151,7 +153,7 @@ const SMTPSettingsPage: React.FC = () => {
     }
   };
 
-  const handleChange = (field: keyof SMTPSettingsCreate) => (
+  const handleChange = (field: string) => (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
@@ -159,6 +161,27 @@ const SMTPSettingsPage: React.FC = () => {
       ...prev,
       [field]: event.target.type === 'number' ? Number(value) : value
     }));
+  };
+  
+  const handleToggleActive = async () => {
+    if (!settings) return;
+    
+    const newActiveState = !formData.is_active;
+    const previousState = formData.is_active;
+    
+    try {
+      setFormData(prev => ({ ...prev, is_active: newActiveState }));
+      
+      // Immediately update in the backend
+      await emailService.updateSMTPSettings(settings.id, { is_active: newActiveState });
+      
+      setSuccess(newActiveState ? 'Email notifications enabled' : 'Email notifications disabled');
+      loadSettings();
+    } catch (error: any) {
+      setError(error.response?.data?.detail || 'Failed to toggle email status');
+      // Revert on error
+      setFormData(prev => ({ ...prev, is_active: previousState }));
+    }
   };
 
   if (loading) {
@@ -210,6 +233,37 @@ const SMTPSettingsPage: React.FC = () => {
         <Alert severity="success" sx={{ mb: 3 }} onClose={() => setSuccess(null)}>
           {success}
         </Alert>
+      )}
+
+      {/* Email Toggle - Prominent */}
+      {settings && (
+        <Paper sx={{ p: 3, mb: 3, bgcolor: formData.is_active ? 'success.light' : 'grey.100' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box>
+              <Typography variant="h6" component="div" sx={{ fontWeight: 'bold' }}>
+                📧 Email Notifications
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {formData.is_active 
+                  ? '✅ Emails are currently ENABLED - System will send email notifications' 
+                  : '🔴 Emails are currently DISABLED - No emails will be sent'}
+              </Typography>
+            </Box>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData.is_active || false}
+                  onChange={handleToggleActive}
+                  color="primary"
+                  size="medium"
+                />
+              }
+              label={formData.is_active ? 'ON' : 'OFF'}
+              labelPlacement="start"
+              sx={{ ml: 2 }}
+            />
+          </Box>
+        </Paper>
       )}
 
       {/* SMTP Configuration Form */}
