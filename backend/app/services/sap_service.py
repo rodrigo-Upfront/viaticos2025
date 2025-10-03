@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.models.models import (
     Prepayment, LocationCurrency, TravelExpenseReport, Expense, 
-    DocumentType, TaxableOption
+    DocumentType, TaxableOption, ReportType
 )
 from app.core.config import settings
 from sqlalchemy import text
